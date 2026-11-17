@@ -1,0 +1,9 @@
+aws_service,aws_sku,aws_region,quantity,usage_hours
+EC2,m6i.2xlarge,eu-central-1,10,730
+EBS,gp3,eu-central-1,5000,730
+S3,Standard,eu-central-1,10240,730
+RDS MySQL,db.r6g.xlarge,eu-central-1,2,730
+ElastiCache Redis,cluster-node,eu-central-1,3,730
+MSK Kafka,kafka-broker,eu-central-1,3,730
+ALB,application-load-balancer,eu-central-1,2,730
+EKS,cluster,eu-central-1,2,730
