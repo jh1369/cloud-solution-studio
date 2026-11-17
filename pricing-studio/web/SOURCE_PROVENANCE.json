@@ -1,0 +1,18 @@
+{
+  "version": "0.1.1",
+  "source_kind": "deployed Sites source",
+  "source_commit": "9e85f66f8dfff63dcf03882e4e51a53c82d03d74",
+  "migration": "Browser assets and Worker source copied byte-for-byte; build/test paths moved from dist to public. Generated Worker and hosting identity excluded.",
+  "sha256": {
+    "public/app.mjs": "70cab77554625599d6461cfc96fd12a68832e63f952c5f04eeca7a991179faa0",
+    "public/catalog.json": "dfdd1b85f9a0c8bc477ede7cd94f4c801565c35be0b254d6c6e5eef390cfd15d",
+    "public/engine.mjs": "8e25b5a8c61e6dc57fabd8d64e7e64027775c41d88db31c44b966643436e5c41",
+    "public/excel.mjs": "2a9cd623087629aac051de06488c5737e309b29f1873f98a8d47f145b45733c6",
+    "public/index.html": "2602aad10af8560cb5b33ee918dde37a6aa275ba934067d9441fe65d96713922",
+    "public/style.css": "9bb9a228284ed8caa99994e2107674cefb23d7e16c83df041d46c0519658f17c",
+    "public/vendor/pdf.min.js": "5b5799e6f8c680663207ac5b42ee14eed2a406fa7af48f50c154f0c0b1566946",
+    "public/vendor/pdf.worker.min.js": "feabdf309770ed24bba31a5467836cdc8cf639c705af27d52b585b041bb8527b",
+    "public/vendor/xlsx.full.min.js": "cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41",
+    "worker.mjs": "a0be3672fdbda76af168819c80678c93666ad33bfaf583f248fdacb2dc7b4e34"
+  }
+}

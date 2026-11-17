@@ -1,0 +1,10 @@
+{
+  "name": "cloud-solution-pricing-studio-web",
+  "version": "0.1.1",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "python3.12 scripts/build_worker.py && node --test tests/*.test.mjs",
+    "build": "python3.12 scripts/build_worker.py"
+  }
+}

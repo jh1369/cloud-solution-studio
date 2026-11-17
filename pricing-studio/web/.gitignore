@@ -1,0 +1,6 @@
+dist/
+node_modules/
+.openai/
+.env*
+*.tar.gz
+__pycache__/
