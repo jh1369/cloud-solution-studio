@@ -24,7 +24,7 @@ Current policy is Token-Efficient Development Mode: one primary Agent by default
 - [ ] Obtain deployment authorization and publish the download repair; previous workspace links did not deliver usable chat attachments.
 
 - [x] Require standalone HTML/ZIP for every completed version; package-derived naming, deterministic rebuilds, immutable archives, source/artifact fingerprints and release index.
-- [ ] Verify this task's authorized GitHub synchronization and actual archived ZIP download.
+- [x] Authorized GitHub sync completed (source f3aae16); GitHub SHA/tree and real ZIP HTTP 200 / byte/hash equality verified. The hosted download-button update remains undeployed.
 
 ## Pricing Studio V0.1.1 — historical baseline
 

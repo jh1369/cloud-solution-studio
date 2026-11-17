@@ -1,6 +1,6 @@
 # Cloud Solution Studio
 
-Local-first tools for cloud solution architects. The current implementation focus is **Pricing Studio V0.2 (candidate)**, with AWS-to-Huawei Cloud Public mapping, independently verified public pricing and Excel export. The V0.2 candidate and offline delivery are being synchronized under explicit user authorization. The hosted Site remains the earlier private candidate; GitHub synchronization does not deploy it.
+Local-first tools for cloud solution architects. The current implementation focus is **Pricing Studio V0.2 (candidate)**, with AWS-to-Huawei Cloud Public mapping, independently verified public pricing and Excel export. The V0.2 candidate and offline delivery have been synchronized under explicit user authorization. The hosted Site remains the earlier private candidate; GitHub synchronization does not deploy it.
 
 ## Security boundary
 
