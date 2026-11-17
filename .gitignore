@@ -1,0 +1,37 @@
+# Python and Node build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+
+# Sensitive/customer data must NOT be kept in this repository
+private/
+confidential/
+customer-files/
+customer_data/
+internal-ppt/
+internal_docs/
+confidential-pricing/
+credentials/
+secrets/
+workspace/
+outputs/
+*.pem
+*.p12
+*.pfx
+*.key
+*.tfstate
+*.tfstate.*
+
+# macOS/Windows
+.DS_Store
+Thumbs.db
