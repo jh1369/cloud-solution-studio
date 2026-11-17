@@ -1,6 +1,6 @@
 # Cloud Solution Studio
 
-Local-first tools for cloud solution architects. The current implementation focus is **Pricing Studio V0.2 (candidate)**, with AWS-to-Huawei Cloud Public mapping, independently verified public pricing and Excel export. The V0.2 candidate and offline delivery have been synchronized under explicit user authorization. The hosted Site remains the earlier private candidate; GitHub synchronization does not deploy it.
+Local-first tools for cloud solution architects. The current implementation focus is **Pricing Studio V0.3 (TCP catalog/data phase)**, with AWS-to-Huawei Cloud Public mapping, independently verified public pricing and Excel export. V0.2.0-dev (`f8ea276`) is the inspected GitHub baseline. V0.3 adds TCP PDF catalog ingestion and safe updates while retaining Huawei quotations. TCP quote mapping/calculation is not enabled yet. The user authorized this task's GitHub sync and automatic deployment of checked versions to the existing private Site.
 
 ## Security boundary
 
@@ -14,7 +14,7 @@ See [SECURITY.md](SECURITY.md), [AGENTS.md](AGENTS.md) and the shared [developme
 
 | Module | Scope | Current state |
 | --- | --- | --- |
-| Pricing Studio | AWS → Huawei Cloud Public, `eu-west-101` | V0.2 candidate privately deployed; signed-in browser acceptance outstanding; Python starter retained |
+| Pricing Studio | AWS → Huawei Cloud Public, `eu-west-101` | V0.3 TCP catalog/update phase; Huawei engine retained; TCP quotation integration and browser acceptance outstanding |
 | PPT Studio | Local template/slide reuse | Planned; placeholder README only |
 | Web Demo Studio | Generic interactive solution mockups | Planned; placeholder README only |
 | Cloud Live Lab | Read-only APIs for isolated approved test accounts | Planned; placeholder README only |
@@ -27,7 +27,7 @@ pricing-studio/
   src/pricing_studio/         # CSV → JSON product-family mapping starter
   sample_data/               # Fictional AWS inventory
   tests/                     # Python starter test
-  web/                       # Pricing Studio 0.2.0-dev, Web + Worker
+  web/                       # Pricing Studio 0.3.0-dev, Web + Worker
     public/                  # Browser code, vendored libraries, public price evidence
     worker.mjs               # Server source; official pricing refresh endpoint
     scripts/                 # Catalogue verification and Worker build helpers
@@ -56,13 +56,17 @@ cd pricing-studio/web
 npm test
 ```
 
-No dependency installation or cloud credentials are needed. `npm test` builds the ignored `dist/server/index.js` and runs 73 JavaScript tests plus 11 Python checks (4 catalogue adapter, 4 offline packaging, 3 immutable version archive). Positive financial tests use fictional rates/resources; Worker tests mock the upstream API. This command does not refresh prices or deploy. See the [MVP acceptance record](docs/PRICING_MVP_ACCEPTANCE.md) for the separate official-API check and outstanding browser acceptance.
+No dependency installation or cloud credentials are needed. `npm test` builds the ignored `dist/server/index.js` and runs the relevant JavaScript and Python catalog/packaging regressions. Positive financial tests use fictional rates/resources; Worker tests mock the upstream API. This command does not refresh prices or deploy. See the [MVP acceptance record](docs/PRICING_MVP_ACCEPTANCE.md) for the separate official-API check and outstanding browser acceptance.
 
-Each completed version includes a shareable offline HTML and ZIP in the [version archive](releases/pricing-studio/README.md). Current candidate: [download offline ZIP](releases/pricing-studio/v0.2.0-dev/Pricing-Studio-0.2.0-dev-Offline.zip?raw=true). Unzip and double-click the HTML without installing software or signing in. For a new version, update `pricing-studio/web/package.json` then run `npm run release:offline` from that directory; it tests, builds and archives the delivery, without Git writes or deployment. Older deliveries cannot be silently overwritten. Original official price expiry is preserved; actual `file://` browser acceptance remains outstanding.
+Each completed version includes a shareable offline HTML and ZIP in the [version archive](releases/pricing-studio/README.md). Current data-phase candidate: [V0.3 offline ZIP](releases/pricing-studio/v0.3.0-dev/Pricing-Studio-0.3.0-dev-Offline.zip?raw=true). This includes Huawei quotations and TCP catalog status; TCP quotation calculation is not enabled. Earlier archives remain unchanged. Unzip and double-click the HTML without installing software or signing in. For a new version, update `pricing-studio/web/package.json` then run `npm run release:offline` from that directory; it tests, builds and archives the delivery, without Git writes or deployment. Older deliveries cannot be silently overwritten. Original official price expiry is preserved; actual `file://` browser acceptance remains outstanding.
 
 See [the web README](pricing-studio/web/README.md) for build-only commands, approved official catalogue refresh, pricing limits and deployment instructions. Hosting configuration is intentionally omitted; building or pushing to GitHub does not deploy the existing Site.
 
 The private deployed V0.1.1 source originated at Sites source commit `9e85f66f8dfff63dcf03882e4e51a53c82d03d74`. `SOURCE_PROVENANCE.json` records that historical migration. Current V0.2 sources differ from those hashes and were explicitly authorized for a private Sites deployment; GitHub synchronization is separate from that private deployment.
+
+## TCP catalog ingestion and updates
+
+See [V0.3 plan, coverage, safety model and commands](docs/PRICING_V03_TCP.md). The offline processing scripts discover the current PDF from the official calculator page, preserve exact public prices/provenance, compare versions and queue uncertain data. Local SQLite stores immutable source/catalog versions and approved pointers; it is not a Python quotation engine. Daily local schedule generators run independently of Codex once installed by the user. The browser's new catalog card shows status and checks for document changes; hosted checks do not parse/promote prices. Full TCP automatic quoting is a later phase. Public candidate data are under `pricing-studio/catalogs/tcp/`; original PDF/database/runtime logs stay ignored.
 
 ## Existing Python mapping CLI
 

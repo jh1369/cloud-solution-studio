@@ -2,7 +2,9 @@
 
 Work only on generic non-sensitive code, synthetic sample data and publicly verifiable product documentation. Never read paths outside the approved repository or seek customer files, company-internal PPTs, credentials or private pricing tables. Do not upload or commit any confidential content. Do not create remote network connections unless explicitly approved for a defined public documentation or official price API endpoint.
 
-Priority: Pricing Studio V0.2, AWS -> Huawei Cloud Public, region `eu-west-101`. V0.1.1 is the last synchronized/released baseline; V0.2 is currently local development. Separate 1) vendor mapping; 2) SKU validation; 3) price source and retrieval; 4) cost calculation; 5) output formatting. Explicitly mark unknown SKU mappings and prices as `PENDING_REVIEW`, never fabricate values. Use only fictitious test data.
+Priority: Pricing Studio V0.3 TCP catalog extraction/update work on synchronized V0.2.0-dev baseline `f8ea276`. Keep the existing Huawei engine backward-compatible; Python additions are offline PDF/catalog processing, never a duplicate quotation system. Only Huawei and TCP adapters are in scope; Alibaba/Tencent remain future adapters. Separate mapping, SKU validation, price retrieval, cost calculation and formatting; unknown prices or mappings remain Pending. Use only public/synthetic data.
+
+Standing deployment authorization (user explicitly granted 2026-11-17): after completing checks for each version of this project, automatically deploy to the existing owner-private Pricing Studio Site, keeping its audience unchanged, and provide the version's offline delivery. Do not ask again for this same authorized deployment. This overrides the default no-automatic-deployment rule below for that Site and scope; it does not authorize sharing/access changes, unrelated projects or unchecked releases. The user also explicitly authorized GitHub synchronization for the current V0.3 task; future GitHub Push still requires its own applicable authorization. Ordinary catalog data validation is not manual approval: keep anomalous/initial/complex TCP prices Pending until reviewed.
 
 If a feature needs access to local confidential files, create an abstract interface and document how a separately executed local component would supply approved input. Do not implement any behavior that exfiltrates files.
 
@@ -54,7 +56,7 @@ For a significant architecture change, also update root `README.md` and `docs/RO
 
 ## Token-Efficient Development Mode — current default
 
-This mode supersedes the earlier default Multi-Agent workflow. Pricing Studio V0.2 remains the priority. Efficiency never overrides safety, functional correctness or necessary test quality.
+This mode supersedes the earlier default Multi-Agent workflow. Pricing Studio V0.3 TCP catalog work is the current priority. Efficiency never overrides safety, functional correctness or necessary test quality.
 
 ### Agent management
 

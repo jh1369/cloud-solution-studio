@@ -1,0 +1,33 @@
+{
+  "format": 1,
+  "version": "0.3.0-dev",
+  "entry": "Pricing-Studio-0.3.0-dev-Offline.html",
+  "catalogueVerifiedAt": "2026-11-17T10:08:32.992132+00:00",
+  "priceTTLDays": 7,
+  "sourceSHA256": {
+    "THIRD_PARTY_NOTICES.md": "f6ac11d027a8af194f330c49076831e67e7933e0bcbcf1f1146892c5ead55324",
+    "package.json": "c52a250de3494cd512cd710273b68b9b15de36cb63628f8cd091611ee8b345a4",
+    "public/app.mjs": "e234f791f63b791991e66b750c45e2b427e23f2d82b74f02c92c914d98edb3fc",
+    "public/catalog.json": "dfdd1b85f9a0c8bc477ede7cd94f4c801565c35be0b254d6c6e5eef390cfd15d",
+    "public/catalog_status.mjs": "946571fc8cfef7398b89dc5a169776f55b0b0e860133d8a29afabac0eb09cbab",
+    "public/engine.mjs": "b4a44f991658c935586d76dc8d1c2fdcd8b9b50071cd11d07e3bcf37936fe8d6",
+    "public/excel.mjs": "955369b7e1b9a59f63b259e0d4c99858ac45d37300fc7e630dfccc0f2c757deb",
+    "public/i18n.mjs": "6b4d19c5b59dc8a57a7ad940631703c759662e24afe57dd0a29f1cf1d083ec5f",
+    "public/index.html": "73d6722ea625c57522f6e0d1067be74b5f9dd8e4675284d0536b82d5ad733766",
+    "public/providers.mjs": "6c342dd53fe7f3397a699924339773aa23ffbd2252519e312693f7cfd0280406",
+    "public/style.css": "75b1d04a37e7066f7849adc815dbf799d12a8a13d39fbadca36cacbc981dc214",
+    "public/tcp-status.json": "5da78543cf74114cef8979302f9587f88973e3a3e41bfeae547b5c0e0a21546a",
+    "public/ui.mjs": "9c4dc6ae05b7c738004b79353244a9159c9e17ddf7843c7d577d87f05450ad21",
+    "public/vendor/pdf.min.js": "5b5799e6f8c680663207ac5b42ee14eed2a406fa7af48f50c154f0c0b1566946",
+    "public/vendor/pdf.worker.min.js": "feabdf309770ed24bba31a5467836cdc8cf639c705af27d52b585b041bb8527b",
+    "public/vendor/xlsx.full.min.js": "cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41",
+    "scripts/build_offline.py": "fa3b422b418acf789340b32bced31f479b72dee27624ffb190614f06d789fc29",
+    "tests/fixtures/aws-fictional-mvp.csv": "d3ed0d8fb5b83a237abd35240da5e525b701ee1edd7afe461291a021dd33f16e"
+  },
+  "sha256": {
+    "Pricing-Studio-0.3.0-dev-Offline.html": "a0c31586aafcd3bf1f68fb311c4218b28831c9bedf5f25549693f9b49744458f",
+    "aws-fictional-mvp.csv": "d3ed0d8fb5b83a237abd35240da5e525b701ee1edd7afe461291a021dd33f16e",
+    "THIRD_PARTY_NOTICES.md": "f6ac11d027a8af194f330c49076831e67e7933e0bcbcf1f1146892c5ead55324",
+    "READ-ME.txt": "2217089500ca1d47931f1e3c09488ac93c04b7bf6157d5c85719b4dd111f1e66"
+  }
+}

@@ -7,6 +7,16 @@ const catalogue=JSON.parse(await readFile(new URL('../public/catalog.json',impor
 const origin='https://pricing.example';
 test('Worker serves functional app and restrictive headers',async()=>{const r=await worker.fetch(new Request(origin));assert.equal(r.status,200);assert.match(await r.text(),/Pricing Studio/);assert.match(r.headers.get('Content-Security-Policy'),/connect-src 'self'/);});
 test('Missing asset is 404',async()=>assert.equal((await worker.fetch(new Request(origin+'/missing'))).status,404));
+test('TCP update button API detects official document changes without price promotion',async()=>{
+ const status=await (await worker.fetch(new Request(origin+'/api/catalog/tcp/status'))).json();assert.equal(status.provider,'tcp');
+ assert.equal((await worker.fetch(new Request(origin+'/api/catalog/tcp/check',{method:'POST',headers:{Origin:'https://evil.example'}}))).status,403);
+ const previous=globalThis.fetch,pdf='%PDF-1.4 FICTIONAL ONLY';
+ globalThis.fetch=async url=>String(url).includes('/en/prices/price-calculator')?new Response('<a href="/new-service-description.pdf">PDF</a>'):new Response(pdf);
+ try{
+  const response=await worker.fetch(new Request(origin+'/api/catalog/tcp/check',{method:'POST',body:'{}'}));const result=await response.json();
+  assert.equal(response.status,200);assert.equal(result.status,'DOCUMENT_CHANGED_REVIEW_REQUIRED');assert.equal(result.currentVersion,status.currentVersion);assert.equal(result.checkScope,'DETECTION_ONLY_NO_PROMOTION');
+ }finally{globalThis.fetch=previous;}
+});
 test('Offline package is a byte-exact ZIP attachment with a working web entry',async()=>{
  const path='/downloads/pricing-studio-offline.zip',version=JSON.parse(await readFile(new URL('../package.json',import.meta.url))).version,name=`Pricing-Studio-${version}-Offline.zip`;
  const response=await worker.fetch(new Request(origin+path));

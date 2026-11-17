@@ -1,6 +1,8 @@
 const assets=/*ASSETS*/{};
 const catalogue=/*CATALOG*/{};
 const offlineDownload=/*OFFLINE_DOWNLOAD*/{};
+const tcpStatus=/*TCP_STATUS*/{};
+/*TCP_INSPECTOR*/
 const endpoint='https://portal.eu.huaweicloud.com/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource';
 const security={'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'SAMEORIGIN','Permissions-Policy':'camera=(), microphone=(), geolocation=()','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; frame-ancestors 'self' https://chatgpt.com https://*.chatgpt.com; base-uri 'none'; object-src 'none'"};
 function requestForPlan(plan,index){
@@ -22,6 +24,14 @@ function resultIndex(quote,count){
 function json(value,status=200){return new Response(JSON.stringify(value),{status,headers:{...security,'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});}
 export default {async fetch(request){
  const url=new URL(request.url);
+ if(url.pathname==='/api/catalog/tcp/status')return request.method==='GET'?json({...tcpStatus,checkScope:'PACKAGED_PUBLIC_STATUS'}):json({error:'GET required'},405);
+ if(url.pathname==='/api/catalog/tcp/check'){
+  if(request.method!=='POST')return json({error:'POST required'},405);
+  if(request.headers.get('Origin')&&request.headers.get('Origin')!==url.origin)return json({error:'Origin mismatch'},403);
+  if(Number(request.headers.get('Content-Length'))>4096||(await request.text()).length>4096)return json({error:'Request too large'},413);
+  const state=await inspectTCPSource(tcpStatus);
+  return json(state,state.status==='CHECK_FAILED'?502:200);
+ }
  if(url.pathname==='/api/rates'){
   if(request.method!=='POST')return json({error:'POST required'},405);
   if(request.headers.get('Origin')&&request.headers.get('Origin')!==url.origin)return json({error:'Origin mismatch'},403);

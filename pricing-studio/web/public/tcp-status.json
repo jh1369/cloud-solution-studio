@@ -1,0 +1,81 @@
+{
+  "provider": "tcp",
+  "lastCheckedAt": "2026-11-17T16:45:00.615497+00:00",
+  "currentVersion": null,
+  "status": "PENDING_REVIEW",
+  "candidateVersion": "tcp-2026-10-09-c88c0aff01e08ade-tcp-pdf-0.3.0-1",
+  "documentRevision": "2026-10-09",
+  "reasons": [
+    "COMPLEX_PRICE_REVIEW",
+    "INITIAL_BASELINE_REVIEW",
+    "PARSE_DIAGNOSTICS_REVIEW"
+  ],
+  "coverage": {
+    "billingPlans": {
+      "OPEN_ELASTIC:0": 4840,
+      "RESERVED:12": 3486,
+      "RESERVED:24": 3486,
+      "RESERVED:36": 788,
+      "RESERVED_UPFRONT:12": 3482,
+      "RESERVED_UPFRONT:24": 3482,
+      "RESERVED_UPFRONT:36": 784
+    },
+    "documentPages": 115,
+    "duplicateRecords": 72,
+    "expandedPriceCells": 20420,
+    "services": {
+      "ECS": {
+        "AUTO_VALIDATED": 1893,
+        "PENDING_REVIEW": 11322,
+        "UNAVAILABLE": 5123,
+        "total": 18338
+      },
+      "EIP": {
+        "AUTO_VALIDATED": 4,
+        "PENDING_REVIEW": 0,
+        "UNAVAILABLE": 0,
+        "total": 4
+      },
+      "ELB": {
+        "AUTO_VALIDATED": 0,
+        "PENDING_REVIEW": 54,
+        "UNAVAILABLE": 10,
+        "total": 64
+      },
+      "EVS": {
+        "AUTO_VALIDATED": 13,
+        "PENDING_REVIEW": 2,
+        "UNAVAILABLE": 1,
+        "total": 16
+      },
+      "OBS": {
+        "AUTO_VALIDATED": 12,
+        "PENDING_REVIEW": 80,
+        "UNAVAILABLE": 16,
+        "total": 108
+      },
+      "RDS": {
+        "AUTO_VALIDATED": 1475,
+        "PENDING_REVIEW": 228,
+        "UNAVAILABLE": 115,
+        "total": 1818
+      }
+    },
+    "tables": 59,
+    "uniqueRecords": 20348
+  },
+  "diffCounts": {
+    "added": 20348,
+    "priceChanged": 0,
+    "removed": 0,
+    "rulesChanged": 0
+  },
+  "source": {
+    "discoveryPage": "https://www.t-cloud-public.com/en/prices/price-calculator",
+    "documentVersion": "2026-10-09",
+    "fetchedAt": "2026-11-17T16:44:33.493147+00:00",
+    "revisionDate": "2026-10-09",
+    "sha256": "c88c0aff01e08adeab9dda95f40414f9f8e41f7112e6ccc68895a5637c92603f",
+    "url": "https://www.t-cloud-public.com/_Resources/Persistent/5/b/4/9/5b49ccec9ceef6d52f461deff50098200b81665f/t-cloud-public-servicedescription.pdf"
+  }
+}

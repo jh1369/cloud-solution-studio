@@ -1,6 +1,6 @@
-# Cloud Solution Studio · Pricing Studio Web V0.2 (private candidate)
+# Cloud Solution Studio · Pricing Studio Web V0.3 (TCP catalog/data phase)
 
-Package `0.2.0-dev` (UI V0.2.0), privately deployed after explicit authorization; full signed-in browser acceptance is still outstanding. This V0.2 candidate is authorized for GitHub synchronization; hosting remains the earlier private deployment. Huawei target billing choices are 按需 / 包月 / 包年, separated from AWS billing. The existing Python mapping CLI remains unchanged. This app uses browser JavaScript modules and a Cloudflare Worker; no duplicate Python quotation system or SQLite runtime has been introduced.
+Package `0.3.0-dev`, prepared for this task's authorized synchronization/deployment. Full browser acceptance and TCP quote calculation/mapping remain outstanding. Huawei quotations retain the existing engine. Huawei target billing choices are 按需 / 包月 / 包年, separated from AWS billing. The existing Python mapping CLI remains unchanged. This app uses browser JavaScript modules and a Cloudflare Worker; no duplicate Python quotation system or SQLite runtime has been introduced.
 
 ## Features
 
@@ -24,7 +24,7 @@ node --test tests/*.test.mjs
 npm test
 ```
 
-No npm/pip install is required for these commands. `npm test` also runs four Python catalogue-adapter and four offline packaging checks; positive finance tests use synthetic prices. Upstream APIs are mocked, not contacted. The [acceptance record](../../docs/PRICING_MVP_ACCEPTANCE.md) separates automated results, live official-price verification and blocked real-browser E2E.
+No npm/pip install is required for these commands. `npm test` also runs Python catalogue, TCP PDF/update/scheduler and offline/version-archive checks; positive finance tests use synthetic prices. Upstream APIs are mocked, not contacted. The [acceptance record](../../docs/PRICING_MVP_ACCEPTANCE.md) separates automated results, live official-price verification and blocked real-browser E2E.
 
 ## Downloadable offline file
 
@@ -40,7 +40,7 @@ The build embeds existing modules, styles, SheetJS, PDF.js/worker and the offici
 
 Original price evidence/timestamps and seven-day expiry are preserved. Expired/missing prices and unconfirmed mappings stay Pending. The package does not import arbitrary price JSON or manufacture fresh verification. Obtain an updated offline package or use the web app after expiry. Excel Assumptions identifies offline delivery. Close/reload clears resource rows; only language preference may persist.
 
-Verification: 73 JS tests + 11 Python checks (4 catalogue adapter + 4 offline artifact + 3 immutable archive checks). Artifact tests cover no external runtime assets/module scripts, classic-script syntax, exact snapshot preservation, ZIP allowlist and checksums. **Not a real-browser pass:** Cloud Browser blocks `file://` by URL policy; native desktop input also reported AT-SPI unavailable. No bypass or browser-security changes were attempted. Real double-click import/download and offline PDF worker behavior remain to be checked on a user's browser.
+Verification includes provider/Huawei compatibility, public-document detection, fictional real-PDF table parsing, version diff/review/rollback, frozen price snapshots, local schedule templates and offline/immutable archive checks. See DEVELOPMENT_STATUS for exact current counts. Cloud Browser file:// restrictions and preview-relay failures remain verification limits; unit/packaging tests do not replace browser acceptance.
 
 For each completed version, run `npm run release:offline` after updating `package.json`. This runs tests and archives HTML/ZIP, bilingual instructions, source fingerprints/checksums and fictional sample data in `releases/pricing-studio/v<version>/` at the repository root. ZIP output is deterministic; changed content cannot replace an existing archive. Update the [version index](../../releases/pricing-studio/README.md). Share files downloaded from GitHub, not cloud workspace links. No automatic Push or deployment is added.
 
@@ -84,3 +84,10 @@ Synthetic tests cover description parsing, unit conversion, decimals, unknown co
 Third-party browser libraries: SheetJS CE 0.20.3 (Apache-2.0), Mozilla PDF.js 3.11.174 (Apache-2.0), vendored from vendor/CDN distribution. No third-party browser scripts or fonts are loaded at runtime.
 
 Shared project state: [../../docs/DEVELOPMENT_STATUS.md](../../docs/DEVELOPMENT_STATUS.md).
+
+
+## TCP V0.3 data phase
+
+See [the V0.3 design and operator guide](../../docs/PRICING_V03_TCP.md). Install `requirements-catalog.txt` only for local PDF processing. `python3.12 scripts/catalog_update.py check` discovers the Service Description from the official calculator page and saves a candidate/history in ignored local SQLite. No real initial baseline has been approved. The candidate artifact under `pricing-studio/catalogs/tcp/` is review data, not a usable complete quotation.
+
+Local `npm run dev` connects the catalog-status card to the persistent CLI updater. Hosted Worker checks discover/download/hash only, and cannot parse/promote prices or install daily jobs. `schedule --scheduler cron|systemd|windows --output <directory>` generates local daily configuration without installing it; run this on the actual scheduler computer. Offline HTML includes the packaged status and disables live checking. TCP source validation requires an approved/current version and successful check within 48 hours; old quote snapshots do not mutate. Alibaba/Tencent adapters are not implemented.

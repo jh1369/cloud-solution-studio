@@ -1,5 +1,5 @@
 """Build a dependency-free Cloudflare Worker with private-site assets embedded."""
-import base64,json
+import base64,json,re
 from pathlib import Path
 from build_offline import build as build_offline, ZIP_NAME
 ROOT=Path(__file__).resolve().parents[1]
@@ -13,6 +13,10 @@ download_path='/downloads/pricing-studio-offline.zip'
 assets[download_path]=base64.b64encode(offline_archive.read_bytes()).decode()
 catalog=json.loads((ROOT/'public/catalog.json').read_text())
 source=(ROOT/'worker.mjs').read_text().replace('/*ASSETS*/{}',json.dumps(assets)).replace('/*CATALOG*/{}',json.dumps(catalog)).replace('/*OFFLINE_DOWNLOAD*/{}',json.dumps({'path':download_path,'filename':ZIP_NAME}))
+status_path=ROOT/'public/tcp-status.json'
+status=json.loads(status_path.read_text()) if status_path.exists() else {'provider':'tcp','status':'NEVER_CHECKED','currentVersion':None,'lastCheckedAt':None}
+inspector=re.sub(r'^export ','',(ROOT/'public/catalog_status.mjs').read_text(),flags=re.M)
+source=source.replace('/*TCP_STATUS*/{}',json.dumps(status)).replace('/*TCP_INSPECTOR*/',inspector)
 p=ROOT/'dist/server/index.js';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(source)
 manifest_path=ROOT/'.openai/hosting.json'
 if manifest_path.exists():

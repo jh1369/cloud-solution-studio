@@ -2,6 +2,7 @@
 import http from 'node:http';
 import {Readable} from 'node:stream';
 import worker from '../dist/server/index.js';
+import {handleLocalCatalogRequest} from './local_catalog_api.mjs';
 
 const port=Number(process.env.PORT||4173);
 const server=http.createServer(async(incoming,outgoing)=>{
@@ -12,7 +13,7 @@ const server=http.createServer(async(incoming,outgoing)=>{
   const protocol=incoming.headers['x-forwarded-proto']==='https'?'https':'http';
   const host=incoming.headers['x-forwarded-host']||incoming.headers.host;
   const request=new Request(`${protocol}://${host}${incoming.url}`,init);
-  const response=await worker.fetch(request);
+  const response=await handleLocalCatalogRequest(request)||await worker.fetch(request);
   outgoing.writeHead(response.status,Object.fromEntries(response.headers));
   if(response.body)Readable.fromWeb(response.body).pipe(outgoing);else outgoing.end();
  }catch{

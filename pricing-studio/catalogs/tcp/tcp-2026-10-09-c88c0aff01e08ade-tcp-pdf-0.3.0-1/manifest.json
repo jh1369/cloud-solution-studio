@@ -1,0 +1,81 @@
+{
+  "billingRulesHash": "bc85e8a558d9690978a87addae8cd730cf6db6b3886e22f2651b1f570bc5540d",
+  "billingRulesPages": [
+    47,
+    48
+  ],
+  "coverage": {
+    "billingPlans": {
+      "OPEN_ELASTIC:0": 4840,
+      "RESERVED:12": 3486,
+      "RESERVED:24": 3486,
+      "RESERVED:36": 788,
+      "RESERVED_UPFRONT:12": 3482,
+      "RESERVED_UPFRONT:24": 3482,
+      "RESERVED_UPFRONT:36": 784
+    },
+    "documentPages": 115,
+    "duplicateRecords": 72,
+    "expandedPriceCells": 20420,
+    "services": {
+      "ECS": {
+        "AUTO_VALIDATED": 1893,
+        "PENDING_REVIEW": 11322,
+        "UNAVAILABLE": 5123,
+        "total": 18338
+      },
+      "EIP": {
+        "AUTO_VALIDATED": 4,
+        "PENDING_REVIEW": 0,
+        "UNAVAILABLE": 0,
+        "total": 4
+      },
+      "ELB": {
+        "AUTO_VALIDATED": 0,
+        "PENDING_REVIEW": 54,
+        "UNAVAILABLE": 10,
+        "total": 64
+      },
+      "EVS": {
+        "AUTO_VALIDATED": 13,
+        "PENDING_REVIEW": 2,
+        "UNAVAILABLE": 1,
+        "total": 16
+      },
+      "OBS": {
+        "AUTO_VALIDATED": 12,
+        "PENDING_REVIEW": 80,
+        "UNAVAILABLE": 16,
+        "total": 108
+      },
+      "RDS": {
+        "AUTO_VALIDATED": 1475,
+        "PENDING_REVIEW": 228,
+        "UNAVAILABLE": 115,
+        "total": 1818
+      }
+    },
+    "tables": 59,
+    "uniqueRecords": 20348
+  },
+  "currency": "EUR",
+  "parserVersion": "tcp-pdf-0.3.0-1",
+  "provider": "tcp",
+  "regions": [
+    "EU-DE",
+    "EU-NL"
+  ],
+  "schemaVersion": 1,
+  "source": {
+    "discoveryPage": "https://www.t-cloud-public.com/en/prices/price-calculator",
+    "documentVersion": "2026-10-09",
+    "fetchedAt": "2026-11-17T16:44:33.493147+00:00",
+    "revisionDate": "2026-10-09",
+    "sha256": "c88c0aff01e08adeab9dda95f40414f9f8e41f7112e6ccc68895a5637c92603f",
+    "url": "https://www.t-cloud-public.com/_Resources/Persistent/5/b/4/9/5b49ccec9ceef6d52f461deff50098200b81665f/t-cloud-public-servicedescription.pdf"
+  },
+  "versionId": "tcp-2026-10-09-c88c0aff01e08ade-tcp-pdf-0.3.0-1",
+  "stage": "CANDIDATE_PENDING_MANUAL_BASELINE",
+  "diagnosticsCount": 72,
+  "artifactSHA256": "5a00f27f21f81a140a5a2da24129173dc26e78b0daca6b01f0acecd3aa426c55"
+}

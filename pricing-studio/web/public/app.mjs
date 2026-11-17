@@ -9,6 +9,7 @@ const storage=(()=>{try{return window.localStorage;}catch{return undefined;}})()
 const offlineBundle=window.PRICING_STUDIO_OFFLINE||null;
 let language=readLanguage(storage);
 let catalog={items:[],ttlDays:7},rows=[],page=0,activeView='studio',mappingSelected=false,busy=false,catalogState='loading';
+let tcpStatus={provider:'tcp',status:'NEVER_CHECKED'},tcpLoaded=false,tcpBusy=false;
 const T=(key,vars)=>t(key,language,vars);
 const E=escapeHTML;
 
@@ -31,7 +32,7 @@ function view(next){
  activeView=next;mappingSelected=false;
  for(const name of ['studio','catalog','guide'])$('#'+name+'-view').hidden=name!==next;
  $$('.nav-item').forEach(button=>button.classList.toggle('active',button.dataset.view===next));
- refreshCrumb();if(next==='catalog')renderCatalog();window.scrollTo({top:0});
+ refreshCrumb();if(next==='catalog'){renderCatalog();loadTCPStatus();}window.scrollTo({top:0});
 }
 function openMapping(){
  view('studio');mappingSelected=true;refreshCrumb();$$('.nav-item').forEach(button=>button.classList.toggle('active',button.id==='mapping-nav'));
@@ -93,10 +94,40 @@ function renderCatalog(){
  const matching=catalog.items.filter(plan=>(!service||plan.service===service)&&(!mode||plan.billingMode===mode)&&(!query||JSON.stringify([plan.service,plan.sku,plan.productId,plan.engine,plan.description]).toLowerCase().includes(query)));
  $('#catalog-rows').innerHTML=catalogueHTML(matching,catalog,language);
  $('#catalog-foot').textContent=T('catalog.foot',{count:matching.length,limit:matching.length>120?T('catalog.limit'):''});
+ renderTCPStatus();
 }
+function renderTCPStatus(){
+ const known=['NEVER_CHECKED','PENDING_REVIEW','UNCHANGED','UPDATED','APPROVED','CHECK_FAILED','DOCUMENT_CHANGED_REVIEW_REQUIRED'];
+ $('#tcp-current').textContent=tcpStatus.currentVersion||T('tcp.noApproved');
+ $('#tcp-candidate').textContent=tcpStatus.candidateVersion||T('tcp.noCandidate');
+ $('#tcp-checked').textContent=tcpStatus.lastCheckedAt?dateLabel(tcpStatus.lastCheckedAt,language):'—';
+ $('#tcp-state').textContent=T('tcp.state.'+(known.includes(tcpStatus.status)?tcpStatus.status:'PENDING_REVIEW'));
+ const services=Object.values(tcpStatus.coverage?.services||{});
+ $('#tcp-coverage').textContent=T('tcp.coverage',{total:services.reduce((n,s)=>n+s.total,0),validated:services.reduce((n,s)=>n+s.AUTO_VALIDATED,0)});
+ $('#tcp-scope').textContent=T(offlineBundle?'tcp.offline':tcpStatus.checkScope==='LOCAL_PERSISTENT_UPDATER'?'tcp.local':'tcp.remote');
+ $('#tcp-check').disabled=!!offlineBundle||tcpBusy;
+}
+async function loadTCPStatus(){
+ if(tcpLoaded)return;
+ try{
+  if(offlineBundle)tcpStatus=offlineBundle.tcpStatus||tcpStatus;
+  else{const response=await fetch('/api/catalog/tcp/status');if(!response.ok)throw Error();tcpStatus=await response.json();}
+  tcpLoaded=true;
+ }catch{tcpStatus={...tcpStatus,status:'CHECK_FAILED'};}
+ renderTCPStatus();
+}
+$('#tcp-check').addEventListener('click',async()=>{
+ if(offlineBundle||tcpBusy)return;tcpBusy=true;renderTCPStatus();toast(T('tcp.checking'));
+ try{
+  const response=await fetch('/api/catalog/tcp/check',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  const state=await response.json();tcpStatus=state?.provider==='tcp'?{...tcpStatus,...state}:{...tcpStatus,status:'CHECK_FAILED'};
+ }catch{tcpStatus={...tcpStatus,status:'CHECK_FAILED'};}
+ finally{tcpBusy=false;renderTCPStatus();}
+});
 function localize(){
  document.documentElement.lang=language==='en'?'en':'zh-CN';document.title=T('app.title');
  applyTranslations(document,language);refreshCrumb();
+ renderTCPStatus();
  if(offlineBundle){
   $('#refresh-prices').title=T('offline.noRefresh');
   $('#offline-date').textContent=T('offline.date',{date:dateLabel(catalog.verifiedAt||offlineBundle.catalog.verifiedAt,language)});

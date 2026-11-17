@@ -6,6 +6,7 @@ Every completed version includes a standalone HTML and ZIP. Download the ZIP fro
 
 | Version | Status | Download | Details |
 | --- | --- | --- | --- |
+| 0.3.0-dev | TCP catalog/data phase; TCP quoting not enabled | [ZIP](v0.3.0-dev/Pricing-Studio-0.3.0-dev-Offline.zip?raw=true) | [Files and instructions](v0.3.0-dev/README.md) |
 | 0.2.0-dev | Candidate; real-browser acceptance outstanding | [ZIP](v0.2.0-dev/Pricing-Studio-0.2.0-dev-Offline.zip?raw=true) | [Files and instructions](v0.2.0-dev/README.md) |
 
 Prices retain their original per-item seven-day verification validity; expired, missing or unconfirmed items stay Pending. Offline live refresh is unavailable. Obtain a newly verified package when needed; rebuilding cannot extend prices.

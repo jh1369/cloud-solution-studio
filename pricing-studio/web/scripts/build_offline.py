@@ -12,7 +12,7 @@ if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?(?:\+[A-Za-z0-9.-]+)?", V
     raise ValueError("A safe semantic package version is required")
 HTML_NAME = f"Pricing-Studio-{VERSION}-Offline.html"
 ZIP_NAME = f"Pricing-Studio-{VERSION}-Offline.zip"
-MODULES = ["engine", "i18n", "ui", "excel"]
+MODULES = ["engine", "i18n", "ui", "excel", "providers"]
 CSP = "default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; worker-src blob:; connect-src 'none'; base-uri 'none'; object-src 'none'"
 
 
@@ -62,7 +62,9 @@ def build(output_dir):
     html = html.replace('<main>', '<main>' + banner, 1)
     html = html.replace('</head>', '<style>.offline-banner{border:1px solid #775392;background:#211431;border-radius:16px;padding:16px 20px;margin:0 0 24px;color:#e3d2f1}.offline-banner p{margin:7px 0;color:#c3b1d4}.offline-banner small{color:#b4a0c6}</style></head>', 1)
     payload = '<script id="offline-catalog" type="application/json">' + json_literal(catalog) + '</script>'
-    config = "window.PRICING_STUDIO_OFFLINE={catalog:JSON.parse(document.getElementById('offline-catalog').textContent),pdfWorkerURL:URL.createObjectURL(new Blob([" + json_literal((public / 'vendor/pdf.worker.min.js').read_text()) + "],{type:'text/javascript'}))};"
+    status_path = public / "tcp-status.json"
+    status = json.loads(status_path.read_text()) if status_path.exists() else {"provider":"tcp", "status":"NEVER_CHECKED"}
+    config = "window.PRICING_STUDIO_OFFLINE={catalog:JSON.parse(document.getElementById('offline-catalog').textContent),tcpStatus:" + json_literal(status) + ",pdfWorkerURL:URL.createObjectURL(new Blob([" + json_literal((public / 'vendor/pdf.worker.min.js').read_text()) + "],{type:'text/javascript'}))};"
     modules = []
     for name in MODULES:
         source, exports = classic_source((public / f"{name}.mjs").read_text())
@@ -94,7 +96,9 @@ def build(output_dir):
    本包不含客户资料或云凭证。公开快照不是客户真实报价。
    每条单价从原 verifiedAt 起 7 天有效；不会因打包、复制或重启延长。过期后 Pending。
    离线版不能在线核价，届时需要获取更新的离线包或使用网页版核价；不会编造或借用其他模式价格。
-7. 关闭/刷新会清空当前清单；导出 Excel 后自行保管。语言偏好可由浏览器保存。
+7. V0.3 当前是 TCP 目录解析/更新阶段：网页报价表单仍用于 Huawei，TCP 不确定价格不会混入该报价。
+   TCP 完整报价与复杂阶梯计算尚未启用，目录状态可在“公开价格目录”查看。
+8. 关闭/刷新会清空当前清单；导出 Excel 后自行保管。语言偏好可由浏览器保存。
    仅含所选计价项；磁盘、网络、备份、税及其他配套费用请单列。
 
 Unzip, then double-click the HTML in a modern Chrome, Edge or Firefox browser.
@@ -108,6 +112,7 @@ Get an updated package after expiry. Partial subtotals are not complete commerci
     }
     files["READ-ME.txt"] = files["READ-ME.txt"].decode("utf-8-sig").replace("Pricing Studio V0.2", f"Pricing Studio {VERSION}").replace("Pricing-Studio-V0.2-Offline.html", HTML_NAME).encode("utf-8-sig")
     inputs = [*public.glob("*.mjs"), public / "index.html", public / "style.css", public / "catalog.json", *sorted((public / "vendor").glob("*.js")), ROOT / "package.json", Path(__file__).resolve(), ROOT / "THIRD_PARTY_NOTICES.md", ROOT / "tests/fixtures/aws-fictional-mvp.csv"]
+    if status_path.exists(): inputs.append(status_path)
     manifest = {"format": 1, "version": VERSION, "entry": HTML_NAME, "catalogueVerifiedAt": catalog.get("verifiedAt"), "priceTTLDays": catalog.get("ttlDays"), "sourceSHA256": {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(inputs)}, "sha256": {name: hashlib.sha256(value).hexdigest() for name, value in files.items()}}
     files["MANIFEST.json"] = json.dumps(manifest, ensure_ascii=False, indent=2).encode()
     for name, value in files.items():

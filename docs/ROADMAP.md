@@ -2,6 +2,21 @@
 
 The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, test evidence and synchronization state. Checkboxes below distinguish the integrated web implementation from the existing Python starter; they do not assert customer-ready completeness.
 
+## Pricing Studio V0.3 — TCP catalog and auto-update phase
+
+Current work follows the [TCP V0.3 plan](PRICING_V03_TCP.md), on baseline `f8ea276`. User explicitly authorized this task's GitHub sync and standing automatic deployment of checked project versions to the existing private Site. No audience changes or unrelated publication are authorized.
+
+- [x] Generic Provider Adapter and Catalog Updater; retain Huawei arithmetic/validation.
+- [x] Official current-PDF discovery, SHA/revision/version metadata and structured ECS/EVS/EIP/ELB/OBS/RDS catalog.
+- [x] Zero vs n.a., independent usage/reserved/upfront prices, tiers and review flags; no inferred official subscription prices.
+- [x] Consecutive-version and approved-baseline diffs; approval gates, immutable history and pinned quote snapshots.
+- [x] Core fictional/PDF/update tests first, then daily local cron/systemd/Windows configuration generators (not installed).
+- [x] Bilingual catalog status/check card; hosted detection-only and local persistent updater separated explicitly.
+- [ ] Manual TCP baseline/complex-rule review; actual real store still has no approved version.
+- [ ] TCP mapping/cost/Excel quote integration; this phase does not claim full TCP automatic quotations.
+- [ ] Complete true browser workflow acceptance; preview relay and file:// restrictions remain blockers.
+- [ ] Finish this version's offline archive, safety review, authorized GitHub synchronization and private deployment; record actual results.
+
 ## Pricing Studio V0.2 — private candidate (single-Agent default)
 
 Current policy is Token-Efficient Development Mode: one primary Agent by default, Subagents only after a new user-approved efficiency justification. The Agent A/B/C items below record the previous task assignments, not active parallel execution or permission to restart them. V0.2 changes are locally integrated and regression-tested; real-browser acceptance remains blocked by the preview relay. The user explicitly authorized synchronizing the current V0.2 candidate and versioned offline files to GitHub. The user subsequently authorized redeployment of the existing owner-private Site; the V0.2 candidate is now deployed from Sites source 64eaa80. This task authorizes GitHub synchronization only; the new download endpoint has not been deployed and future deployments require corresponding authorization.
@@ -50,7 +65,7 @@ Current policy is Token-Efficient Development Mode: one primary Agent by default
 
 - [ ] Local slide index/preview, template reuse, PowerPoint automation.
 
-## V0.3 Web Demo Studio
+## Future Web Demo Studio
 
 - [ ] Generic solution demonstrations: migration, auto scaling, disaster recovery.
 
