@@ -1,0 +1,5 @@
+product,specification,region,quantity,usage,billing_method,unit
+EC2,m6i.2xlarge Linux,eu-central-1,2,730,reserved,hour
+EBS,gp3,eu-central-1,1,500,on-demand,GB-month
+RDS,db.m5.large MySQL Single-AZ,eu-central-1,1,730,on-demand,hour
+S3,Standard,eu-central-1,1,100,on-demand,GB-month

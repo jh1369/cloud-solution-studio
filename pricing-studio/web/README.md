@@ -1,12 +1,13 @@
-# Cloud Solution Studio · Pricing Studio Web V0.1.1
+# Cloud Solution Studio · Pricing Studio Web V0.2 (private candidate)
 
-Pricing Studio V0.1.1, synchronized from the deployed private Sites version into the canonical repository. Huawei target billing choices are 按需 / 包月 / 包年, separated from the original AWS billing record. The existing Python mapping CLI remains in the parent module. This web app runs browser JavaScript modules and a Cloudflare Worker. The repository does not yet integrate the separate Python/openpyxl/SQLite prototype; neither Python nor SQLite runs inside this Worker.
+Package `0.2.0-dev` (UI V0.2.0), privately deployed after explicit authorization; full signed-in browser acceptance is still outstanding. This V0.2 candidate is authorized for GitHub synchronization; hosting remains the earlier private deployment. Huawei target billing choices are 按需 / 包月 / 包年, separated from AWS billing. The existing Python mapping CLI remains unchanged. This app uses browser JavaScript modules and a Cloudflare Worker; no duplicate Python quotation system or SQLite runtime has been introduced.
 
 ## Features
 
 - Chinese/English line-oriented resource descriptions; deterministic extraction, not an LLM.
 - CSV / XLSX normalized inventory and browser-local text PDF AWS bill import (sample layout only, no OCR).
 - Editable service mappings, resource counts, usage units and billing periods; per-row or batch human confirmation.
+- Bilingual CN/EN interface and mapping review notes for CPU/memory/architecture, OS, database engines and storage. Unknown storage types require manual SKU selection. Resource counts must be positive integers.
 - Official Huawei EU public catalogue and independent inquiry verification for pay-per-use, 1-month and 1-year plans. Source reserved/spot records never become Huawei target options.
 - Monthly comparisons, independent annual subscription prices, first-term prepayment totals, optional discount, five-sheet XLSX export and downloadable price evidence.
 - All original files and text remain in browser memory. The server receives only official Huawei product IDs when refreshing rates; it does not receive AWS account identifiers or uploaded files. Refreshing discards the in-memory quote.
@@ -23,7 +24,33 @@ node --test tests/*.test.mjs
 npm test
 ```
 
-No npm/pip install is required for these commands. They use the checked-in official public price snapshot and do not query cloud APIs.
+No npm/pip install is required for these commands. `npm test` also runs four Python catalogue-adapter and four offline packaging checks; positive finance tests use synthetic prices. Upstream APIs are mocked, not contacted. The [acceptance record](../../docs/PRICING_MVP_ACCEPTANCE.md) separates automated results, live official-price verification and blocked real-browser E2E.
+
+## Downloadable offline file
+
+```bash
+npm run build:offline
+```
+
+Output: `outputs/offline/Pricing-Studio-<package-version>-Offline.html` and `.zip`. Download the HTML directly, or unzip and double-click it in a modern Chrome/Edge/Firefox browser. No Node, Python, server, login or Internet is needed on the user's computer. The ZIP also includes a fictional CSV, bilingual instructions, third-party notices and SHA-256 manifest. Do not run it inside a chat/cloud-drive HTML preview.
+
+Cloud `/workspace/...` paths are developer paths, not durable chat attachments. The Worker now packages `/downloads/pricing-studio-offline.zip` with `application/zip`, `Content-Disposition: attachment` and `no-store`; the web header has a bilingual download link. **Local preparation only: this route is not live until the next authorized deployment.** It retains the existing Site access gate; no public-access change is required. The downloaded HTML omits this server-only link.
+
+The build embeds existing modules, styles, SheetJS, PDF.js/worker and the official catalogue into one classic-script HTML so `file://` does not need cross-file ES module imports or fetch. The same pricing engine is reused. Offline mode loads embedded data, disables live refresh and uses a CSP with `connect-src 'none'`; there are no automatic network uploads. Explicit links to the official calculator open only when clicked.
+
+Original price evidence/timestamps and seven-day expiry are preserved. Expired/missing prices and unconfirmed mappings stay Pending. The package does not import arbitrary price JSON or manufacture fresh verification. Obtain an updated offline package or use the web app after expiry. Excel Assumptions identifies offline delivery. Close/reload clears resource rows; only language preference may persist.
+
+Verification: 73 JS tests + 11 Python checks (4 catalogue adapter + 4 offline artifact + 3 immutable archive checks). Artifact tests cover no external runtime assets/module scripts, classic-script syntax, exact snapshot preservation, ZIP allowlist and checksums. **Not a real-browser pass:** Cloud Browser blocks `file://` by URL policy; native desktop input also reported AT-SPI unavailable. No bypass or browser-security changes were attempted. Real double-click import/download and offline PDF worker behavior remain to be checked on a user's browser.
+
+For each completed version, run `npm run release:offline` after updating `package.json`. This runs tests and archives HTML/ZIP, bilingual instructions, source fingerprints/checksums and fictional sample data in `releases/pricing-studio/v<version>/` at the repository root. ZIP output is deterministic; changed content cannot replace an existing archive. Update the [version index](../../releases/pricing-studio/README.md). Share files downloaded from GitHub, not cloud workspace links. No automatic Push or deployment is added.
+
+Local preview uses the same packaged Worker via a small Node HTTP adapter:
+
+```bash
+npm run dev
+```
+
+In this managed environment, use `sites-preview start /workspace/repos/cloud-solution-studio/pricing-studio/web` and open its exact returned URL. The relay currently fails before returning a URL; do not treat this as browser acceptance. On Node 24 behind an inherited environment proxy, use `NODE_USE_ENV_PROXY=1 npm run dev` (or prefix the managed preview command) so official refresh honors that proxy. Keep TLS verification enabled; no credentials or proxy values belong in source. A normal local machine without such a proxy does not need the prefix. Local preview does not deploy or Push.
 
 Refresh the public catalogue only when needed and when access to the documented Huawei EU endpoints is approved:
 
@@ -38,7 +65,7 @@ The refresh changes `public/catalog.json`; inspect its provenance and diff befor
 
 For a separately authorized Sites deployment, create the local `.openai/hosting.json` for the selected Site and follow the Sites publishing workflow. Building/testing does not deploy or Push. No GitHub action auto-deploys this version.
 
-See [SOURCE_PROVENANCE.json](SOURCE_PROVENANCE.json) for the original deployed source commit and SHA-256 checksums of every unchanged runtime asset and the Worker source. Only build/test layout and documentation were adapted during synchronization. The one repository test in the parent Python module is a different suite.
+See [SOURCE_PROVENANCE.json](SOURCE_PROVENANCE.json) for historical V0.1.1 migration checksums; current V0.2 modified sources are not byte-identical to that baseline. The one test in the parent Python mapping module is a separate, unchanged suite.
 
 ## Official price contract
 
@@ -49,6 +76,8 @@ The catalogue supports simple hourly resources and EVS GB-hour (a size-1 inquiry
 Tiered traffic/storage, Kafka parameters not yet modeled, logs, commitments, Huawei spot or reserved-like target calculations remain outside this tool’s scope. Other unsupported services remain Pending even when a monthly or yearly mode is selected. S3→OBS service-family mapping is available; an OBS storage amount is **not** fabricated from an unrelated hourly price. Unknown Huawei target billing modes remain Pending; unknown AWS source billing does not block an independently specified Huawei target plan. Reference hours convert GB-month to GB-hour only when explicitly using that unit. Only pay-per-use/monthly annual scenarios repeat a month twelve times. A yearly plan uses its independently verified annual rate; its monthly comparison is the annual amount divided by twelve, never a monthly payment offer. Monthly and yearly prepaid first-term totals are shown separately from postpaid usage. EVS subscriptions use an explicit per-disk GB capacity and target quantity; aggregate instance-hours or GB-month totals never establish subscription counts or capacity. All totals of incomplete quotes are partial subtotals.
 
 ## Validation and privacy
+
+Money uses HALF_UP cents per line and cent-based subtotals shared by UI and Excel. Annual pay-per-use/monthly scenarios multiply the unrounded monthly calculation by 12 and then round once. Yearly amortization divides the rounded annual term by 12 per line. Thus monthly cents × 12 may differ from the annual estimate; this policy is exported in Assumptions and does not promise invoice amounts.
 
 Synthetic tests cover description parsing, unit conversion, decimals, unknown counts, source-period aggregates, unsupported billing, mapping confirmation, expired prices and evidence/product identity. Worker tests cover request validation, upstream failures and static asset serving. No real PDF, bill, account identifier, customer inventory or quotation is included. PDF parser tests use synthetic text.
 

@@ -2,7 +2,31 @@
 
 The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, test evidence and synchronization state. Checkboxes below distinguish the integrated web implementation from the existing Python starter; they do not assert customer-ready completeness.
 
-## Pricing Studio V0.1.1 — current integrated web version
+## Pricing Studio V0.2 — private candidate (single-Agent default)
+
+Current policy is Token-Efficient Development Mode: one primary Agent by default, Subagents only after a new user-approved efficiency justification. The Agent A/B/C items below record the previous task assignments, not active parallel execution or permission to restart them. V0.2 changes are locally integrated and regression-tested; real-browser acceptance remains blocked by the preview relay. The user explicitly authorized synchronizing the current V0.2 candidate and versioned offline files to GitHub. The user subsequently authorized redeployment of the existing owner-private Site; the V0.2 candidate is now deployed from Sites source 64eaa80. This task authorizes GitHub synchronization only; the new download endpoint has not been deployed and future deployments require corresponding authorization.
+
+- [x] Lead read the actual project rules, roadmap and shared status; preserved existing UI work.
+- [x] Launch 3 real Subagents with exclusive ownership boundaries recorded in root AGENTS.
+- [x] Integrate prior pricing work locally: strict evidence/tariffs/time/unit/Pending and precision checks; core mapping review notes. Architecture/version/topology equivalence still needs human review.
+- [x] Integrate prior purple-neon CN/EN UI and import/confirmation/export wiring locally; automated presentation checks pass. Real-browser behavior is not yet accepted.
+- [x] Integrate independent fictional-price/resource regressions; add CSV/XLSX, five-Sheet and cent-safe subtotal checks.
+- [x] Single primary Agent reviewed/integrated local diffs: 72 JS + 4 Python adapter tests pass; no new Subagents. Live official API 9/9; openpyxl exports 3/3.
+- [x] Record results, unresolved issues and next steps in DEVELOPMENT_STATUS and PRICING_MVP_ACCEPTANCE; GitHub changes remain local; the separately authorized private Sites deployment succeeded.
+- [ ] P0: complete real-browser import → confirmation → three modes → refresh → download after preview relay recovery; current relay timeout is an environment blocker, not an E2E pass.
+
+- [x] User-authorized V0.2 private candidate deployment: original Site/audience/URL preserved, native deployment succeeded; cloud browser reached the sign-in gate, so signed-in UI acceptance remains open.
+
+- [x] Downloadable offline HTML/ZIP reuses the web pricing engine; all assets/catalogue embedded, original expiry and Pending enforced, no live refresh.
+- [ ] Validate actual double-click file import/download in a user browser; Cloud Browser forbids file:// and native input is unavailable.
+
+- [x] Prepare same-origin ZIP attachment endpoint and bilingual download button; 73 JS + 8 Python checks pass locally.
+- [ ] Obtain deployment authorization and publish the download repair; previous workspace links did not deliver usable chat attachments.
+
+- [x] Require standalone HTML/ZIP for every completed version; package-derived naming, deterministic rebuilds, immutable archives, source/artifact fingerprints and release index.
+- [ ] Verify this task's authorized GitHub synchronization and actual archived ZIP download.
+
+## Pricing Studio V0.1.1 — historical baseline
 
 - [x] Safe repository scaffold and fictional AWS input fixture.
 - [x] Python CSV → JSON product-family mapping starter (package 0.1.0), retained.
@@ -19,10 +43,10 @@ The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, t
 - [ ] Formalize BSS authenticated adapter injection without discovering or persisting credentials.
 - [ ] Fix NaN/Infinity and quantity/unit semantics in the Python starter under a separate implementation task.
 - [ ] Decide and document integration of the original Python 3.12/openpyxl/SQLite prototype; those runtime/storage capabilities are not currently in this repository.
-- [ ] Make positive web test fixtures independent of public snapshot expiry, while retaining explicit expiry tests.
+- [x] Make positive web test fixtures independent of public snapshot expiry, while retaining explicit expiry tests (V0.2 local integration).
 - [ ] Add CI/documentation checks if requested; no automatic Push, data uploads or deployment.
 
-## V0.2 PPT Studio
+## Future workstream — PPT Studio
 
 - [ ] Local slide index/preview, template reuse, PowerPoint automation.
 

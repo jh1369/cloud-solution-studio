@@ -1,10 +1,13 @@
 {
   "name": "cloud-solution-pricing-studio-web",
-  "version": "0.1.1",
+  "version": "0.2.0-dev",
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "python3.12 scripts/build_worker.py && node --test tests/*.test.mjs",
-    "build": "python3.12 scripts/build_worker.py"
+    "dev": "python3.12 scripts/build_worker.py && node scripts/dev-server.mjs",
+    "test": "python3.12 scripts/build_worker.py && python3.12 -m unittest discover -s tests -p 'test_*.py' && node --test tests/*.test.mjs",
+    "build": "python3.12 scripts/build_worker.py",
+    "build:offline": "python3.12 scripts/build_offline.py",
+    "release:offline": "npm test && python3.12 scripts/release_offline.py"
   }
 }

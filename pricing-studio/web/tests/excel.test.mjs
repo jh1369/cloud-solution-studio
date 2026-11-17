@@ -7,7 +7,8 @@ import {parseText,recommend} from '../public/engine.mjs';
 const sandbox={console,Buffer,Uint8Array,ArrayBuffer,TextEncoder,TextDecoder};
 vm.runInNewContext(await readFile(new URL('../public/vendor/xlsx.full.min.js',import.meta.url),'utf8'),sandbox);
 const XLSX=sandbox.XLSX;
-const catalog=JSON.parse(await readFile(new URL('../public/catalog.json',import.meta.url)));
+import {syntheticCatalog} from './fixtures/synthetic-catalog.mjs';
+const catalog=syntheticCatalog();
 function resources(){const rows=parseText('2 台 EC2 m6i.2xlarge Linux，730 小时\n1 个 EBS gp3 500 GB\n1 个 S3 Standard 100 GB');rows.forEach(r=>{r.targetId=recommend(r,catalog);r.accepted=!!r.targetId;});return rows;}
 test('Export real XLSX with five worksheets, official prices and Pending blanks',async()=>{
  const rows=resources(),book=buildWorkbook(XLSX,rows,catalog,{hours:730,discount:.15},'Fictional demo');

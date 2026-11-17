@@ -1,0 +1,22 @@
+// Local HTTP adapter for the same Worker used in production; no separate engine.
+import http from 'node:http';
+import {Readable} from 'node:stream';
+import worker from '../dist/server/index.js';
+
+const port=Number(process.env.PORT||4173);
+const server=http.createServer(async(incoming,outgoing)=>{
+ try{
+  const init={method:incoming.method,headers:incoming.headers};
+  if(!['GET','HEAD'].includes(incoming.method))Object.assign(init,{body:Readable.toWeb(incoming),duplex:'half'});
+  // Preserve the browser origin when the managed preview terminates HTTPS.
+  const protocol=incoming.headers['x-forwarded-proto']==='https'?'https':'http';
+  const host=incoming.headers['x-forwarded-host']||incoming.headers.host;
+  const request=new Request(`${protocol}://${host}${incoming.url}`,init);
+  const response=await worker.fetch(request);
+  outgoing.writeHead(response.status,Object.fromEntries(response.headers));
+  if(response.body)Readable.fromWeb(response.body).pipe(outgoing);else outgoing.end();
+ }catch{
+  outgoing.writeHead(500,{'Content-Type':'text/plain'});outgoing.end('Local Worker request failed');
+ }
+});
+server.listen(port,'0.0.0.0',()=>console.log(`Local Pricing Studio Worker listening on ${port}`));

@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {parseText,normalizeRows,recommend,calculate,cost,family,parseBillPages} from '../public/engine.mjs';
 const catalog=JSON.parse(await readFile(new URL('../public/catalog.json',import.meta.url)));
-const fixture={...catalog,items:catalog.items.map(p=>({...p,verifiedAt:new Date().toISOString()}))};
+import {syntheticCatalog} from './fixtures/synthetic-catalog.mjs';
+const fixture=syntheticCatalog();
 function row(){const r=parseText('2 台 EC2 m6i.2xlarge Linux，每台每月 730 小时')[0];r.targetId=recommend(r,fixture);r.accepted=true;return r;}
 test('Chinese text extracts count and usage',()=>{const r=row();assert.equal(r.quantity,2);assert.equal(r.usage,730);assert.equal(r.service,'ECS');assert.ok(r.targetId);});
 test('Unknown description stays incomplete',()=>{const r=parseText('我要一套高可用系统')[0];assert.equal(r.quantity,null);assert.equal(r.usage,null);assert.equal(r.service,'Unmapped');});

@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {parseText,normalizeRows,recommend,calculate,cost,switchBilling,BILLING_MODES,billingOf} from '../public/engine.mjs';
-const catalog=JSON.parse(await readFile(new URL('../public/catalog.json',import.meta.url)));
+const sourceCatalogue=JSON.parse(await readFile(new URL('../public/catalog.json',import.meta.url)));
+import {syntheticCatalog} from './fixtures/synthetic-catalog.mjs';
+const catalog=syntheticCatalog();
 function compute(mode='ONDEMAND'){
  const row=parseText('2 台 EC2 c5.large Linux 730 小时')[0];switchBilling(row,mode,catalog);row.accepted=true;return row;
 }
@@ -60,7 +62,7 @@ test('Import and text preserve independent source/target modes',()=>{
 });
 test('Each official plan records and verifies its own billing parameters',()=>{
  const counts={ONDEMAND:0,MONTHLY:0,YEARLY:0};
- for(const p of catalog.items){counts[p.billingMode]++;assert.equal(p.evidence.response.productId,p.productId);assert.equal(p.evidence.response.officialWebsiteAmount,p.rate);
+ for(const p of sourceCatalogue.items){counts[p.billingMode]++;assert.equal(p.evidence.response.productId,p.productId);assert.equal(p.evidence.response.officialWebsiteAmount,p.rate);
   assert.equal(p.evidence.inquiry.chargingMode,p.billingMode==='ONDEMAND'?1:0);
   if(p.billingMode!=='ONDEMAND'){assert.equal(p.periodNum,1);assert.equal(p.evidence.inquiry.periodType,p.billingMode==='MONTHLY'?2:3);assert.equal(p.evidence.inquiry.periodNum,1);}
  }

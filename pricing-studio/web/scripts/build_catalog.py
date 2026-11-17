@@ -1,5 +1,6 @@
 """Verify Huawei EU pay-per-use, 1-month and 1-year prices independently."""
 import json, urllib.request, urllib.error, re, hashlib, math
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
@@ -20,7 +21,8 @@ def get(path):
  data=fetch(url)
  if data.get('urlPath')!=path or data.get('region')!=REGION:return []
  rows=[]
- for key,values in data['product'].items():
+ for key,values in data.get('product',{}).items():
+  if not isinstance(values,list):continue
   for item in values:
    if not isinstance(item,dict) or 'resourceSpecCode' not in item:continue
    spec=item['resourceSpecCode'];desc=item.get('productSpecSysDesc','');size=False
@@ -42,7 +44,7 @@ def get(path):
    if cpu and int(cpu[1])>32:continue
    for plan in item.get('planList',[]):
     mode=plan.get('billingMode')
-    if mode not in MODES or not plan.get('productId') or not isinstance(plan.get('amount'),(float,int)):continue
+    if mode not in MODES or not plan.get('productId') or isinstance(plan.get('amount'),bool) or not isinstance(plan.get('amount'),(float,int)) or not math.isfinite(plan['amount']) or plan['amount']<0:continue
     if mode=='ONDEMAND' and (plan.get('measureUnit')!=4 or 'duration' not in plan.get('usageFactor','').lower()):continue
     if mode!='ONDEMAND' and plan.get('periodNum')!=1:continue
     unit,period_type=MODES[mode]
@@ -65,19 +67,32 @@ def verify(chunk):
   return [item for row in chunk for item in verify([row])]
  if result.get('currency')!='USD':raise ValueError('Currency not verified')
  verified=[]
- for quote in result.get('productRatingResult',[]):
-  row=chunk[int(quote['id'])];rate=quote.get('officialWebsiteAmount')
-  if not isinstance(rate,(float,int)) or not math.isfinite(rate) or rate<0 or quote.get('productId')!=row['productId']:continue
-  row.update(rate=rate,currency='USD',region=REGION,verifiedAt=datetime.now(timezone.utc).isoformat(),sourceUrl=BASE+INQUIRY,evidence={'request':payload['productInfos'][int(quote['id'])],'inquiry':{k:v for k,v in payload.items() if k!='productInfos'},'response':quote,'currency':result['currency'],'responseSha256':hashlib.sha256(json.dumps(result,sort_keys=True).encode()).hexdigest()})
+ quotes=result.get('productRatingResult',[])
+ if not isinstance(quotes,list):return []
+ def quote_index(quote):
+  if not isinstance(quote,dict) or not isinstance(quote.get('id'),str) or not re.fullmatch(r'0|[1-9]\d*',quote['id']):return None
+  index=int(quote['id'])
+  return index if index<len(chunk) else None
+ indices=Counter(index for quote in quotes if (index:=quote_index(quote)) is not None)
+ for quote in quotes:
+  index=quote_index(quote)
+  if index is None or indices[index]!=1:continue
+  row=chunk[index];rate=quote.get('officialWebsiteAmount')
+  if isinstance(rate,bool) or not isinstance(rate,(float,int)) or not math.isfinite(rate) or rate<0 or rate>1e12 or quote.get('productId')!=row['productId']:continue
+  row.update(rate=rate,currency='USD',region=REGION,verifiedAt=datetime.now(timezone.utc).isoformat(),sourceUrl=BASE+INQUIRY,evidence={'request':payload['productInfos'][index],'inquiry':{k:v for k,v in payload.items() if k!='productInfos'},'response':quote,'currency':result['currency'],'responseSha256':hashlib.sha256(json.dumps(result,sort_keys=True).encode()).hexdigest()})
   verified.append(row)
  return verified
-with ThreadPoolExecutor(max_workers=4) as executor:batches=list(executor.map(get,['ecs','evs','rds','elb','redis','nat','cce']))
-items=list({row['id']:row for batch in batches for row in batch}.values());chunks=[]
-for mode in MODES:
- group=[row for row in items if row['billingMode']==mode]
- chunks.extend(group[index:index+10] for index in range(0,len(group),10))
-with ThreadPoolExecutor(max_workers=4) as executor:verified=[row for batch in executor.map(verify,chunks) for row in batch]
-if not verified:raise ValueError('No official prices verified; preserve existing catalogue')
-output={'region':REGION,'currency':'USD','verifiedAt':datetime.now(timezone.utc).isoformat(),'ttlDays':7,'source':'Huawei Cloud EU public calculator + independent officialWebsiteAmount inquiry for each billing mode','items':verified}
-target=ROOT/'public/catalog.json';temporary=target.with_suffix('.tmp');temporary.write_text(json.dumps(output,ensure_ascii=False));temporary.replace(target)
-print('Verified price plans:',len(verified),'by mode:',{mode:sum(row['billingMode']==mode for row in verified) for mode in MODES},flush=True)
+def main():
+ with ThreadPoolExecutor(max_workers=4) as executor:batches=list(executor.map(get,['ecs','evs','rds','elb','redis','nat','cce']))
+ items=list({row['id']:row for batch in batches for row in batch}.values());chunks=[]
+ for mode in MODES:
+  group=[row for row in items if row['billingMode']==mode]
+  chunks.extend(group[index:index+10] for index in range(0,len(group),10))
+ with ThreadPoolExecutor(max_workers=4) as executor:verified=[row for batch in executor.map(verify,chunks) for row in batch]
+ if not verified:raise ValueError('No official prices verified; preserve existing catalogue')
+ output={'region':REGION,'currency':'USD','verifiedAt':datetime.now(timezone.utc).isoformat(),'ttlDays':7,'source':'Huawei Cloud EU public calculator + independent officialWebsiteAmount inquiry for each billing mode','items':verified}
+ target=ROOT/'public/catalog.json';temporary=target.with_suffix('.tmp');temporary.write_text(json.dumps(output,ensure_ascii=False));temporary.replace(target)
+ print('Verified price plans:',len(verified),'by mode:',{mode:sum(row['billingMode']==mode for row in verified) for mode in MODES},flush=True)
+
+if __name__=='__main__':
+ main()
