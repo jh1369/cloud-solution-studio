@@ -2,6 +2,12 @@
 
 The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, test evidence and synchronization state. Checkboxes below distinguish the integrated web implementation from the existing Python starter; they do not assert customer-ready completeness.
 
+## Pricing Studio V0.3 — Huawei inventory and quotation
+
+- [x] Use service-specific dimensions and exact catalog matching for ECS, EVS, DCS and scoped RDS instance estimates.
+- [x] Review bounded nonstandard CSV and multi-sheet Excel imports with structured output from a configured local model. Preserve source evidence through export.
+- [ ] Expand supported vendor layouts, service-specific dimensions and verified ancillary price coverage using fictional fixtures and public evidence.
+
 ## Pricing Studio V0.3 — TCP catalog automation
 
 - [x] Discover the latest official TCP Service Description and preserve PDF, hash, revision and cell evidence.

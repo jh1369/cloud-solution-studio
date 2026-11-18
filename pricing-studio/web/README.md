@@ -1,19 +1,51 @@
-# Cloud Solution Studio · Pricing Studio Web V0.3 (TCP catalog/data phase)
+# Cloud Solution Studio · Pricing Studio Web
 
-Candidate `0.3.1-dev` fixes three issues found during browser acceptance. The private Site runs `0.3.0-dev` from Sites source `fff0d1f`. Authenticated production testing and the native offline file check are still open. [Browser results and checklist](../../docs/PRICING_BROWSER_ACCEPTANCE.md) · [Offline ZIP](https://raw.githubusercontent.com/jh1369/cloud-solution-studio/main/releases/pricing-studio/v0.3.1-dev/Pricing-Studio-0.3.1-dev-Offline.zip)
-
-TCP quotation calculation and mapping remain outstanding. Huawei quotations use the existing engine. Huawei target billing choices are 按需 / 包月 / 包年. The app keeps the AWS source billing method separately. Browser JavaScript modules and a Cloudflare Worker power the web app. The local catalog updater uses SQLite for catalog history.
+Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.4-dev` adds deterministic Huawei SKU matching and a local model-assisted review workflow. [Browser acceptance](../../docs/PRICING_BROWSER_ACCEPTANCE.md)
 
 ## Features
 
-- Chinese/English line-oriented resource descriptions; deterministic extraction, not an LLM.
+- Chinese and English line-oriented resource descriptions with deterministic extraction and catalog matching.
 - CSV / XLSX normalized inventory and browser-local text PDF AWS bill import (sample layout only, no OCR).
 - Editable service mappings, resource counts, usage units and billing periods; per-row or batch human confirmation.
 - Bilingual CN/EN interface and mapping review notes for CPU/memory/architecture, OS, database engines and storage. Unknown storage types require manual SKU selection. Resource counts must be positive integers.
 - Official Huawei EU public catalogue and independent inquiry verification for pay-per-use, 1-month and 1-year plans. Source reserved/spot records never become Huawei target options.
 - Monthly comparisons, independent annual subscription prices, first-term prepayment totals, optional discount, five-sheet XLSX export and downloadable price evidence.
-- All original files and text remain in browser memory. The server receives only official Huawei product IDs when refreshing rates; it does not receive AWS account identifiers or uploaded files. Refreshing discards the in-memory quote.
+- The hosted Site processes uploaded files in browser memory. Rate refresh sends allowlisted official product IDs. When explicitly enabled on the user machine, assisted import sends a bounded cell preview only to a loopback model. Reloading discards the in-memory quote.
 - Source-period aggregate usage preserves unknown resource counts; no automatic month/year extrapolation.
+
+## Huawei specification matching
+
+The bundled public catalog has 441 pay-per-use and 400 plans each for one month and one year. It contains ECS, EVS, RDS, DCS, ELB, NAT Gateway and CCE. The automatic matching rules currently cover these components.
+
+| Component | Exact match and review conditions |
+| --- | --- |
+| ECS | Match vCPU and memory exactly. Check architecture, OS and compute class. For generic requests, x86, Linux and General Computing are visible estimate assumptions. Specialized hosts, licenses and accelerators require review. |
+| EVS | Match cloud-disk class. Generic SSD uses a disclosed GPSSD scenario. Confirm disk capacity and usage. Performance, snapshot and unsupported tiers stay under review. |
+| DCS | Match Redis cache capacity and an explicit deployment. `2G Redis` needs a deployment decision. A shared topology with several matching node counts needs an explicit node count or manual selection. |
+| RDS | Match engine, version, shape, topology and explicit Cloud SSD for instance-only estimates. Check storage and backup fees separately. |
+| ELB, NAT Gateway, CCE and other services | Manual candidate selection where a catalog plan exists. Unknown dimensions or missing plans stay Pending. OBS has no usable price rows. |
+
+Each eligible service checks the requested target billing mode and the verified rate before pricing. A known count with omitted usage can use a disclosed full-month estimate for supported per-resource rows. Aggregate usage keeps its source period. Manual choices require confirmation and take precedence. Pending lines have blank quote amounts and are excluded from subtotals.
+
+## Model-assisted CSV and Excel on the user machine
+
+Standard CSV and spreadsheet templates still take the direct local parser. Use UTF-8 for CSV. Nonstandard uploads open an editable preview. The model button is enabled only when the Web + Worker stack is running locally with a configured model. The hosted Site supports the same manual preview and confirmation.
+
+Install an approved local model runtime that implements OpenAI-compatible `/v1/chat/completions` and strict `json_schema` output. Acceptance used llama.cpp and Qwen2.5-1.5B-Instruct Q4_K_M on CPU. Obtain the runtime and weights through your approved software channel. Example local startup for an existing GGUF model
+
+```bash
+llama-server --host 127.0.0.1 --port 4813 --alias inventory-local -m /path/to/model.gguf -c 8192 \
+  --cors-origins http://127.0.0.1:4814 --no-cors-credentials
+# In pricing-studio/web. Use an absolute path to an existing reviewed ZIP.
+PRICING_OFFLINE_ARCHIVE=/path/to/existing.zip python3.12 scripts/build_worker.py
+INVENTORY_MODEL_PORT=4813 INVENTORY_MODEL=inventory-local PORT=4814 node scripts/dev-server.mjs
+```
+
+Open `http://127.0.0.1:4814`, select Huawei Cloud and upload a file. In the preview, run the local model, inspect the original cells and proposed fields, adjust the included rows, and click **Confirm and quote**. A repeated import of the last successful dataset in the same page reuses the result. The preview keeps sheet and physical row numbers and the original cells for the Input worksheet.
+
+The model receives at most 10 sheets, 60 nonempty rows, 20 columns and 12,000 serialized characters. It proposes source fields only. Pricing and target SKU selection happen after review using the same deterministic rules as the standard path. Invalid fields are flagged, omitted rows stay visible, and timeouts preserve editable source cells. Untyped files, unsupported encodings, complex ranges and unknown fields may need manual cleanup or a standard template.
+
+With the model enabled, the local Web server and model listen on the user's machine. The same-origin Node adapter forwards only to a configured `127.0.0.1` port via direct HTTP. It does not use a proxy or follow redirects. Use a trusted local runtime with telemetry disabled. Before handling sensitive data, require authentication at the model server and restrict its browser origins. Supply the matching credential through the local process environment as `INVENTORY_MODEL_TOKEN`. The hosted app has no external model configuration, upload endpoint or model credential. Any external integration would require explicit approval for the allowed columns, purpose, data residency, retention, credentials and audit controls.
 
 ## Commands
 
@@ -71,9 +103,9 @@ See [SOURCE_PROVENANCE.json](SOURCE_PROVENANCE.json) for historical V0.1.1 migra
 
 ## Official price contract
 
-Region `eu-west-101`, currency USD. Target modes: `ONDEMAND` (按需), `MONTHLY` (包月, one month), `YEARLY` (包年, one year). `scripts/build_catalog.py` reads only the public EU calculator `productInfo` endpoint and verifies `officialWebsiteAmount` with `/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource`. No credentials, account sessions or private quotations are used. Each price records the official product ID, SKU, request, response, source and timestamp. Snapshots expire after seven days. Mode switches clear mapping confirmation and reuse a matching target SKU only when that billing plan exists; absent prices remain Pending with no fallback to an hourly price. `POST /api/rates` re-queries only allowlisted product IDs; no client-supplied remote URLs or prices are accepted.
+Region `eu-west-101`, currency USD. Target modes: `ONDEMAND` (按需), `MONTHLY` (包月, one month), `YEARLY` (包年, one year). `scripts/build_catalog.py` reads only the public EU calculator `productInfo` endpoint and verifies `officialWebsiteAmount` with `/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource`. No credentials, account sessions or private quotations are used. Each price records the official product ID, SKU, request, response, source and timestamp. Snapshots expire after seven days. Mode switches validate the new plan independently. Explicit manual choices require fresh confirmation; exact automated matches may be recalculated. Absent prices remain Pending. `POST /api/rates` re-queries only allowlisted product IDs; no client-supplied remote URLs or prices are accepted.
 
-The catalogue supports simple hourly resources and EVS GB-hour (a size-1 inquiry). Monthly and yearly plans are independently queried with `chargingMode=0`, `periodType=2/3`, `periodNum=1`; pay-per-use uses `chargingMode=1` and one-hour usage. The server groups mixed-mode refreshes into separate inquiries. A catalogue match is a proposed design, never a guarantee of AWS feature equivalence. Users must confirm architecture, OS/licensing, database engine/version/topology, units and ancillary resources. All amounts remain Pending until those conditions are satisfied.
+The catalogue supports simple hourly resources and EVS GB-hour (a size-1 inquiry). Monthly and yearly plans are independently queried with `chargingMode=0`, `periodType=2/3`, `periodNum=1`; pay-per-use uses `chargingMode=1` and one-hour usage. The server groups mixed-mode refreshes into separate inquiries. A catalogue match is a proposed design, never a guarantee of AWS feature equivalence. Explicit specifications and disclosed estimates can be automatically priced for the supported components. Conflicts and incomplete mappings require review.
 
 Tiered traffic/storage, Kafka parameters not yet modeled, logs, commitments, Huawei spot or reserved-like target calculations remain outside this tool’s scope. Other unsupported services remain Pending even when a monthly or yearly mode is selected. S3→OBS service-family mapping is available; an OBS storage amount is **not** fabricated from an unrelated hourly price. Unknown Huawei target billing modes remain Pending; unknown AWS source billing does not block an independently specified Huawei target plan. Reference hours convert GB-month to GB-hour only when explicitly using that unit. Only pay-per-use/monthly annual scenarios repeat a month twelve times. A yearly plan uses its independently verified annual rate; its monthly comparison is the annual amount divided by twelve, never a monthly payment offer. Monthly and yearly prepaid first-term totals are shown separately from postpaid usage. EVS subscriptions use an explicit per-disk GB capacity and target quantity; aggregate instance-hours or GB-month totals never establish subscription counts or capacity. All totals of incomplete quotes are partial subtotals.
 

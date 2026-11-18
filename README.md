@@ -1,6 +1,6 @@
 # Cloud Solution Studio
 
-Local-first tools for cloud solution architects. Pricing Studio V0.3 supports AWS-to-Huawei Cloud Public quotations and TCP pay-per-use estimates for selected ECS, EVS and RDS configurations in EU-DE. Both workflows use the AWS inventory import and five-sheet Excel export. The TCP publisher and Worker reader support private object storage. The private Site uses an expiring verified snapshot for its initial TCP release. [Verified status](docs/DEVELOPMENT_STATUS.md)
+Local-first tools for cloud solution architects. Pricing Studio V0.3 supports AWS-to-Huawei Cloud Public quotations and TCP pay-per-use estimates for selected ECS, EVS and RDS configurations in EU-DE. Both workflows use the existing inventory import and five-sheet Excel export. Huawei additionally supports deterministic SKU matching and optional model-assisted normalization on the user machine. The TCP publisher and Worker reader support private object storage. The private Site uses an expiring verified snapshot for its initial TCP release. [Verified status](docs/DEVELOPMENT_STATUS.md)
 
 ## Security boundary
 
@@ -14,7 +14,7 @@ See [SECURITY.md](SECURITY.md), [AGENTS.md](AGENTS.md) and the shared [developme
 
 | Module | Scope | Current state |
 | --- | --- | --- |
-| Pricing Studio | AWS → Huawei Cloud Public, `eu-west-101` | V0.3 TCP catalog/update phase; Huawei engine retained; TCP quotation integration and browser acceptance outstanding |
+| Pricing Studio | AWS → Huawei Cloud Public, `eu-west-101` | Huawei catalog matching and optional local inventory normalization. TCP quote support in EU-DE |
 | PPT Studio | Local template/slide reuse | Planned; placeholder README only |
 | Web Demo Studio | Generic interactive solution mockups | Planned; placeholder README only |
 | Cloud Live Lab | Read-only APIs for isolated approved test accounts | Planned; placeholder README only |
