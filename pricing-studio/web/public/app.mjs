@@ -24,7 +24,6 @@ function settings(){
  if(!Number.isFinite(discount)||discount<0||discount>1)throw Error(T('error.discount'));
  return {hours,discount};
 }
-function results(){return rows.map(row=>calculate(row,catalog,settings()));}
 function refreshCrumb(){
  $('#crumb').textContent=T(mappingSelected?'nav.mapping':({studio:'nav.workspace',catalog:'nav.catalog',guide:'nav.guide'})[activeView]);
 }
@@ -42,14 +41,14 @@ function renderConnection(){
  const connection=$('.connection');connection.classList.toggle('expired',catalogState==='expired');connection.classList.toggle('unavailable',catalogState==='unavailable');
  $('#connection-label').textContent=T(catalogState==='loading'?'top.loading':catalogState==='expired'?'top.expired':catalogState==='unavailable'?'top.unavailable':offlineBundle?'offline.snapshot':'top.connected');
 }
-function renderMetrics(output=[]){
+function renderMetrics(output,now){
  $('#metric-resources').textContent=rows.length.toLocaleString(language==='en'?'en-US':'zh-CN');
  const ready=output.filter(result=>result.status==='Valid'||result.status==='Period').length;
  $('#metric-confirmed').innerHTML=`${ready} <em>/ ${rows.length}</em>`;
- const count=catalog.items.filter(plan=>priceValidation(plan,catalog).valid).length;
+ const count=catalog.items.filter(plan=>priceValidation(plan,catalog,{now}).valid).length;
  $('#metric-plans').textContent=catalog.items.length?count.toLocaleString(language==='en'?'en-US':'zh-CN'):'—';
 }
-function renderSummary(output){
+function renderSummary(output,now){
  const summary=summaryModel(rows,output,language);
  $('#monthly-label').textContent=summary.monthlyLabel;
  $('#monthly-money').innerHTML=E(money(summary.monthly))+`<span> ${T(summary.onlyPeriod?'term.period':'term.monthly')}</span>`;
@@ -58,11 +57,14 @@ function renderSummary(output){
  $('#upfront-row').hidden=!summary.hasPrepaid;$('#upfront-money').textContent=money(summary.upfront);
  $('#quote-status').textContent=summary.status;$('#quote-status').className='badge '+summary.statusClass;
  $('#coverage').textContent=summary.coverage;$('#quote-note').textContent=summary.note;
- $('#breakdown').innerHTML=breakdownHTML(summary,language);renderMetrics(output);
+ $('#breakdown').innerHTML=breakdownHTML(summary,language);renderMetrics(output,now);
 }
-function render(){
+function render({now=Date.now()}={}){
  let output;
- try{output=results();renderSummary(output);}catch(error){
+ try{
+  const options={...settings(),now};
+  output=rows.map(row=>calculate(row,catalog,options));renderSummary(output,now);
+ }catch(error){
   $('#monthly-money').textContent='—';$('#annual-money').textContent='—';$('#scenario-money').textContent='—';
   $('#upfront-row').hidden=true;$('#upfront-money').textContent='—';$('#coverage').textContent='—';$('#breakdown').textContent='—';
   $('#quote-status').textContent=T('status.invalid');$('#quote-status').className='badge pending';
@@ -75,7 +77,7 @@ function render(){
  $('#confirm-all').disabled=!rows.some(row=>row.targetId&&!row.accepted);
  $('#refresh-prices').disabled=!!offlineBundle||busy||!rows.some(row=>row.targetId);
  $('#parse').disabled=busy;$('#file').disabled=busy;
- $('#resources').innerHTML=rows.length?resourceHTML(rows,output,catalog,language,page):emptyResources(language);
+ $('#resources').innerHTML=rows.length?resourceHTML(rows,output,catalog,language,page,now):emptyResources(language);
  $('#resource-pagination').hidden=rows.length<=10;
  $('#page-info').textContent=T('pagination.info',{start:page*10+1,end:Math.min(page*10+10,rows.length),total:rows.length});
  $('#prev-page').disabled=page===0;$('#next-page').disabled=(page+1)*10>=rows.length;
@@ -233,7 +235,10 @@ $('#template').addEventListener('click',()=>download('\uFEFFproduct,specificatio
 function exportExcel(){
  try{
   if(!window.XLSX)throw Error(T('error.excelModule'));
-  const book=buildWorkbook(window.XLSX,rows,catalog,{...settings(),language,delivery:offlineBundle?'offline':'web'},$('#project-name').value);
+  const now=Date.now();
+  // A displayed plan can expire while the page is idle or a refresh is pending.
+  render({now});
+  const book=buildWorkbook(window.XLSX,rows,catalog,{...settings(),now,language,delivery:offlineBundle?'offline':'web'},$('#project-name').value);
   window.XLSX.writeFile(book,'Huawei-Cloud-Quotation-'+new Date().toISOString().slice(0,10)+'.xlsx');toast(T('toast.exported'));
  }catch(error){report(error);}
 }
@@ -243,20 +248,30 @@ $('#export-evidence').addEventListener('click',()=>download(JSON.stringify(catal
 $('#refresh-prices').addEventListener('click',async()=>{
  if(offlineBundle){toast(T('offline.noRefresh'),true);return;}
  const ids=[...new Set(rows.map(row=>row.targetId).filter(Boolean))];if(!ids.length||busy)return;
- busy=true;render();toast(T('toast.refreshing'));let count=0,failed=0;
+ const updates=new Map();
+ busy=true;render();toast(T('toast.refreshing'));
  try{
   for(let start=0;start<ids.length;start+=10){
-   const response=await fetch('/api/rates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids.slice(start,start+10)})});
-   if(!response.ok)throw Error(T('error.refresh'));
-   const data=await response.json();
-   for(const plan of data.items||[]){const index=catalog.items.findIndex(item=>item.id===plan.id);if(index>=0){catalog.items[index]=plan;count++;}}
-   failed+=(data.pending||[]).length;
+   const batch=ids.slice(start,start+10);
+   try{
+    const response=await fetch('/api/rates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:batch})});
+    if(!response.ok)continue;
+    const data=await response.json();
+    for(const plan of data.items){
+     if(batch.includes(plan?.id)&&priceValidation(plan,catalog).valid)updates.set(plan.id,plan);
+    }
+   }catch{
+    // Keep the original evidence for this batch and attempt the remaining IDs.
+    continue;
+   }
   }
-  toast(T('toast.refreshed',{count})+(failed?' '+T('toast.refreshPartial',{count:failed}):''));
- }catch{
-  // A later batch can fail after earlier plans were successfully refreshed.
-  const message=count?`${T('toast.refreshed',{count})} ${T('toast.refreshPartial',{count:ids.length-count})}`:T('error.refresh');
-  toast(message,true);
+  // Until this synchronous commit, both export buttons use the displayed catalog.
+  catalog.items=catalog.items.map(plan=>updates.get(plan.id)??plan);
+  const failed=ids.length-updates.size;
+  const summary=T('toast.refreshed',{count:updates.size});
+  if(!updates.size)toast(T('error.refresh'),true);
+  else if(failed)toast(summary+' '+T('toast.refreshPartial',{count:failed}),true);
+  else toast(summary);
  }finally{
   busy=false;updateCatalogState();render();renderCatalogueMetadata();if(activeView==='catalog')renderCatalog();
  }
