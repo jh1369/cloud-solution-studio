@@ -2,6 +2,21 @@
 
 2026-11-18（Europe/Berlin）。实测基线为 `main` 的 `eed9a72b2cb4bd2da6b518dd6b4ac8c03db456f0`，包版本为 `0.3.0-dev`。测试期间合入了调研文档 `b40a6ca`。三项修复在候选包 `0.3.1-dev` 上复验。测试使用 Debian Chromium `156.0.8078.79` 的真实桌面会话、虚构资源清单、华为云公开目录和独立故障夹具。
 
+## 2026-11-18 重试 · 在线版优先
+
+执行人 Codex。GitHub `main` 实查为 `227ff50d2dcfc4fd77e86e749bc9f5604eaeeddb`，网页候选包 `0.3.1-dev`。Sites 最新保存版本为第 5 版，部署状态为 `succeeded`，部署源码 `fff0d1fe414b09464089a4f6734b6a03f56738ff` 与已归档的 `0.3.0-dev` 发布记录一致。实际页面版本待进入工作台读取。
+
+| 研究文档第 4 节待验项 | 本轮私有在线版结果 |
+| --- | --- |
+| 浏览器与入口 | 共享桌面 Chromium 156.0.8078.79 打开生产站，显示 Sign in required。点击 Continue with ChatGPT 到达 OpenAI 的 Welcome back。重试同样到达登录页。 |
+| 虚构文件导入 | 登录阻塞。待核对 CSV、XLSX 各 4 行，文字 PDF 的用量、页码及数量边界。 |
+| 确认与金额 | 登录阻塞。待查三模式切换后重新确认、15% 折扣、预付、摊销和 Pending 空金额。 |
+| 官方核价 | 登录阻塞。待查真实刷新和失败提示，比较失败前后的官方产品、地区、模式、币种、核验时间和金额。 |
+| 双语、下载与重载 | 登录阻塞。本轮生产下载件 0 份。登录后逐一重开五表核对页面读数及价格证据，再核对重载清空。 |
+| 离线启动与有效期 | 根据用户最新决定暂停。暂停前从上述 SHA 下载 ZIP 并解压，866,718 字节，SHA-256 与下方归档一致。Thunar 双击打开 Mousepad；Chromium 原生“打开文件”选择同一 HTML 后显示 “This page is blocked / Your organization doesn’t allow you to view this site”。用户本机尚未执行。 |
+
+生产验收需在执行测试的同一浏览器登录。通过下方私有站点入口选择 Continue with ChatGPT，用有访问权的账号完成安全登录，返回 Pricing Studio 工作台后交还控制。下列本地 HTTP 结果和 12 个下载件来自上轮。
+
 ## 在线版
 
 `npm run dev` 在 4173 启动，浏览器使用 `http://127.0.0.1:4173/` 的 Web + Worker。启用 Node 的环境代理支持后实际核价。独立检查 `GET /` 和 `GET /app.mjs` 正常。释放端口后运行 `NODE_USE_ENV_PROXY=1 sites-preview start <web 绝对路径>`，仍报 `relay could not open browser port 4173: timed out waiting for relay readiness`，随后 `sites-preview status` 为 stopped。共享 Chromium 访问本地服务成功，预览中继故障仍存在。原私有生产站 `0.3.0-dev` 打开到登录页，点击 Continue with ChatGPT 到 OpenAI 登录，共享浏览器的安全登录未完成，认证后的流程待复验。
