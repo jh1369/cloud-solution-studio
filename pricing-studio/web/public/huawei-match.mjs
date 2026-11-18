@@ -8,6 +8,20 @@ function attributes(item){
 }
 const capacityToken=/(?:^|[^\w.])(\d+(?:\.\d+)?)\s*(?:GiB|GB|G)(?![a-z])/gi;
 const capacity=(text)=>Number(text.matchAll(capacityToken).next().value?.[1])||null;
+function updateEvsCapacity(row){
+ const spec=row.specification;
+ const sizes=new Set([...spec.matchAll(capacityToken)].filter(match=>
+  !/^\s*(?:[-/·]\s*)?(?:(?:months?|hours?|mo|h)\b|月|小时)/i.test(spec.slice(match.index+match[0].length))
+ ).map(match=>Number(match[1])));
+ const detected=sizes.size===1?sizes.values().next().value:null;
+ // A copy made by the text parser is not independent billable usage.
+ if(row.evsUsageFromCapacity){row.usage=null;row.evsUsageFromCapacity=false;}
+ const explicit=row.evsCapacitySource==='explicit';
+ row.evsCapacityConflict=sizes.size>1||(explicit&&detected!==null&&detected!==row.capacity);
+ if(!explicit){
+  row.capacity=detected;row.evsCapacitySource='specification';
+ }
+}
 const policy=(test,assumptions=[])=>({test,assumptions});
 const missing=(code)=>({code});
 const computeShape=text=>{
@@ -95,10 +109,13 @@ export function identifyHuaweiRow(row){
   else if(/云盘|硬盘|\b(?:EBS|EVS)\b/i.test(text))row.service='EVS';
   else if(/redis|\bdcs\b/i.test(text))row.service='DCS';
  }
- if(row.service==='DCS'||row.service==='EVS'){
+ if(row.service==='DCS'){
   row.capacity??=capacity(row.specification);
-  if(row.service==='DCS'&&!row.unit)row.unit='hour';
-  if(row.service==='EVS'&&inferred&&!row.unitExplicit&&row.usage==null)row.unit='';
+  if(!row.unit)row.unit='hour';
+ }
+ if(row.service==='EVS'){
+  updateEvsCapacity(row);
+  if(inferred&&!row.unitExplicit&&row.usage==null)row.unit='';
  }
  if(row.scope==='resource'&&row.quantity==null)row.huaweiQuantity=Number(text.match(/(\d+)\s*(?:套|台|块|instances?\b)/i)?.[1])||null;
  return row;

@@ -1,6 +1,6 @@
 {
   "name": "cloud-solution-pricing-studio-web",
-  "version": "0.3.5-dev",
+  "version": "0.3.6-dev",
   "type": "module",
   "private": true,
   "scripts": {

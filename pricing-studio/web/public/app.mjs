@@ -261,9 +261,11 @@ $('#resources').addEventListener('change',event=>{
  const input=event.target;
  row[field]=field==='accepted'?input.checked:['quantity','targetQuantity','capacity','usage'].includes(field)?input.value===''?null:Number(input.value):input.value;
  if(field==='unit')row.unitExplicit=!!input.value;
+ if(field==='usage'&&row.evsUsageFromCapacity)row.evsUsageFromCapacity=false;
  if(field==='specification'&&provider==='tcp'){row.targetId=recommend(row,catalog);row.accepted=false;}
  if(field==='targetBilling')setBilling(row,input.value);
  if(provider==='huawei'&&huaweiMatching){
+  if(field==='capacity'&&row.service==='EVS')row.evsCapacitySource=row.capacity===null?'specification':'explicit';
   if(field==='targetId'||field==='accepted'){
    row.huaweiSelection='manual';row.huaweiCandidates=null;
    if(field==='targetId'){
@@ -274,7 +276,10 @@ $('#resources').addEventListener('change',event=>{
    if(field==='service'){row.targetId='';row.huaweiSelection=null;}
    row.accepted=false;
    if(row.huaweiSelection!=='manual')selectHuawei(row);
-   else huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
+   else{
+    if(row.service==='EVS'&&['specification','capacity'].includes(field))huaweiMatching.identifyHuaweiRow(row);
+    huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
+   }
   }
  }else if(['targetId','service','targetQuantity','capacity','usage','unit','period'].includes(field)){
   row.accepted=false;if(field==='service')row.targetId='';
