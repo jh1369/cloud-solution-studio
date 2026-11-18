@@ -90,3 +90,11 @@ class TCPPDFTest(unittest.TestCase):
         rows, error, _ = parse_table(table, source())
         self.assertEqual(len(rows), 1)
         self.assertEqual(error["reasons"], ["UNRECOGNIZED_PRICE_HEADER"])
+
+    def test_obs_early_deletion_is_not_a_simple_storage_rate(self):
+        table = self.table([["Name", "charging unit", "price EU-DE in Euro"],
+                            ["FICTIONAL OBS early deletion fee", "GiB/month", "0.10"]], "OBS")
+        rows, error, _ = parse_table(table, source())
+        self.assertIsNone(error)
+        self.assertEqual(rows[0]["verification"]["status"], "PENDING_REVIEW")
+        self.assertIn("COMPLEX_RULE_REVIEW", rows[0]["verification"]["reasons"])

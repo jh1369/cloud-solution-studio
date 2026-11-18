@@ -1,4 +1,5 @@
 """TCP official-page discovery and conservative PDF table extraction."""
+from bisect import bisect_right
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from html.parser import HTMLParser
@@ -18,7 +19,8 @@ OPEN_UNITS = {
 UNSUPPORTED_BILLING = re.compile(
     r"\b(?:min(?:imum)?\.?\s+(?:billing|charging)|minimum\s+(?:charge|duration)|"
     r"(?:billing|charging)\s+(?:interval|increment|granularity)|"
-    r"(?:billed|charged)\s+(?:per|in increments of)|rounded?\s+up|prorat(?:a|ed|ion))\b",
+    r"(?:billed|charged)\s+(?:per|in increments of)|rounded?\s+up|prorat(?:a|ed|ion)|"
+    r"min\.\s*\d+|[\d,.]+\s+(?:IOPS|MiB/s)\s+free\s+and)\b",
     re.I,
 )
 
@@ -155,7 +157,8 @@ def parse_table(table, source, previous=None):
         sku_match = re.search(r"\b[a-z][a-z0-9-]*\.(?:[a-z0-9]+\.)+[a-z0-9]+\b", " ".join(values.values()), re.I)
         if table["service"] in {"ECS", "RDS"} and (not sku_match or not any("cpu" in k.lower() for k in spec)):
             reasons.append("SPECIFICATION_REVIEW")
-        if table["service"] == "ELB" or re.search(r"\bper\b|\bLCU\b|\bIOPS\b|\bbackup\b|\brestore\b|\bphysical\b|\bGPU\b", label, re.I):
+        early_deletion = table["service"] == "OBS" and label.lower().endswith("early deletion fee")
+        if table["service"] == "ELB" or early_deletion or re.search(r"\bper\b|\bLCU\b|\bIOPS\b|\bbackup\b|\brestore\b|\bphysical\b|\bGPU\b", label, re.I):
             reasons.append("COMPLEX_RULE_REVIEW")
         for col in price_cols:
             plan = column_plan(headers[col], cells[unit_col] if unit_col is not None else "")
@@ -267,9 +270,61 @@ def price_section_text(lines, table_boxes):
             yield line
 
 
+def scoped_billing_evidence(prose, rows):
+    """Separate explicit KMS and EVS notes from rules of unknown scope."""
+    volumes = {row["productLabel"].casefold() for row in rows if row["service"] == "EVS"}
+    section, general, volume_notes, diagnostics = "", [], {}, []
+    for page, text in prose:
+        heading = re.match(r"^6(?:\.\d+)+\s+(.+)$", text)
+        if heading:
+            section = heading[1].casefold()
+        elif re.match(r"^(?:back to|zurück zu)\b", text, re.I):
+            section = ""
+        note = {"page": page, "text": text}
+        label, _, terms = text.partition(":")
+        if (section == "elastic volume service" and label.casefold() in volumes
+                and UNSUPPORTED_BILLING.search(terms)):
+            volume_notes.setdefault(label.casefold(), []).append(note)
+            continue
+        kms_clause = re.match(r"^KMS CMKs are billed per active key version\.\s*", text, re.I)
+        if section == "key management service" and kms_clause:
+            diagnostics.append({"code": "OUT_OF_SCOPE_KMS_BILLING", "severity": "info",
+                                "pages": [page], "evidence": kms_clause[0].strip()})
+            text = text[kms_clause.end():]
+        if text:
+            general.append((page, text))
+
+    # Preserve the fingerprint of all remaining prose and locate ambiguous terms,
+    # including terms wrapped across lines or pages.
+    starts, parts, offset = [], [], 0
+    for _, text in general:
+        starts.append(offset)
+        parts.append(text)
+        offset += len(text) + 1
+    fingerprint_text = " ".join(parts)
+    blocking_pages = set()
+    for rule in UNSUPPORTED_BILLING.finditer(fingerprint_text):
+        first = bisect_right(starts, rule.start()) - 1
+        last = bisect_right(starts, rule.end() - 1) - 1
+        blocking_pages.update(page for page, _ in general[first:last + 1])
+    if blocking_pages:
+        diagnostics.append({"code": "UNSUPPORTED_DOCUMENT_BILLING_RULE", "severity": "error",
+                            "pages": sorted(blocking_pages)})
+    for row in rows:
+        if row["service"] != "EVS":
+            continue
+        notes = volume_notes.get(row["productLabel"].casefold())
+        if notes:
+            row["evidence"]["billingNotes"] = notes
+            row["verification"]["reasons"] = sorted(set(row["verification"]["reasons"] + ["SKU_BILLING_RULE_REVIEW"]))
+            if row["verification"]["status"] != "UNAVAILABLE":
+                row["verification"]["status"] = "PENDING_REVIEW"
+    return fingerprint_text, diagnostics
+
+
 class TCPProvider:
     provider_id = "tcp"
-    parser_version = "tcp-pdf-0.3.0-2"
+    parser_version = "tcp-pdf-0.3.0-3"
     validate_for_publication = staticmethod(validate_publication)
 
     def __init__(self, fetch=fetch_public):
@@ -287,7 +342,7 @@ class TCPProvider:
         import pdfplumber
         if digest(content) != source["sha256"]:
             raise ValueError("PDF digest differs from provenance")
-        tables, billing_text, rule_pages = [], [], []
+        tables, billing_prose, rule_pages = [], [], []
         context, root_section, in_prices = None, None, False
         with pdfplumber.open(BytesIO(content)) as pdf:
             revision = re.search(r"Last\s+revised\s*:\s*(\d{2}\.\d{2}\.\d{4})", pdf.pages[0].extract_text() or "", re.I)
@@ -336,7 +391,7 @@ class TCPProvider:
                         context = service
                 prose = list(price_section_text(dict(sorted(words_by_line.items())), price_boxes))
                 if prose:
-                    billing_text.extend(prose)
+                    billing_prose.extend((page_no, clean(line)) for line in prose)
                     rule_pages.append(page_no)
         items, diagnostics, previous = [], [], None
         for table in tables:
@@ -345,16 +400,15 @@ class TCPProvider:
             if error:
                 error["severity"] = "error"
                 diagnostics.append(error)
-        if not billing_text:
+        if not billing_prose:
             raise ValueError("Pricing section evidence is missing")
-        if UNSUPPORTED_BILLING.search(clean(" ".join(billing_text))):
-            # The current parser cannot interpret these document-level terms reliably.
-            diagnostics.append({"code": "UNSUPPORTED_DOCUMENT_BILLING_RULE", "severity": "error", "pages": rule_pages})
+        billing_text, rule_diagnostics = scoped_billing_evidence(billing_prose, items)
+        diagnostics.extend(rule_diagnostics)
         for row in items:
             if row["verification"]["status"] == "AUTO_VALIDATED" and not simple_price_contract(row):
                 row["verification"] = {"status": "PENDING_REVIEW", "reasons": ["UNIT_OR_BILLING_CONTRACT_UNSUPPORTED"]}
         captured = len(items)
         items, duplicate_diagnostics = reconcile_duplicates(items)
         diagnostics.extend(duplicate_diagnostics)
-        catalog = {"schemaVersion": SCHEMA_VERSION, "provider": "tcp", "parserVersion": self.parser_version, "versionId": f"tcp-{revised}-{source['sha256'][:16]}-{self.parser_version}", "source": source, "currency": "EUR", "regions": ["EU-DE", "EU-NL"], "billingRulesHash": digest(clean(" ".join(billing_text))), "billingRulesPages": rule_pages, "items": items, "diagnostics": diagnostics, "coverage": {"documentPages": pages, "tables": len(tables), "expandedPriceCells": captured, "uniqueRecords": len(items), "duplicateRecords": captured-len(items), "billingPlans": {f"{mode}:{term or 0}": sum(r['billingMode']==mode and r['termMonths']==term for r in items) for mode, term in sorted({(r['billingMode'],r['termMonths']) for r in items}, key=lambda x:(x[0],x[1] or 0))}, "services": {name: {"total": sum(r['service'] == name for r in items), **{s: sum(r['service'] == name and r['verification']['status'] == s for r in items) for s in ['AUTO_VALIDATED', 'PENDING_REVIEW', 'UNAVAILABLE']}} for name in sorted(SERVICES)}}}
+        catalog = {"schemaVersion": SCHEMA_VERSION, "provider": "tcp", "parserVersion": self.parser_version, "versionId": f"tcp-{revised}-{source['sha256'][:16]}-{self.parser_version}", "source": source, "currency": "EUR", "regions": ["EU-DE", "EU-NL"], "billingRulesHash": digest(billing_text), "billingRulesPages": rule_pages, "items": items, "diagnostics": diagnostics, "coverage": {"documentPages": pages, "tables": len(tables), "expandedPriceCells": captured, "uniqueRecords": len(items), "duplicateRecords": captured-len(items), "billingPlans": {f"{mode}:{term or 0}": sum(r['billingMode']==mode and r['termMonths']==term for r in items) for mode, term in sorted({(r['billingMode'],r['termMonths']) for r in items}, key=lambda x:(x[0],x[1] or 0))}, "services": {name: {"total": sum(r['service'] == name for r in items), **{s: sum(r['service'] == name and r['verification']['status'] == s for r in items) for s in ['AUTO_VALIDATED', 'PENDING_REVIEW', 'UNAVAILABLE']}} for name in sorted(SERVICES)}}}
         return validate_catalog(catalog)
