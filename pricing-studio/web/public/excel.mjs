@@ -19,7 +19,7 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
  ]);
  add('Public Pricing',[
   ['Row','Price Status','Product ID','SKU','Unit Price','Currency','Unit','Verified At','Official Source','Official Evidence','Huawei Billing Mode','Verified Period Type','Verified Period Count'],
-  ...rows.map((row,i)=>{const price=catalog.items.find(p=>p.id===row.targetId),fresh=price&&priceValidation(price,catalog).valid&&(price.billingMode||'ONDEMAND')===billingOf(row);return[i+1,fresh?'Valid':'Pending',price?.productId??null,price?.sku??null,fresh?price.rate:null,price?.currency??null,price?.unit??null,price?.verifiedAt??null,price?.sourceUrl??null,price?JSON.stringify(price.evidence):null,billingLabel(billingOf(row),language),price?.periodType??null,price?.periodNum??null];})
+  ...rows.map((row,i)=>{const price=catalog.items.find(p=>p.id===row.targetId),fresh=price&&priceValidation(price,catalog,opts).valid&&(price.billingMode||'ONDEMAND')===billingOf(row);return[i+1,fresh?'Valid':'Pending',price?.productId??null,price?.sku??null,fresh?price.rate:null,price?.currency??null,price?.unit??null,price?.verifiedAt??null,price?.sourceUrl??null,price?JSON.stringify(price.evidence):null,billingLabel(billingOf(row),language),price?.periodType??null,price?.periodNum??null];})
  ]);
  add('Quotation',[
   ['Row','Target Service','Status','Monthly Public or Amortized USD','Discount Fraction','Monthly Scenario or Amortized USD','Annual Scenario USD','Source Period Public USD','Source Period Scenario USD','Reason','Huawei Billing Mode','Contract Term','Term Public USD','Term Scenario USD','Prepaid First Term Scenario USD','Annual Basis'],

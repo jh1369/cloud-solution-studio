@@ -1,0 +1,289 @@
+{
+  "source": "45770a63bb43c654ae861944cea9ce87c1fa395f",
+  "version": "0.3.2-dev",
+  "browser": "Debian Chromium 156.0.8078.79",
+  "executor": "Codex",
+  "channel": "local HTTP",
+  "reader": "openpyxl 3.1.5",
+  "sheets": [
+    "Input",
+    "Service Mapping",
+    "Public Pricing",
+    "Quotation",
+    "Assumptions"
+  ],
+  "baseline": {
+    "source": "a69bb13106b83d5bee1cfcff4810a1bdc7087b14",
+    "requestsAfterFirst503": 0,
+    "pageSubtotalUSD": 90,
+    "downloadSubtotalUSD": 250
+  },
+  "syntheticBatchDownloads": [
+    {
+      "scenario": "expired-card",
+      "bytes": 57474,
+      "sha256": "4d045162f4f3fa465a00fba44549ba6a65464b2614cfcb7210261ea93b162678",
+      "monthlyScenarioUSD": null
+    },
+    {
+      "scenario": "expired-top",
+      "bytes": 57474,
+      "sha256": "4d045162f4f3fa465a00fba44549ba6a65464b2614cfcb7210261ea93b162678",
+      "monthlyScenarioUSD": null
+    },
+    {
+      "scenario": "first-503-finished-card",
+      "bytes": 59579,
+      "sha256": "45cc933365df092cf41dd65191810da6d673e92f24a0216c4f7769e510a2997b",
+      "monthlyScenarioUSD": 110
+    },
+    {
+      "scenario": "first-503-finished-top",
+      "bytes": 59579,
+      "sha256": "45cc933365df092cf41dd65191810da6d673e92f24a0216c4f7769e510a2997b",
+      "monthlyScenarioUSD": 110
+    },
+    {
+      "scenario": "first-503-waiting-card",
+      "bytes": 59578,
+      "sha256": "f4fd8591ff628cd7a9e4f238a4210b2ed06b8a2b3a8c2645d86a3abd73af023b",
+      "monthlyScenarioUSD": 90
+    },
+    {
+      "scenario": "first-503-waiting-top",
+      "bytes": 59578,
+      "sha256": "f4fd8591ff628cd7a9e4f238a4210b2ed06b8a2b3a8c2645d86a3abd73af023b",
+      "monthlyScenarioUSD": 90
+    },
+    {
+      "scenario": "first-partial-finished-card",
+      "bytes": 59579,
+      "sha256": "ef5ed70d78a7b48e872b7f14aae38ee416b65be488b4b6ba486627f49b236990",
+      "monthlyScenarioUSD": 270
+    },
+    {
+      "scenario": "first-partial-finished-top",
+      "bytes": 59579,
+      "sha256": "ef5ed70d78a7b48e872b7f14aae38ee416b65be488b4b6ba486627f49b236990",
+      "monthlyScenarioUSD": 270
+    },
+    {
+      "scenario": "first-partial-waiting-card",
+      "bytes": 59578,
+      "sha256": "f4fd8591ff628cd7a9e4f238a4210b2ed06b8a2b3a8c2645d86a3abd73af023b",
+      "monthlyScenarioUSD": 90
+    },
+    {
+      "scenario": "first-partial-waiting-top",
+      "bytes": 59578,
+      "sha256": "f4fd8591ff628cd7a9e4f238a4210b2ed06b8a2b3a8c2645d86a3abd73af023b",
+      "monthlyScenarioUSD": 90
+    }
+  ],
+  "publicPriceWorkflowDownloads": [
+    {
+      "scenario": "csv-unconfirmed",
+      "bytes": 40585,
+      "sha256": "d7a781b29c3ba63261f8d1f6fb4d9ef5fdcdf65211d7fb6d7744f9331b6b34bf",
+      "status": [
+        "Pending",
+        "Pending",
+        "Pending",
+        "Pending"
+      ],
+      "amounts": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "verifiedAt": [
+        "2026-11-17T10:08:26.868560+00:00",
+        "2026-11-17T10:08:26.936047+00:00",
+        "2026-11-17T10:08:27.315179+00:00",
+        null
+      ]
+    },
+    {
+      "scenario": "csv-ONDEMAND",
+      "bytes": 40902,
+      "sha256": "4f0fda9134ac109cf308bc46c70c235fe614429cc05891e40bbf9cdcb12e6b4d",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "597.22",
+        "507.64",
+        "6091.57",
+        null
+      ],
+      "verifiedAt": [
+        "2026-11-18T13:40:04.348Z",
+        "2026-11-18T13:40:04.348Z",
+        "2026-11-18T13:40:04.348Z",
+        null
+      ]
+    },
+    {
+      "scenario": "csv-MONTHLY",
+      "bytes": 40851,
+      "sha256": "c7d41a52b9816af758284526a5ceb0b94fc70bdf47564c87a81828e51331464a",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "451.43",
+        "383.72",
+        "4604.59",
+        "383.72"
+      ],
+      "verifiedAt": [
+        "2026-11-18T13:40:05.235Z",
+        "2026-11-18T13:40:05.235Z",
+        "2026-11-18T13:40:05.235Z",
+        null
+      ]
+    },
+    {
+      "scenario": "csv-YEARLY",
+      "bytes": 40898,
+      "sha256": "13a43773baa67d580b9cf7a4539d8cc35ee4c80254beee692434c54006f1779d",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "377.86",
+        "321.18",
+        "3854.20",
+        "3854.20"
+      ],
+      "verifiedAt": [
+        "2026-11-18T13:40:06.044Z",
+        "2026-11-18T13:40:06.044Z",
+        "2026-11-18T13:40:06.044Z",
+        null
+      ]
+    },
+    {
+      "scenario": "csv-refresh-failed",
+      "bytes": 40898,
+      "sha256": "6c1db832d668866e675a39c54f51eeb0c938b2121cffabb41920cb06423a50e5",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "377.86",
+        "321.18",
+        "3854.20",
+        "3854.20"
+      ],
+      "verifiedAt": [
+        "2026-11-18T13:40:06.044Z",
+        "2026-11-18T13:40:06.044Z",
+        "2026-11-18T13:40:06.044Z",
+        null
+      ]
+    },
+    {
+      "scenario": "xlsx-ONDEMAND",
+      "bytes": 41238,
+      "sha256": "22f612d52745d7984939a167c20ab8d6ba636a259c47c0bbba1c82f8eb39289c",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "597.22",
+        "507.64",
+        "6091.57",
+        null
+      ],
+      "verifiedAt": [
+        "2026-11-17T10:08:26.868560+00:00",
+        "2026-11-17T10:08:26.936047+00:00",
+        "2026-11-17T10:08:27.315179+00:00",
+        null
+      ]
+    },
+    {
+      "scenario": "xlsx-MONTHLY",
+      "bytes": 41187,
+      "sha256": "8f3fdab40b4ba2b56a02c8994a4c235d1272c434c1f5adbb669488a6cd12552b",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "451.43",
+        "383.72",
+        "4604.59",
+        "383.72"
+      ],
+      "verifiedAt": [
+        "2026-11-17T10:08:28.963034+00:00",
+        "2026-11-17T10:08:29.175725+00:00",
+        "2026-11-17T10:08:29.599785+00:00",
+        null
+      ]
+    },
+    {
+      "scenario": "xlsx-YEARLY",
+      "bytes": 41234,
+      "sha256": "e2baeda9ab865905300e24f859fcebf8bf15e89bbcdd4fcc61880882941809fd",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "377.86",
+        "321.18",
+        "3854.20",
+        "3854.20"
+      ],
+      "verifiedAt": [
+        "2026-11-17T10:08:31.058957+00:00",
+        "2026-11-17T10:08:31.274220+00:00",
+        "2026-11-17T10:08:31.686330+00:00",
+        null
+      ]
+    },
+    {
+      "scenario": "pdf-ONDEMAND",
+      "bytes": 36934,
+      "sha256": "a543c18e1adcebde6567245501cc7af7a57504038c18e9c051849a8642af5266",
+      "status": [
+        "Period",
+        "Period"
+      ],
+      "amounts": [
+        "545.02",
+        "463.27",
+        null,
+        null
+      ],
+      "verifiedAt": [
+        "2026-11-17T10:08:26.868560+00:00",
+        "2026-11-17T10:08:27.315179+00:00"
+      ]
+    }
+  ],
+  "privateSiteDownloads": 0
+}
