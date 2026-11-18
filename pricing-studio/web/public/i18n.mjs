@@ -301,6 +301,7 @@ export const ENGINE_REASON_MESSAGES={
  HW_CACHE_ENGINE:['请确认 Redis 兼容类型。','Confirm the Redis-compatible engine.'],
  HW_CACHE_CAPACITY:['请确认 Redis 缓存容量。','Confirm Redis cache capacity.'],
  HW_CACHE_MODE:['容量已识别，请确认 Redis 部署模式（单机、主备或集群）。','Capacity is recognized. Confirm Redis topology (single, primary/standby or cluster).'],
+ HW_DEFAULT_REDIS_SINGLE:['按单机估算，部署模式未指定','Single-node estimate. Deployment mode unspecified.'],
  HW_DB_PARAMETERS:['请确认数据库引擎、版本、实例规格和部署模式。','Confirm database engine, version, shape and topology.'],
  HW_DB_STORAGE_SCOPE:['请明确 RDS 存储类型。当前目录仅可自动估算实例费用。','Confirm RDS storage type. The catalog supports automatic instance pricing only.'],
  HW_TARGET_REGION:['当前只支持华为云 eu-west-101，请确认目标区域。','Huawei target region must be eu-west-101.'],

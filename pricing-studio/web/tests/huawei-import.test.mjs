@@ -28,19 +28,59 @@ test('match ECS and generic SSD without using rate to choose, with visible defau
  assert.equal(resource('1 块 100 GiB Premium SSD 云盘').huaweiMatch,'HW_DISK_PERFORMANCE');
 });
 
-test('DCS never invents a topology or standby size; explicit single and two nodes price',()=>{
+test('DCS defaults to a unique single node and leaves unspecified quantities unpriced',()=>{
  const bare=resource('2G Redis');
  assert.equal(bare.service,'DCS');
  assert.equal(bare.capacity,2);
- assert.equal(bare.huaweiMatch,'HW_CACHE_MODE');
+ assert.equal(selection(bare),'redis.single.xu1.large.2');
+ assert.equal(bare.quantity,null);
+ assert.equal(bare.huaweiQuantity,null);
+ assert.equal(calculate(bare,catalog,{now}).reasonCode,'QUANTITY_REQUIRED');
+ const inferred=resource('1个1g的redis');
+ assert.equal(selection(inferred),'redis.single.xu1.large.1');
+ assert.deepEqual(inferred.huaweiAssumptions,['HW_DEFAULT_REDIS_SINGLE']);
+ assert.equal(calculate(inferred,catalog,{now}).monthly,12.41);
+ const expired=calculate(inferred,catalog,{now:now+8*86400000});
+ assert.deepEqual([expired.reasonCode,expired.monthly],['PRICE_EXPIRED',null]);
  const HA=resource('Redis 2GB 主备 3套');
  assert.equal(HA.huaweiMatch,'HW_MULTIPLE');
  assert.ok(HA.huaweiCandidates.length>1);
  assert.equal(selection(resource('Redis 2GB 主备 2节点 3套')),'redis.ha.xu1.large.r2.2');
  const single=resource('Redis 2GB 单机 3套');
  assert.equal(selection(single),'redis.single.xu1.large.2');
+ assert.deepEqual(single.huaweiAssumptions,[]);
  assert.equal(calculate(single,catalog,{now}).monthly,74.46);
  assert.equal(calculate(single,catalog,{now:now+8*86400000}).monthly,null);
+});
+
+test('Redis default rejects conflicts and ambiguous or invalid catalog records',()=>{
+ for(const [text,code] of [
+  ['1个1g的redis 主备','HW_MULTIPLE'],['1个1g的redis 单机 主备','HW_CACHE_MODE'],
+  ['1个1g的redis 2节点','HW_CACHE_MODE'],['1个1g的redis 高可用','HW_CACHE_MODE'],
+  ['1个1g的redis 1GB 或 2GB','HW_CACHE_CAPACITY'],['1个1g的redis 1-2GB','HW_CACHE_CAPACITY'],
+  ['1个1g的redis 版本7.0','HW_CACHE_ENGINE'],['Redis v7 1GB','HW_CACHE_ENGINE'],['Redis 1GB ARM x86','HW_NO_MATCH']
+ ]){
+  const row=resource(text);
+  assert.equal(row.huaweiMatch,code,text);
+  assert.equal(calculate(row,catalog,{now}).monthly,null,text);
+ }
+ const item=catalog.items.find(item=>item.sku==='redis.single.xu1.large.1'&&item.billingMode==='ONDEMAND');
+ const fixture=items=>({...catalog,items});
+ const from=items=>match(parseText('1个1g的redis')[0],fixture(items));
+ assert.equal(from([item,{...item,id:'fictional-duplicate'}]).huaweiMatch,'HW_MULTIPLE');
+ assert.equal(from([{...item,region:'fictional-region'}]).huaweiMatch,'HW_NO_PLAN');
+ assert.equal(from([{...item,description:null}]).huaweiMatch,'HW_NO_MATCH');
+ const unverified=fixture([{...item,evidence:null}]);
+ assert.equal(calculate(match(parseText('1个1g的redis')[0],unverified),unverified,{now}).monthly,null);
+ const manual=match({...resource('1个1g的redis'),huaweiSelection:'manual',targetId:'manual-example',accepted:false});
+ assert.equal(manual.targetId,'manual-example');
+ assert.equal(manual.accepted,false);
+ const monthly=match({...parseText('1个1g的redis')[0],targetBilling:'MONTHLY'});
+ assert.equal(catalog.items.find(item=>item.id===monthly.targetId)?.billingMode,'MONTHLY');
+ for(const [product,code] of [['Redis Cluster','HW_CACHE_MODE'],['Redis 7.0','HW_CACHE_ENGINE'],['Redis 2G','HW_CACHE_CAPACITY'],['Redis ARM','HW_NO_MATCH']]){
+  const [row]=normalizeRows([{product,specification:'1g',quantity:1}]);
+  assert.equal(match({...row,service:'DCS'}).huaweiMatch,code);
+ }
 });
 
 test('RDS compute-only scope, region, unmatched service and manual selection',()=>{

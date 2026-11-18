@@ -135,3 +135,18 @@ Sites 第 6 版的生产 Worker 返回在线首页 `0.3.2-dev`。Chromium 156.0.
 CSV 下载 SHA-256 `74d5d8fc73d3481663f27bf64e2b7c55efb31604bd1c61e83eba0a53c338a4fa`。多表下载 SHA-256 `bb1198a038a92099eeaa504366ae984f151c3aa18db57a02b3ea74dad22f5110`。[虚构 CSV](../pricing-studio/web/tests/fixtures/huawei-fictional-nonstandard.csv) · [本机模型运行说明](../pricing-studio/web/README.md#model-assisted-csv-and-excel-on-the-user-machine)
 
 生产私有站第 8 版由 Sites 服务访问验收，部署源码 `9f324898777511eb5ca3ee5d6c772d4920bd2ee8`。Chromium 以生产域名运行，新资源组和正式资产字节与仓库对应。三条已计价行的官方刷新 HTTP 200、3 项收到有效结果，托管站没有模型分析按钮且模型 POST 返回 405。浏览器实际生产下载 SHA-256 `8f644387684eb91568363da4b41374c4f439e847e37c9489bca34faf8e4c14a6`，重开核对五表及 Pending 空白。交互式登录与离线发布不在本轮验收。
+
+
+## 2026-11-18 — Huawei Redis 单机估算
+
+以 `c4f34d337150b6cfb4855e75c6a23633d4eb5d8b` 为评审基线。Codex 使用 Chromium 156.0.8078.79 和 openpyxl 3.1.5，分别在本地 HTTP 和私有生产站第 9 版 `0.3.5-dev` 执行同一组验收。生产源码 `02c2aeaa31caf05868e435e6ddd339708d1da0d1`，经 Sites 服务访问获取的资产与仓库逐字节一致。浏览器固定时间使用随仓库提供的公开目录，保留目录原核验时间。[虚构 CSV](../pricing-studio/web/tests/fixtures/huawei-fictional-redis-mixed.csv)
+
+| 场景 | 页面和下载工作簿 |
+| --- | --- |
+| Redis | `1个1g的redis` 选择 `redis.single.xu1.large.1`，USD 12.41，显示「按单机估算，部署模式未指定」。`2G Redis` 推荐对应单机 SKU，数量和金额为空。只声明主备时仍有多解。 |
+| ECS | 2 台 4 vCPU、16 GiB Linux x86 使用 `s6.xlarge.4.linux`，USD 222.50。同报 ARM 和 x86 的行 Pending。 |
+| EVS | 2 块各 100 GiB 的通用 SSD 使用 `GPSSD`，USD 20.88，页面和 Excel 都写入估算假设。带 IOPS 要求的行 Pending。 |
+| RDS | MySQL 8.0 Single-AZ Cloud SSD 使用 `rds.mysql.n1.large.4`，USD 100.01，明示只含实例费用。缺版本和缺部署模式的两行分别 Pending。 |
+| 核对 | 初次小计 USD 355.80，4 行计价、6 行 Pending。手动选择 2 节点主备并确认，Redis 行变为 USD 24.82，小计 USD 368.21，原单机估算假设移除。模拟超过目录有效期后，所有行和小计金额为空。 |
+
+两种环境的三份下载均重开 `Input`、`Service Mapping`、`Public Pricing`、`Quotation`、`Assumptions`，核查 SKU、数量、假设、计费金额、官方价格证据和 Pending 空值。混合、手动及过期文件的 SHA-256 依次为 `29a890098a9799e3c85f209e51f6a042042b2ade174b257b971a0c17306dbad0`、`557735b65d2155984dd47d60ad9007e815483a7024f30ad64908f51d81df170d`、`bed4dd000b66a79efce471b8e5ca2436923cb48322f93942e1acac94995919fa`。初次本地浏览器脚本的部分 SKU 选择器匹配两条选项，改用完整 SKU 后全部通过。

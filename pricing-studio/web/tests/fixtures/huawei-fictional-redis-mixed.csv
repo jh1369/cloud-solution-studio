@@ -1,0 +1,11 @@
+product,specification,quantity,usage,unit
+Redis,1个1g的redis,1,,hour
+Redis,2G Redis,,,hour
+Redis,1个1g的redis 主备,1,,hour
+ECS,2 台 4 vCPU / 16 GiB Linux x86 云主机,2,,hour
+ECS,2 台 4 vCPU / 16 GiB Linux ARM x86 云主机,2,,hour
+EVS,2 块 100 GiB SSD 云盘,2,,
+EVS,2 块 100 GiB SSD 云盘 5000 IOPS,2,,
+RDS,1 台 db.m5.large MySQL 8.0 Single-AZ Cloud SSD instance only,1,,hour
+RDS,1 台 db.m5.large MySQL Single-AZ Cloud SSD instance only,1,,hour
+RDS,1 台 db.m5.large MySQL 8.0 Cloud SSD instance only,1,,hour

@@ -7,14 +7,14 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-18，Europe/Berlin |
-| 当前优先目标 / 模式 | Huawei 规格匹配和本机智能导入，离线版暂停，单主 Agent |
-| 本轮检查基线 | `main` / `481612a48e27b76b7892dc3860da1da434306c6b`，起始私有站版 0.3.3-dev |
+| 当前优先目标 / 模式 | Huawei Redis 单机估算和多服务报价回归，离线版暂停，单主 Agent |
+| 本轮检查基线 | `main` / `c4f34d337150b6cfb4855e75c6a23633d4eb5d8b`，起始私有站版 0.3.4-dev |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 私有站第 8 版已部署 `0.3.4-dev`，生产浏览器报价和下载通过。真实模型在本机 HTTP 环回独立验收。原所有者访问范围复查通过 |
+| 当前网页版本 | 私有站第 9 版已部署 `0.3.5-dev`。生产浏览器报价及五表下载核查通过，原所有者访问范围复查通过 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| 当前 Sites 部署源码 | `9f324898777511eb5ca3ee5d6c772d4920bd2ee8`，第 8 版私有部署 succeeded（2026-11-18，Europe/Berlin）。上一版为 `4380492` |
+| 当前 Sites 部署源码 | `02c2aeaa31caf05868e435e6ddd339708d1da0d1`，第 9 版私有部署 succeeded（2026-11-18，Europe/Berlin）。上一版为 `9f32489` |
 | 整体进度 | Huawei 精确规格匹配及本机模型标准化已通过验收。TCP EU-DE 生产目录有独立有效期 |
 | 本轮同步范围 | Huawei 精确 SKU 匹配、标准化预览和五表导出，离线工作暂停 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
@@ -409,3 +409,10 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **修改** 非标准 UTF-8 CSV 和多工作表 XLSX 在本机服务使用结构化模型预览，保留原始单元格、工作表和行号。用户确认后才计价。标准模板继续直接导入。托管站提供手动预览，本机模型通过独立环回适配器配置。TCP 报价路径和离线归档沿用既有版本。
 - **回归** 在 `pricing-studio/web` 使用 Node 24.22.1 运行线上测试 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，103 项通过。Python 3.12.14 的目录、核验、PDF、调度和发布五组共 42 项通过，0 失败。本机 Qwen 实际完成两个非标准场景。Chromium 下载后由 openpyxl 重开核对，使用真实公开目录及虚构输入。生产站三个公开价格查询成功。[浏览器验收](PRICING_BROWSER_ACCEPTANCE.md#2026-11-18--huawei-规格匹配与智能导入)
 - **同步与部署** GitHub 分支 `feat/huawei-pricing-import`，私有站第 8 版 `0.3.4-dev`。正式用户自行配置可信本机模型、限制浏览器来源并使用本机认证。模型预览有范围限制，不保证所有表格字段可自动识别。客户文件、模型权重、下载工作簿与凭证均留在受控环境。[模型配置](../pricing-studio/web/README.md#model-assisted-csv-and-excel-on-the-user-machine)
+
+### 2026-11-18 — Huawei Redis 单机估算与多服务验收
+
+- **实现** 明确 Redis 容量且拓扑未指定时，只从当前区域和计费模式选唯一兼容的单机 SKU。页面和 Excel 的估算假设字段均显示「按单机估算，部署模式未指定」。缺数量仍可推荐 SKU，报价金额留空。显式拓扑、主备多解、容量或架构冲突及无效价格继续 Pending 或沿用原明确约束匹配。手动选择优先。**删除** 无。
+- **自动测试** 在 `pricing-studio/web` 使用 Node 24.22.1 先运行 `node --test tests/huawei-import.test.mjs`，8 通过、0 失败。仅在线构建复用旧附件后运行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，104 通过、0 失败。Python 3.12.14 以 `python3.12 -m unittest discover -s tests -p <suite>.py` 跑 `test_catalog`、`test_catalog_updates`、`test_tcp_pdf`、`test_schedule`、`test_catalog_publication`，42 通过、0 失败。
+- **浏览器验收** Chromium 156.0.8078.79 与 openpyxl 3.1.5。使用仓库固定的公开目录及虚构 10 行混合 CSV，在本地 HTTP 和私有站均执行导入、核价和真实下载，重开每个工作簿的五张表。4 行计价合计 USD 355.80，6 行 Pending。手工改主备并确认后 USD 368.21。模拟过期后 10 行金额均为空。未发现 ECS、EVS、RDS 本次用例的独立缺陷。[验收明细](PRICING_BROWSER_ACCEPTANCE.md#2026-11-18--huawei-redis-单机估算)
+- **同步与实际部署** 评审基线 `c4f34d337150b6cfb4855e75c6a23633d4eb5d8b`，GitHub 分支 `fix/huawei-redis-default`。私有站第 9 版 `0.3.5-dev` 实际生效，生产浏览器通过 Sites 服务访问验收。固定目录原验证时间保留，测试未调用实时核价。离线开发、打包和验收继续暂停。
