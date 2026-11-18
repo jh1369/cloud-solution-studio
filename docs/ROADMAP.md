@@ -8,8 +8,9 @@ The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, t
 - [x] Automatically publish a validated initial baseline and later safe versions. Retry anomalies and keep unresolved rows Pending.
 - [x] Track last check, last verified time, catalog version and effective state. Freeze the version used by each quote.
 - [x] Export a consistent state/catalog pair and expose the four state fields in the Web status card.
-- [ ] Run Python daily on managed Linux with a persistent disk for SQLite. Publish an immutable catalog and a conditional state update to object storage. Wire the Worker to consume them with expiry and integrity checks.
-- [ ] Validate the managed workflow with the current official PDF. Extend deterministic checks for merged/cross-page rows, service-specific charging rules, tiers and composite fees.
+- [x] Publish verified TCP rows and evidence through the conditional object-store adapter. Verify that the Worker rejects expired, incomplete and conflicting publications in local integration.
+- [ ] Run the publisher daily on managed Linux with a persistent SQLite disk, an approved private R2 bucket and the Worker binding. Use the current official PDF to verify two runs and a failure in the hosted environment.
+- [ ] Extend deterministic checks for merged and cross-page rows, service-specific charging rules, tiers and composite fees.
 - [ ] Start TCP automatic quotations with one region and explicit simple SKUs. Confirm AWS mappings, reconcile units and compare line costs and Excel evidence against the official PDF.
 - [ ] Extend quotation coverage for reserved and upfront plans, storage, ancillary charges and missing resources. Preserve unknown amounts as Pending.
 

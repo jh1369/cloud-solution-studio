@@ -99,6 +99,10 @@ class CatalogStore:
         return self.publication(provider, now)["state"]
 
     def publication(self, provider, now=None):
+        snapshot = self.publication_snapshot(provider, now)
+        return {"state": snapshot["state"], "catalog": snapshot["catalog"]}
+
+    def publication_snapshot(self, provider, now=None):
         with self.db:
             self.db.execute("BEGIN")
             row = self._last(provider)
@@ -126,7 +130,8 @@ class CatalogStore:
             "diffCounts": {k: len(v) for k, v in payload.get("diff", {}).items()},
             "source": payload.get("source"), "attempts": payload.get("attempts"),
         }
-        return {"state": state, "catalog": active if effective == "ACTIVE" else None}
+        return {"state": state, "catalog": active if effective == "ACTIVE" else None,
+                "sequence": row["id"] if row else 0}
 
     def pin_for_quote(self, provider, now=None):
         publication = self.publication(provider, now)

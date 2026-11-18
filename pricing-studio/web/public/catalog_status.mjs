@@ -36,19 +36,23 @@ export function publishedTCPStatus(packaged,now=Date.now()){
  }
  return {...packaged,lastVerifiedAt:packaged.lastVerifiedAt??null,effectiveState};
 }
-export async function inspectTCPSource(packaged,{fetcher=fetch,now=()=>new Date().toISOString()}={}){
+export async function inspectTCPSource(packaged,{fetcher=fetch,now=()=>new Date().toISOString(),loadStatus=()=>packaged}={}){
+ let document;
  try{
   const page=await getOfficial(TCP_PRICE_PAGE,fetcher);
   const url=discoverTCPDocument(new TextDecoder().decode(await limited(page.response,2*1024*1024)),page.url);
   const pdf=await getOfficial(url,fetcher),bytes=await limited(pdf.response,16*1024*1024);
   if(new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')throw Error('Official response is not a PDF');
   const sha256=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');
-  const unchanged=packaged.source?.sha256===sha256, checked=now();
-  const state=publishedTCPStatus(packaged,Date.parse(checked));
-  // Detection has no authority to change successful verification time or publish a catalog.
-  return {...state,lastCheckedAt:checked,status:unchanged?state.status:'DOCUMENT_CHANGED',
-   effectiveState:unchanged?state.effectiveState:'PENDING',candidateVersion:unchanged?state.candidateVersion:null,
-   documentRevision:unchanged?state.documentRevision:null,source:{...(unchanged?state.source:{}),url:pdf.url,sha256,fetchedAt:checked},
-   reasons:unchanged?(state.reasons||[]):['AUTOMATED_PDF_VALIDATION_REQUIRED'],checkScope:'DETECTION_ONLY_NO_PROMOTION'};
- }catch{return {...publishedTCPStatus(packaged),lastCheckedAt:now(),effectiveState:'PENDING',status:'CHECK_FAILED',reasons:['OFFICIAL_DETECTION_FAILED'],checkScope:'DETECTION_ONLY_NO_PROMOTION'};}
+  document={url:pdf.url,sha256};
+ }catch{/* Report detection failure against the latest publication. */}
+ const published=await loadStatus(),checked=now();
+ const state=publishedTCPStatus(published,Date.parse(checked));
+ if(!document)return {...state,lastCheckedAt:checked,effectiveState:'PENDING',status:'CHECK_FAILED',reasons:['OFFICIAL_DETECTION_FAILED'],checkScope:'DETECTION_ONLY_NO_PROMOTION'};
+ // Detection has no authority to change successful verification time or publish a catalog.
+ const unchanged=published.source?.sha256===document.sha256;
+ return {...state,lastCheckedAt:checked,status:unchanged?state.status:'DOCUMENT_CHANGED',
+  effectiveState:unchanged?state.effectiveState:'PENDING',candidateVersion:unchanged?state.candidateVersion:null,
+  documentRevision:unchanged?state.documentRevision:null,source:{...(unchanged?state.source:{}),...document,fetchedAt:checked},
+  reasons:unchanged?(state.reasons||[]):['AUTOMATED_PDF_VALIDATION_REQUIRED'],checkScope:'DETECTION_ONLY_NO_PROMOTION'};
 }
