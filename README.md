@@ -1,6 +1,6 @@
 # Cloud Solution Studio
 
-Local-first tools for cloud solution architects. The current implementation focus is **Pricing Studio V0.3 (TCP catalog/data phase)**, with AWS-to-Huawei Cloud Public mapping, independently verified public pricing and Excel export. V0.2.0-dev (`f8ea276`) is the inspected GitHub baseline. V0.3 adds TCP PDF catalog ingestion and safe updates while retaining Huawei quotations. TCP quote mapping/calculation is not enabled yet. The user authorized this task's GitHub sync and automatic deployment of checked versions to the existing private Site.
+Local-first tools for cloud solution architects. The current implementation focus is **Pricing Studio V0.3 (TCP catalog/data phase)**, with AWS-to-Huawei Cloud Public mapping, independently verified public pricing and Excel export. V0.2.0-dev (`f8ea276`) is the inspected GitHub baseline. V0.3 adds TCP PDF catalog ingestion and safe updates while retaining Huawei quotations. TCP quote mapping/calculation is not enabled yet. The user authorized this task's GitHub sync and automatic deployment of checked versions to the existing private Site. V0.3 data-phase source is synchronized (`8777743`) and deployed (Sites source `fff0d1f`); see the [verified status](docs/DEVELOPMENT_STATUS.md).
 
 ## Security boundary
 

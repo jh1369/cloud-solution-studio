@@ -1,6 +1,6 @@
 # Cloud Solution Studio · Pricing Studio Web V0.3 (TCP catalog/data phase)
 
-Package `0.3.0-dev`, prepared for this task's authorized synchronization/deployment. Full browser acceptance and TCP quote calculation/mapping remain outstanding. Huawei quotations retain the existing engine. Huawei target billing choices are 按需 / 包月 / 包年, separated from AWS billing. The existing Python mapping CLI remains unchanged. This app uses browser JavaScript modules and a Cloudflare Worker; no duplicate Python quotation system or SQLite runtime has been introduced.
+Package `0.3.0-dev`, synchronized to GitHub and deployed to the existing private Site from Sites source `fff0d1f` (2026-11-17). Full browser acceptance and TCP quote calculation/mapping remain outstanding. Huawei quotations retain the existing engine. Huawei target billing choices are 按需 / 包月 / 包年, separated from AWS billing. The existing Python mapping CLI remains unchanged. This app uses browser JavaScript modules and a Cloudflare Worker; no duplicate Python quotation system has been introduced. The hosted Worker has no SQLite runtime; the local catalog updater uses SQLite only for catalog/history management.
 
 ## Features
 

@@ -6,20 +6,20 @@
 
 | 项目 | 当前状态 |
 | --- | --- |
-| 更新日期 | 2026-11-17，Europe/Berlin |
+| 更新日期 | 2026-11-18，Europe/Berlin；发布执行于 11-17 |
 | 当前优先目标 / 模式 | Pricing Studio V0.3 TCP 目录/自动更新阶段；Token-Efficient、单主 Agent |
 | 本轮检查基线 | `main` / `f8ea276178e5a2114311745f61f52a3d652bc757`；V0.2.0-dev 干净工作树，无既有 TCP 实现或 TCP V0.3 计划 |
 | 本轮发布权限 | 用户追加授权本轮检查完成后同步 GitHub；并明确后续检查通过的项目版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 本轮包 `0.3.0-dev`（TCP 目录阶段），离线归档已生成；主报价仍为 Huawei，TCP 报价计算尚未接入；待本轮发布确认 |
+| 当前网页版本 | `0.3.0-dev`（TCP 目录阶段）已同步并部署，离线 HTML/ZIP 可下载；主报价仍为 Huawei，TCP 报价计算尚未接入 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| 当前 Sites 部署源码 | `64eaa80dea73b608d4c409c373394151d5f22641`；V0.2 候选版私有部署 succeeded；历史 V0.1.1 为 `9e85f66` |
+| 当前 Sites 部署源码 | `fff0d1fe414b09464089a4f6734b6a03f56738ff`；V0.3 数据阶段原生私有部署 succeeded（2026-11-17 18:16 Europe/Berlin）；原 V0.2 为 `64eaa80` |
 | 整体进度 | TCP 官方 PDF → 结构化候选目录、通用 Adapter/Updater、差异/审批/历史、本地调度配置及小型状态卡已实现；首次 TCP 基线未批准，完整 TCP 自动报价未完成 |
 | 本次同步授权 | 本轮代码/公开候选数据/离线包可同步 GitHub；每个完成版本继续交付离线 HTML/ZIP。原私有站点已有站立自动部署授权；其他发布/分享变更不包含在内 |
-| 同步结果 | V0.3 本轮同步/部署进行中，尚未确认成功。此前 V0.2 已 Push 到 GitHub main：`f3aae16453c43a0221e02220d6b0efaa01da0d3f`；API 确认远端 SHA/文件树一致，公开 ZIP 下载 HTTP 200 且字节/哈希一致；此前 V0.1.1 为历史基线 |
+| 同步结果 | V0.3 代码/目录/离线交付提交 `8777743e497a8014dfb9e61574690238981fa1bd` 已 Push；GitHub API 核对 main 与文件树成功，ZIP 下载 HTTP 200 / application/zip / 866,490 bytes / SHA-256 一致。本发布确认另随文档提交同步；V0.2 为历史版本 |
 
-V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。当前 V0.2 源码已改变，不再声称与部署版本字节一致。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
+V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
 
 ## 2. 已完成的功能
 
@@ -46,7 +46,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 - 实测官方计算器页面发现的 PDF 与用户提供文件一致：修订 2026-10-09 / SHA-256 c88c0aff01e08adeab9dda95f40414f9f8e41f7112e6ccc68895a5637c92603f。候选压缩 JSON 与 manifest 已生成；没有批准真实 TCP 初始目录。
 - 6/6 服务、59 张匹配表、20,420 个展开价格单元格，去重后 20,348 条区域/方案/阶梯记录；结构校验 3,397、Pending 11,686、n.a. 不可用 5,265，重复身份 72 个保留审核证据。这不是全部服务覆盖率或报价可用率。
 - 本地 SQLite Updater 保存源码 PDF、不可变目录/检查/批准记录与正式指针；网页托管检查仅发现文件变化，不解析/提升目录；本地 Web 接入完整处理。离线 HTML 仅显示快照状态。定时任务配置已生成，未替用户电脑安装。
-- 真实浏览器 HTTP 预览再次失败：sites-preview relay 4173 readiness 超时，status stopped；不是文件权限问题，不绕过平台限制。部署后再观察生产入口，未把单元测试写成浏览器验收。
+- 真实浏览器 HTTP 预览再次失败：sites-preview relay 4173 readiness 超时，status stopped；不是文件权限问题，不绕过平台限制。2026-11-18 实际打开生产入口，停在 Sign in required / Continue with ChatGPT；未登录、未绕过访问控制，完整网页操作仍未验收。
 
 ### 先前 V0.2 集成记录（历史）
 
@@ -127,7 +127,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 
 规范仓库 `pricing-studio/web/` 执行 `npm run release:offline`：**82 JS + 34 Python 全通过、0 失败**，Node 24.22.1 / Python 3.12.14 / pdfplumber 0.11.9。新增真实微型虚构 PDF、目录更新/审批/回滚/并发、Adapter、HTTP 检测/本地 bridge 和本地调度配置检查；旧 Huawei 回归继续通过，engine.mjs 和正式 catalog.json 未改。完整 TCP 公共 PDF 的最终解析结果逐字段匹配已归档候选。0.3.0-dev HTML/ZIP 已生成，0.2.0-dev 旧归档不变。
 
-浏览器：本轮已启动桌面能力后重试 managed preview，仍 relay readiness 超时，未产生可打开 URL，status stopped。未进行浏览器 UI 流程，不以 116 个自动检查代替。部署/远端下载结果待原生发布与 GitHub 核验后补记。
+浏览器：本轮已启动桌面能力后重试 managed preview，仍 relay readiness 超时，未产生可打开 URL，status stopped。未进行浏览器 UI 流程，不以 116 个自动检查代替。原生部署 succeeded，GitHub SHA/文件树及公开 ZIP 下载已核验；2026-11-18 生产入口为 ChatGPT 登录页，未验证登录后的 UI。
 
 
 日期：2026-11-17。测试均在迁入后的规范仓库中执行：Python 3.12.14，Node.js 24.22.1。
@@ -175,7 +175,7 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 
 ## 8. 下一步开发计划
 
-1. 完成本轮最终安全检查、离线归档、GitHub 同步和原私有站点部署；只按实际原生结果补记成功状态。
+1. 本轮目录阶段已交付；下一步先完成真实浏览器验收并人工复核 TCP 初始基线，保持未确定价格 Pending。
 2. 人工复核 TCP 首次目录及合并/跨页/重复/阶梯/ELB 规则；Agent 不替人批准真实价格。
 3. 下一阶段接 TCP AWS 规格确认、计价/Excel、期望总成本与必需配套资源，报价固定目录版本。当前不能声称 TCP 自动报价已上线。
 4. 用户在实际运行机器生成并安装每日任务；不依赖 Codex，不在临时云开发机假装替其启用。
@@ -321,3 +321,13 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **状态：** 当前安全复核/同步发布中，尚不写“部署成功”；后续记录实际源码提交、HTTP 下载校验与原生部署结果。
 
 - **发布前核验：** 44 个显式白名单文件/公开候选 gzip/离线 ZIP 已审查，常见凭证模式无命中；产物及源指纹全部匹配，ZIP 只含五个允许文件，原 Huawei engine/catalog 与旧 V0.2 归档无变更。独立 Sites 发布目录运行 npm test：82 JS + 34 Python 通过、0 失败。未包含原始 PDF、SQLite 数据库、输出日志、客户清单或部署凭证。
+
+
+### 2026-11-18 — V0.3 发布与同步结果确认
+
+- **新增/删除：** 无业务功能增删。**修改：** 状态、README/路线图补记已成功的发布；本次仅文档变更，不继续扩展报价功能。
+- **GitHub：** 11-17 已将 44 个白名单文件提交并 Push：`8777743e497a8014dfb9e61574690238981fa1bd`；11-18 再核对 main，GitHub 文件树 `fa15ffd153f26d6467c8eeb7da16ae5e3ac06f62` 与本地相同且未截断。
+- **离线交付：** [V0.3 ZIP](https://raw.githubusercontent.com/jh1369/cloud-solution-studio/main/releases/pricing-studio/v0.3.0-dev/Pricing-Studio-0.3.0-dev-Offline.zip) 已真实 GET 验证 HTTP 200、application/zip、866,490 bytes；SHA-256 `f1c0f96b4fea48fb211ea3d3f3045cf83f8f49c134dcf54d1f29a815f089bd4e` 与本地一致。旧 V0.2 归档未改。
+- **网站：** [原私有站点](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/) 已从 Sites 源码 `fff0d1fe414b09464089a4f6734b6a03f56738ff` 构建，原生发布 succeeded；11-18 状态复查仍 succeeded。访问范围不变，无新增分享或公开访问。发布包只含既有 hosting manifest 与同一源码构建的 Worker；凭证未写入源码/文档/包。
+- **测试/安全：** 规范仓库 release:offline 与独立发布目录 npm test 均为 82 JS + 34 Python 全通过、0 失败（执行日期 11-17）；本次文档确认仅做 diff/变更范围核查，不重复业务测试。实际浏览器 11-18 打开生产地址停在 ChatGPT 登录页，不算导入/切换/刷新/下载端到端通过；未绕过认证。
+- **未解决/下一步：** TCP 初始目录仍未人工批准，完整 TCP 自动报价/映射/Excel 属下一阶段；复杂规则继续 Pending。调度配置生成并经过测试，但须在用户实际机器安装，托管检查只发现文件变化且无持久目录提升。继续真实浏览器验收与价格审核后再接入 TCP 计价；不把目录交付写成全功能完成。

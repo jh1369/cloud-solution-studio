@@ -4,7 +4,7 @@ The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, t
 
 ## Pricing Studio V0.3 — TCP catalog and auto-update phase
 
-Current work follows the [TCP V0.3 plan](PRICING_V03_TCP.md), on baseline `f8ea276`. User explicitly authorized this task's GitHub sync and standing automatic deployment of checked project versions to the existing private Site. No audience changes or unrelated publication are authorized.
+Current work follows the [TCP V0.3 plan](PRICING_V03_TCP.md), on baseline `f8ea276`. User explicitly authorized this task's GitHub sync and standing automatic deployment of checked project versions to the existing private Site. No audience changes or unrelated publication are authorized. The data phase is synchronized to GitHub (`8777743`) and deployed from Sites source `fff0d1f`; 116 automated checks passed. Initial price approval, TCP quotation integration and real-browser acceptance remain outstanding.
 
 - [x] Generic Provider Adapter and Catalog Updater; retain Huawei arithmetic/validation.
 - [x] Official current-PDF discovery, SHA/revision/version metadata and structured ECS/EVS/EIP/ELB/OBS/RDS catalog.
@@ -19,7 +19,7 @@ Current work follows the [TCP V0.3 plan](PRICING_V03_TCP.md), on baseline `f8ea2
 
 ## Pricing Studio V0.2 — private candidate (single-Agent default)
 
-Current policy is Token-Efficient Development Mode: one primary Agent by default, Subagents only after a new user-approved efficiency justification. The Agent A/B/C items below record the previous task assignments, not active parallel execution or permission to restart them. V0.2 changes are locally integrated and regression-tested; real-browser acceptance remains blocked by the preview relay. The user explicitly authorized synchronizing the current V0.2 candidate and versioned offline files to GitHub. The user subsequently authorized redeployment of the existing owner-private Site; the V0.2 candidate is now deployed from Sites source 64eaa80. This task authorizes GitHub synchronization only; the new download endpoint has not been deployed and future deployments require corresponding authorization.
+Current policy is Token-Efficient Development Mode: one primary Agent by default, Subagents only after a new user-approved efficiency justification. The Agent A/B/C items below record the previous task assignments, not active parallel execution or permission to restart them. V0.2 changes are locally integrated and regression-tested; real-browser acceptance remains blocked by the preview relay. The user explicitly authorized synchronizing the current V0.2 candidate and versioned offline files to GitHub. Historical V0.2 deployment used Sites source 64eaa80. V0.3 subsequently deployed the download endpoint and TCP status card under the standing authorization above; the current snapshot is in DEVELOPMENT_STATUS.
 
 - [x] Lead read the actual project rules, roadmap and shared status; preserved existing UI work.
 - [x] Launch 3 real Subagents with exclusive ownership boundaries recorded in root AGENTS.
