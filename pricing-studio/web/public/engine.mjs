@@ -95,10 +95,12 @@ export function normalizeRows(objects){
  const quantity=aggregate?null:finite(get(raw,'quantity'),'数量',true);
  const usage=finite(get(raw,'usage'),'用量',true);
  const explicitUnit=String(get(raw,'unit')).trim();
- const capacity=finite(get(raw,'capacity'),'容量 GB',true)??(!aggregate&&service==='EVS'&&['gb-month','gb-mo'].includes(explicitUnit.toLowerCase())?usage:null);
+ const explicitCapacity=finite(get(raw,'capacity'),'容量 GB',true);
+ const capacity=explicitCapacity??(!aggregate&&service==='EVS'&&['gb-month','gb-mo'].includes(explicitUnit.toLowerCase())?usage:null);
  const targetBilling=targetMode(get(raw,'target_billing')||'ONDEMAND');
  const targetQuantity=finite(get(raw,'target_quantity'),'目标资源数量',true);
  return {id:crypto.randomUUID(),product,specification:spec,region:String(get(raw,'region')),quantity,usage,unit:explicitUnit||(['ECS','RDS','DCS','DMS Kafka','ELB','NAT Gateway','CCE'].includes(service)?'hour':''),billing:String(get(raw,'billing_method')||'未提供'),targetBilling,targetQuantity,capacity,service,scope:aggregate?'aggregate':'resource',period:String(get(raw,'period')||(aggregate?'source-period':'monthly')),notes:aggregate?'来源账期累计用量，未推断资源数量；需确认是否完整月。':!explicitUnit?'用量单位根据服务推定，请核对。':'',accepted:false,targetId:'',manualRate:null,
+  ...(explicitCapacity!==null&&(service==='EVS'||service==='Unmapped')?{evsCapacitySource:'explicit'}:{}),
   sourceService:service,unitExplicit:!!explicitUnit,huaweiTargetRegion:String(raw.huawei_target_region||'').trim(),tcpTarget:String(raw.tcp_target_sku||'').trim(),tcpTargetRegion:String(raw.tcp_target_region||'').trim(),tcpTargetBilling:targetMode(raw.tcp_target_billing||'ONDEMAND')};
  });
 }
@@ -169,7 +171,8 @@ export function parseText(text){
  const usage=line.match(/(?:用量|usage)\s*[=:：]?\s*(\d+(?:\.\d+)?)/i)||line.match(/(\d+(?:\.\d+)?)\s*(?:小时|hours?|hrs?)/i);
  const capacity=line.match(/(\d+(?:\.\d+)?)\s*(?:GB|G)(?:\s*[-/]?\s*(?:月|month|mo))?/i);
  const storage=service==='EVS'||service==='OBS';
- return {id:crypto.randomUUID(),product:service==='ECS'?'EC2':service,specification:line,region:line.match(/\b[a-z]{2}-[a-z]+-\d\b/)?.[0]||'',quantity:quantity?+quantity[1]:null,usage:storage&&capacity?+capacity[1]:usage?+usage[1]:null,unit:storage?'GB-month':'hour',billing:/reserved/i.test(line)?'reserved':/spot|竞价/i.test(line)?'spot':/on.?demand|按需/i.test(line)?'on-demand':'未提供',targetBilling:/包年|华为云.*yearly/i.test(line)?'YEARLY':/包月|华为云.*monthly/i.test(line)?'MONTHLY':'ONDEMAND',capacity:storage&&capacity?+capacity[1]:null,targetQuantity:null,service,scope:'resource',period:'monthly',notes:'规则提取，请确认数量、规格与用量。文字中的存储 GB 解释为每资源月均容量；其他费用单独添加。',accepted:false,targetId:'',manualRate:null};
+ return {id:crypto.randomUUID(),product:service==='ECS'?'EC2':service,specification:line,region:line.match(/\b[a-z]{2}-[a-z]+-\d\b/)?.[0]||'',quantity:quantity?+quantity[1]:null,usage:storage&&capacity?+capacity[1]:usage?+usage[1]:null,unit:storage?'GB-month':'hour',billing:/reserved/i.test(line)?'reserved':/spot|竞价/i.test(line)?'spot':/on.?demand|按需/i.test(line)?'on-demand':'未提供',targetBilling:/包年|华为云.*yearly/i.test(line)?'YEARLY':/包月|华为云.*monthly/i.test(line)?'MONTHLY':'ONDEMAND',capacity:storage&&capacity?+capacity[1]:null,targetQuantity:null,service,scope:'resource',period:'monthly',notes:'规则提取，请确认数量、规格与用量。文字中的存储 GB 解释为每资源月均容量；其他费用单独添加。',accepted:false,targetId:'',manualRate:null,
+  ...(service==='EVS'&&capacity?{evsCapacitySource:'specification',evsUsageFromCapacity:true}:{})};
  });
 }
 // Exact decimal ratios avoid turning tiny verified rates into an invented zero.
@@ -214,6 +217,7 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
  const pending=pendingResult;
  const mode=billingOf(row),item=catalog.items.find(price=>price.id===row.targetId);
  if(row.huaweiTargetRegion&&row.huaweiTargetRegion!==REGION)return pending('', 'HW_TARGET_REGION');
+ if(row.service==='EVS'&&row.evsCapacityConflict)return pending('', 'HW_DISK_CAPACITY_CONFLICT');
  if(!Object.hasOwn(BILLING_MODES,mode))return pending('华为云目标计费模式仅支持按需、包月、包年。','PRICE_MODE');
  if(!item)return pending(`请为${BILLING_MODES[mode]}选择已验证的目标规格；未获取价格的服务保持 Pending。`,row.huaweiMatch||'PRICE_MISSING');
  if(item.billingMode!==mode)return pending('所选官方价格与华为云目标计费模式不一致，请重新选择。','PRICE_MODE');

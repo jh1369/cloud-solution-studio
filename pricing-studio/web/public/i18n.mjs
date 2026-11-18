@@ -298,6 +298,7 @@ export const ENGINE_REASON_MESSAGES={
  HW_DISK_PERFORMANCE:['请确认磁盘性能、快照及 IOPS/吞吐量条款。','Confirm disk performance, snapshots and IOPS/throughput terms.'],
  HW_DISK_TYPE:['请确认云盘类型或性能等级。','Confirm the volume type or performance tier.'],
  HW_DISK_CAPACITY:['请填写每块云盘的容量。','Enter capacity per volume.'],
+ HW_DISK_CAPACITY_CONFLICT:['每盘容量存在冲突。请核对规格文本及填写或导入的目标容量（每盘）。','Capacity per disk conflicts. Check the specification and the entered or imported target capacity per disk.'],
  HW_CACHE_ENGINE:['请确认 Redis 兼容类型。','Confirm the Redis-compatible engine.'],
  HW_CACHE_CAPACITY:['请确认 Redis 缓存容量。','Confirm Redis cache capacity.'],
  HW_CACHE_MODE:['容量已识别，请确认 Redis 部署模式（单机、主备或集群）。','Capacity is recognized. Confirm Redis topology (single, primary/standby or cluster).'],

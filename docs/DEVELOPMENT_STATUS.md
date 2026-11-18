@@ -7,16 +7,16 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-18，Europe/Berlin |
-| 当前优先目标 / 模式 | Huawei Redis 单机估算和多服务报价回归，离线版暂停，单主 Agent |
-| 本轮检查基线 | `main` / `c4f34d337150b6cfb4855e75c6a23633d4eb5d8b`，起始私有站版 0.3.4-dev |
+| 当前优先目标 / 模式 | Huawei EVS 每盘容量编辑与报价一致性，单主 Agent |
+| 本轮检查基线 | `main` / `e8ff1ec697eafb7466c336156c9d752610e749fc`，起始私有站版 0.3.5-dev |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 私有站第 9 版已部署 `0.3.5-dev`。生产浏览器报价及五表下载核查通过，原所有者访问范围复查通过 |
+| 当前网页版本 | 私有站第 10 版已部署 `0.3.6-dev`。生产浏览器 EVS 容量编辑、三种计费模式及五表下载核查通过 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| 当前 Sites 部署源码 | `02c2aeaa31caf05868e435e6ddd339708d1da0d1`，第 9 版私有部署 succeeded（2026-11-18，Europe/Berlin）。上一版为 `9f32489` |
+| 当前 Sites 部署源码 | `ed6a912814e8089c4c7c1d015be73b4e74809e7a`，第 10 版私有部署 succeeded（2026-11-18，Europe/Berlin）。上一版为 `02c2aea` |
 | 整体进度 | Huawei 精确规格匹配及本机模型标准化已通过验收。TCP EU-DE 生产目录有独立有效期 |
-| 本轮同步范围 | Huawei 精确 SKU 匹配、标准化预览和五表导出，离线工作暂停 |
+| 本轮同步范围 | Huawei EVS 在线容量更新和相关回归，TCP 和离线工作暂停 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -416,3 +416,11 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **自动测试** 在 `pricing-studio/web` 使用 Node 24.22.1 先运行 `node --test tests/huawei-import.test.mjs`，8 通过、0 失败。仅在线构建复用旧附件后运行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，104 通过、0 失败。Python 3.12.14 以 `python3.12 -m unittest discover -s tests -p <suite>.py` 跑 `test_catalog`、`test_catalog_updates`、`test_tcp_pdf`、`test_schedule`、`test_catalog_publication`，42 通过、0 失败。
 - **浏览器验收** Chromium 156.0.8078.79 与 openpyxl 3.1.5。使用仓库固定的公开目录及虚构 10 行混合 CSV，在本地 HTTP 和私有站均执行导入、核价和真实下载，重开每个工作簿的五张表。4 行计价合计 USD 355.80，6 行 Pending。手工改主备并确认后 USD 368.21。模拟过期后 10 行金额均为空。未发现 ECS、EVS、RDS 本次用例的独立缺陷。[验收明细](PRICING_BROWSER_ACCEPTANCE.md#2026-11-18--huawei-redis-单机估算)
 - **同步与实际部署** 评审基线 `c4f34d337150b6cfb4855e75c6a23633d4eb5d8b`，GitHub 分支 `fix/huawei-redis-default`。私有站第 9 版 `0.3.5-dev` 实际生效，生产浏览器通过 Sites 服务访问验收。固定目录原验证时间保留，测试未调用实时核价。离线开发、打包和验收继续暂停。
+
+### 2026-11-18 — Huawei EVS 每盘容量编辑
+
+- **新增** 在线 EVS 的每盘容量输入和双语冲突提示。规格文本与导入或填写的每盘容量不一致时，即使确认了 SKU，也保持 Pending，页面和 Excel 的报价金额留空。
+- **修改** 重新从编辑后的规格提取每盘容量，保留独立盘数和账单用量。按需优先使用已填账单用量，整月估算使用当前每盘容量。包月、包年使用当前每盘容量及各自的官方费率。自动匹配和手动确认路径均覆盖。**删除** 无。
+- **自动测试** 在 `pricing-studio/web` 运行 `node --test tests/huawei-import.test.mjs`，11 通过、0 失败。Node 24.22.1 运行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，107 通过、0 失败，含 DCS、ECS、EVS、RDS、Excel 和 Worker。Python 3.12.14 运行 `python3.12 -m unittest discover -s tests -p <suite>.py`，`test_catalog`、`test_catalog_updates`、`test_tcp_pdf`、`test_schedule`、`test_catalog_publication` 共 42 通过、0 失败。离线构建和专用测试暂停。
+- **浏览器验收** Codex 用 Chromium 156.0.8078.79 和虚构输入在本地与生产站分别实际编辑、下载，每处 5 份工作簿均以 openpyxl 3.1.5 重开核对五张表。单盘 100→200 GiB，按需月参考金额 USD 10.44→20.88。混合清单中两块各 200 GiB 的报价为按需 USD 41.76/月、包月 USD 40.00、包年 USD 416.00，包年月均 USD 34.67。另一行按需计费使用独立导入的 80 GB-month。三模式的页面与 Excel 月均小计分别为 USD 50.11、60.00、52.00，包年首期合计 USD 624.00。显式容量冲突在三个模式均留空，填写为 200 GiB 后恢复。两处工作簿逐字节一致，混合包年工作簿 SHA-256 为 `01e619b550dc31c9009f1c73ad42f8e954813bb9b615a73439142a0d8d335b68`。验收使用固定公开目录和固定时间，未调用实时核价。
+- **同步与实际部署** 源码、回归及本文通过 `fix/huawei-evs-capacity` 交付。私有站第 10 版 `0.3.6-dev` 已实际生效，生产 Chromium 使用 Sites 服务访问验收，所有者访问范围复查通过。TCP 和离线版本继续暂停。

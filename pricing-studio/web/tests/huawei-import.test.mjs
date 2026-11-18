@@ -28,6 +28,61 @@ test('match ECS and generic SSD without using rate to choose, with visible defau
  assert.equal(resource('1 块 100 GiB Premium SSD 云盘').huaweiMatch,'HW_DISK_PERFORMANCE');
 });
 
+test('EVS edits replace text-derived capacity and calculate each disk in every billing mode',()=>{
+ for(const [targetBilling,term,monthly] of [['ONDEMAND',41.76,41.76],['MONTHLY',40,40],['YEARLY',416,34.67]]){
+  const [row]=parseText('2 块 100 GiB SSD 云盘');
+  row.targetBilling=targetBilling;
+  match(row);
+  assert.equal(row.capacity,100);
+  row.specification='2 块 200 GiB SSD 云盘';
+  match(row);
+  assert.equal(selection(row),'GPSSD');
+  assert.equal(row.capacity,200);
+  assert.equal(row.usage,null);
+  const result=calculate(row,catalog,{now});
+  assert.deepEqual([result.quantity,result.termPublic,result.monthly],[2,term,monthly]);
+  row.specification='2 块 SSD 云盘';
+  match(row);
+  assert.equal(row.capacity,null);
+  assert.equal(calculate(row,catalog,{now}).monthly,null);
+ }
+ const legacy=resource('1 个 EBS gp3 100 GB');
+ assert.equal(legacy.usage,null);
+ legacy.specification='1 个 EBS gp3 200 GB';
+ assert.equal(calculate(match(legacy),catalog,{now}).monthly,20.88);
+});
+
+test('EVS explicit capacity conflicts cannot be confirmed into a quote',()=>{
+ for(const targetBilling of ['ONDEMAND','MONTHLY','YEARLY']){
+  const [row]=normalizeRows([{product:'EVS',specification:'100 GiB SSD',quantity:1,capacity_gb:100}]);
+  row.targetBilling=targetBilling;
+  match(row);
+  row.huaweiSelection='manual';
+  row.specification='200 GiB SSD';
+  match(row);
+  assert.equal(row.capacity,100);
+  const pending=calculate(row,catalog,{now});
+  assert.deepEqual([pending.reasonCode,pending.monthly,pending.termPublic],['HW_DISK_CAPACITY_CONFLICT',null,null]);
+  row.capacity=200;
+  match(row);
+  assert.equal(calculate(row,catalog,{now}).status,'Valid');
+ }
+ const ambiguous=resource('1 块 100 GiB 或 200 GiB SSD 云盘');
+ assert.equal(calculate(ambiguous,catalog,{now}).reasonCode,'HW_DISK_CAPACITY_CONFLICT');
+});
+
+test('EVS sizing leaves imported usage independent of per-disk capacity',()=>{
+ const [row]=normalizeRows([{product:'EVS',specification:'100 GB SSD; 80 GB-month usage',quantity:2,usage:80,unit:'GB-month'}]);
+ match(row);
+ row.specification='200 GB SSD; 80 GB-month usage';
+ match(row);
+ assert.deepEqual([row.capacity,row.usage,calculate(row,catalog,{now}).monthly],[200,80,16.7]);
+ row.targetBilling='MONTHLY';
+ assert.equal(calculate(match(row),catalog,{now}).monthly,40);
+ row.specification='SSD; 80 GB-month usage';
+ assert.equal(calculate(match(row),catalog,{now}).reasonCode,'HW_DISK_CAPACITY');
+});
+
 test('DCS defaults to a unique single node and leaves unspecified quantities unpriced',()=>{
  const bare=resource('2G Redis');
  assert.equal(bare.service,'DCS');
