@@ -12,7 +12,7 @@
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 私有站第 6 版已部署 `0.3.2-dev`，对应 GitHub `c60138e`。生产功能已通过 Sites 服务访问验证，ChatGPT 账号登录及回跳待核验 |
+| 当前网页版本 | 私有站第 6 版已部署 `0.3.2-dev`，对应 GitHub `c60138e`。生产功能已验证，用户确认当前会话可直接进入工作台。按本轮验收范围跳过首次登录与回跳 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
 | 当前 Sites 部署源码 | `0cdb286b139b359e25d2b90692428a1092cbc12b`，第 6 版私有部署 succeeded（2026-11-18，Europe/Berlin）；上一部署为 `fff0d1f` |
 | 整体进度 | TCP 官方 PDF → 结构化候选目录、通用 Adapter/Updater、差异/审批/历史、本地调度配置及小型状态卡已实现；首次 TCP 基线未批准，完整 TCP 自动报价未完成 |
@@ -375,4 +375,4 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 
 ### 2026-11-18 — 生产功能验证
 
-通过 Sites 官方服务访问测试第 6 版 Worker。实际浏览器导入、确认、三种计费模式、折扣、双语和重载通过。生产官方核价 9 项成功，9 份下载件用 openpyxl 重开核对五张表。浏览器模拟连接中断后，价格证据和报价保持一致。账号登录回跳仍待核验。[验收记录](PRICING_BROWSER_ACCEPTANCE.md)
+通过 Sites 官方服务访问测试第 6 版 Worker。实际浏览器导入、确认、三种计费模式、折扣、双语和重载通过。生产官方核价 9 项成功，9 份下载件用 openpyxl 重开核对五张表。浏览器模拟连接中断后，价格证据和报价保持一致。用户随后确认其浏览器打开私有站后直接进入工作台。本轮验收通过，首次登录与回跳经确认跳过。[验收记录](PRICING_BROWSER_ACCEPTANCE.md)
