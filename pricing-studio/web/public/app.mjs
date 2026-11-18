@@ -253,7 +253,11 @@ $('#refresh-prices').addEventListener('click',async()=>{
    failed+=(data.pending||[]).length;
   }
   toast(T('toast.refreshed',{count})+(failed?' '+T('toast.refreshPartial',{count:failed}):''));
- }catch(error){report(error,'error.refresh');}finally{
+ }catch{
+  // A later batch can fail after earlier plans were successfully refreshed.
+  const message=count?`${T('toast.refreshed',{count})} ${T('toast.refreshPartial',{count:ids.length-count})}`:T('error.refresh');
+  toast(message,true);
+ }finally{
   busy=false;updateCatalogState();render();renderCatalogueMetadata();if(activeView==='catalog')renderCatalog();
  }
 });

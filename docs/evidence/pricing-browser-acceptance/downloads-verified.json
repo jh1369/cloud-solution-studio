@@ -1,0 +1,322 @@
+{
+  "unconfirmed": {
+    "sheets": [
+      "Input",
+      "Service Mapping",
+      "Public Pricing",
+      "Quotation",
+      "Assumptions"
+    ],
+    "statuses": [
+      "Pending",
+      "Pending",
+      "Pending",
+      "Pending"
+    ],
+    "bytes": 40575,
+    "sha256": "315a9ef8e6ed205ab33f52ba6d71644f6e3bbedc139ce166b0d65aeb7726a94f"
+  },
+  "ondemand": {
+    "sheets": [
+      "Input",
+      "Service Mapping",
+      "Public Pricing",
+      "Quotation",
+      "Assumptions"
+    ],
+    "statuses": [
+      "Valid",
+      "Valid",
+      "Valid",
+      "Pending"
+    ],
+    "bytes": 40907,
+    "sha256": "9ad004783baaddcc4ee24500fd52e09db321f393466e521ba0b4c320b7ca6aa7",
+    "amountsUsd": {
+      "monthly": "597.22",
+      "scenario": "507.64",
+      "annual": "6091.57",
+      "upfront": null
+    },
+    "units": [
+      "hour",
+      "GB-hour",
+      "hour"
+    ],
+    "verifiedAt": [
+      "2026-11-18T08:35:33.225Z",
+      "2026-11-18T08:35:33.225Z",
+      "2026-11-18T08:35:33.225Z"
+    ]
+  },
+  "monthly": {
+    "sheets": [
+      "Input",
+      "Service Mapping",
+      "Public Pricing",
+      "Quotation",
+      "Assumptions"
+    ],
+    "statuses": [
+      "Valid",
+      "Valid",
+      "Valid",
+      "Pending"
+    ],
+    "bytes": 40856,
+    "sha256": "49320a3fab0d5e76bdf9fd58bebd391aa0e97e84ca8d524a0f90003b6921cc60",
+    "amountsUsd": {
+      "monthly": "451.43",
+      "scenario": "383.72",
+      "annual": "4604.59",
+      "upfront": "383.72"
+    },
+    "units": [
+      "month",
+      "GB-month",
+      "month"
+    ],
+    "verifiedAt": [
+      "2026-11-18T08:35:36.933Z",
+      "2026-11-18T08:35:36.933Z",
+      "2026-11-18T08:35:36.933Z"
+    ]
+  },
+  "yearly": {
+    "sheets": [
+      "Input",
+      "Service Mapping",
+      "Public Pricing",
+      "Quotation",
+      "Assumptions"
+    ],
+    "statuses": [
+      "Valid",
+      "Valid",
+      "Valid",
+      "Pending"
+    ],
+    "bytes": 40903,
+    "sha256": "f0704599cbe86eef8d79f492c0e024e3dd1d6190ebd77246d6f9f466f08e308a",
+    "amountsUsd": {
+      "monthly": "377.86",
+      "scenario": "321.18",
+      "annual": "3854.2",
+      "upfront": "3854.2"
+    },
+    "units": [
+      "year",
+      "GB-year",
+      "year"
+    ],
+    "verifiedAt": [
+      "2026-11-18T08:36:35.940Z",
+      "2026-11-18T08:36:35.940Z",
+      "2026-11-18T08:36:35.940Z"
+    ]
+  },
+  "pdf": {
+    "sheets": [
+      "Input",
+      "Service Mapping",
+      "Public Pricing",
+      "Quotation",
+      "Assumptions"
+    ],
+    "statuses": [
+      "Period"
+    ],
+    "bytes": 33334,
+    "sha256": "7294894b8981a23cc3effeef0f8c1385c054bc5dddb9fbc5a90e6ef1d715dc08",
+    "sourcePdfPages": [
+      1
+    ]
+  },
+  "twoPageBefore": {
+    "sheets": [
+      "Input",
+      "Service Mapping",
+      "Public Pricing",
+      "Quotation",
+      "Assumptions"
+    ],
+    "statuses": [
+      "Pending",
+      "Pending"
+    ],
+    "bytes": 36607,
+    "sha256": "47031761ecd4795c64524d83d03a94ff76b47a8b5464fc5e73eb8a51dc86928b",
+    "sourcePdfPages": [
+      1,
+      1
+    ]
+  },
+  "twoPageFixed": {
+    "sheets": [
+      "Input",
+      "Service Mapping",
+      "Public Pricing",
+      "Quotation",
+      "Assumptions"
+    ],
+    "statuses": [
+      "Period",
+      "Period"
+    ],
+    "bytes": 36927,
+    "sha256": "760dc19a427a727c8327e8b1f887997dd2538a0f0bfaf019604f555c41712232",
+    "sourcePdfPages": [
+      1,
+      2
+    ]
+  },
+  "yearlyFixed": {
+    "sheets": [
+      "Input",
+      "Service Mapping",
+      "Public Pricing",
+      "Quotation",
+      "Assumptions"
+    ],
+    "statuses": [
+      "Valid",
+      "Valid",
+      "Valid",
+      "Pending"
+    ],
+    "bytes": 40898,
+    "sha256": "99456a3c3b94573ab01d6dae1e6e6efb05dc73d056740bf97447661987d8e7c7",
+    "amountsUsd": {
+      "monthly": "377.86",
+      "scenario": "321.18",
+      "annual": "3854.2",
+      "upfront": "3854.2"
+    },
+    "units": [
+      "year",
+      "GB-year",
+      "year"
+    ],
+    "verifiedAt": [
+      "2026-11-18T08:53:00.720Z",
+      "2026-11-18T08:53:00.720Z",
+      "2026-11-18T08:53:00.720Z"
+    ]
+  },
+  "expired": {
+    "sheets": [
+      "Input",
+      "Service Mapping",
+      "Public Pricing",
+      "Quotation",
+      "Assumptions"
+    ],
+    "statuses": [
+      "Pending",
+      "Pending",
+      "Valid",
+      "Pending"
+    ],
+    "bytes": 40503,
+    "sha256": "26f33d2487946a0781dff407a3ee77202f6240341995f2d62e675962c8b32e8e"
+  },
+  "afterFailure": {
+    "sheets": [
+      "Input",
+      "Service Mapping",
+      "Public Pricing",
+      "Quotation",
+      "Assumptions"
+    ],
+    "statuses": [
+      "Valid",
+      "Valid",
+      "Valid",
+      "Pending"
+    ],
+    "bytes": 40898,
+    "sha256": "ffb87fb360498bd76bbe71360cdbf752df0f0eb575ed70a33492a074db66a602",
+    "amountsUsd": {
+      "monthly": "377.86",
+      "scenario": "321.18",
+      "annual": "3854.2",
+      "upfront": "3854.2"
+    },
+    "units": [
+      "year",
+      "GB-year",
+      "year"
+    ],
+    "verifiedAt": [
+      "2026-11-18T08:53:00.720Z",
+      "2026-11-18T08:53:00.720Z",
+      "2026-11-18T08:53:00.720Z"
+    ]
+  },
+  "offlineWorksheet": {
+    "sheets": [
+      "Input",
+      "Service Mapping",
+      "Public Pricing",
+      "Quotation",
+      "Assumptions"
+    ],
+    "statuses": [
+      "Valid",
+      "Valid",
+      "Valid",
+      "Pending"
+    ],
+    "bytes": 41313,
+    "sha256": "cb2065ba255104aefe25b14e7c81a702e537df95b8fcf16fc370637423ecb566",
+    "amountsUsd": {
+      "monthly": "377.86",
+      "scenario": "321.18",
+      "annual": "3854.2",
+      "upfront": "3854.2"
+    },
+    "units": [
+      "year",
+      "GB-year",
+      "year"
+    ],
+    "verifiedAt": [
+      "2026-11-17T10:08:31.058957+00:00",
+      "2026-11-17T10:08:31.274220+00:00",
+      "2026-11-17T10:08:31.686330+00:00"
+    ]
+  },
+  "offlinePdf": {
+    "sheets": [
+      "Input",
+      "Service Mapping",
+      "Public Pricing",
+      "Quotation",
+      "Assumptions"
+    ],
+    "statuses": [
+      "Period",
+      "Period"
+    ],
+    "bytes": 37013,
+    "sha256": "a9bf589afb13c4dc940c27fd46a5a80059ce3f5b80b32be5d55fc2c141311825",
+    "sourcePdfPages": [
+      1,
+      2
+    ]
+  },
+  "zip": {
+    "file": "Pricing-Studio-0.3.0-dev-Offline.zip",
+    "bytes": 866490,
+    "sha256": "f1c0f96b4fea48fb211ea3d3f3045cf83f8f49c134dcf54d1f29a815f089bd4e",
+    "verifiedAt": "2026-11-17T10:08:32.992132+00:00",
+    "ttlDays": 7
+  },
+  "zipFixed": {
+    "file": "Pricing-Studio-0.3.1-dev-Offline.zip",
+    "bytes": 866718,
+    "sha256": "95dee41f900893de3e7774e454e589fba8b918ebb48bab6d0d142da0b7953376",
+    "verifiedAt": "2026-11-17T10:08:32.992132+00:00",
+    "ttlDays": 7
+  }
+}

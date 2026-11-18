@@ -2,9 +2,13 @@
 
 Work only on generic non-sensitive code, synthetic sample data and publicly verifiable product documentation. Never read paths outside the approved repository or seek customer files, company-internal PPTs, credentials or private pricing tables. Do not upload or commit any confidential content. Do not create remote network connections unless explicitly approved for a defined public documentation or official price API endpoint.
 
-Priority: Pricing Studio V0.3 TCP catalog extraction/update work on synchronized V0.2.0-dev baseline `f8ea276`. Keep the existing Huawei engine backward-compatible; Python additions are offline PDF/catalog processing, never a duplicate quotation system. Only Huawei and TCP adapters are in scope; Alibaba/Tencent remain future adapters. Separate mapping, SKU validation, price retrieval, cost calculation and formatting; unknown prices or mappings remain Pending. Use only public/synthetic data.
+Read the current priority and baseline in `docs/DEVELOPMENT_STATUS.md`. Keep the existing Huawei engine backward-compatible and use the same quotation engine for web and offline delivery. Limit Python additions to offline PDF and catalog processing. Only Huawei and TCP adapters are in scope. Keep mapping, SKU validation, price retrieval, cost calculation and formatting separate. Unknown prices or mappings stay Pending. Use public information and synthetic samples.
 
-Standing deployment authorization (user explicitly granted 2026-11-17): after completing checks for each version of this project, automatically deploy to the existing owner-private Pricing Studio Site, keeping its audience unchanged, and provide the version's offline delivery. Do not ask again for this same authorized deployment. This overrides the default no-automatic-deployment rule below for that Site and scope; it does not authorize sharing/access changes, unrelated projects or unchecked releases. The user also explicitly authorized GitHub synchronization for the current V0.3 task; future GitHub Push still requires its own applicable authorization. Ordinary catalog data validation is not manual approval: keep anomalous/initial/complex TCP prices Pending until reviewed.
+Standing deployment authorization (2026-11-17): deploy each checked release to the existing owner-private Pricing Studio Site with the same access scope, and provide its offline delivery.
+
+Standing GitHub authorization (2026-11-18): after completing and sufficiently verifying a Cloud Solution Studio task, merge its reviewed changes into `jh1369/cloud-solution-studio` without asking again. Complete the security review below before every sync. When the user explicitly requests an earlier GitHub handoff, mark the version as a candidate and record the outstanding acceptance checks. The standing deployment authorization applies to checked releases. Follow the repository's branch rules and the user's instructions for the current task.
+
+Ordinary catalog data validation is not manual price approval. Keep anomalous/initial/complex TCP prices Pending until reviewed.
 
 If a feature needs access to local confidential files, create an abstract interface and document how a separately executed local component would supply approved input. Do not implement any behavior that exfiltrates files.
 
@@ -35,7 +39,7 @@ For a significant architecture change, also update root `README.md` and `docs/RO
 - Keep version archives immutable. Changed content requires a new package version; never silently replace an older delivery. Same-source rebuilds must produce identical ZIP bytes.
 - Include bilingual usage instructions, fictional sample data, third-party notices, artifact checksums and source fingerprints. Preserve original official verification times and expiry; missing/expired/unconfirmed items remain Pending. No customer input, quotations, credentials, hosting identity or internal materials in the bundle.
 - Update the release index and DEVELOPMENT_STATUS with artifact paths, tests, limitations and synchronization state. Record actual browser verification separately; packaging checks cannot substitute for a real double-click/import/download test.
-- Do not present cloud workspace paths as downloadable chat attachments. For a synchronized version, verify its actual GitHub download; colleagues can share the downloaded file without a site account. Preserve the existing no-automatic-Push/deploy/publish rules: this offline requirement alone does not authorize remote publication.
+- Do not present cloud workspace paths as downloadable chat attachments. For a synchronized version, verify its actual GitHub download. Apply the standing GitHub and Site authorizations only after their checks pass.
 
 ### Security review before any commit or synchronization
 
@@ -43,8 +47,8 @@ For a significant architecture change, also update root `README.md` and `docs/RO
 - Check code, documents, fixtures, logs, caches, binaries, generated exports and any commits proposed for publication. Do not include customer materials or customer-derived inventories, internal PPTs, true quotations/discounts, account identifiers, personal data, tokens, cloud credentials or private pricing.
 - `.gitignore` is not a security boundary. If sensitive content is discovered, do not print or copy its values into reports, status files, issues or patches; exclude it and report the category and affected scope without disclosure.
 - Only reviewed generic code, sanitized documentation and fictional test data may be committed to GitHub. Public product/price metadata must retain provenance and still pass the repository's security policy.
-- **Do not automatically Push.** Push requires an explicit user instruction for the relevant repository/change; a safety review, prior read access, past publication or a generic development request is not Push authorization.
-- Do not bypass the no-Push rule by using GitHub API file writes, creating remote commits/PRs, or automatic publication hooks. Do not automatically commit or deploy as part of this status-maintenance mechanism. When only local work is authorized, leave a reviewable local diff and state that the remote has not changed.
+- Push or merge only under the standing GitHub authorization above or specific authorization for the current change. A safety review, prior read access or past publication alone does not grant authorization. Apply the same conditions to API writes, remote commits and PRs.
+- Record local, synchronized and deployed versions separately. Keep incomplete work local unless the user requests a candidate handoff.
 - No background synchronization, automatic uploads, secret discovery or credential scanning outside the approved development repository.
 
 ### Role split and handoff
@@ -88,5 +92,5 @@ This mode supersedes the earlier default Multi-Agent workflow. Pricing Studio V0
 ### Safety and synchronization
 
 - All existing AGENTS and SECURITY safeguards remain in force. Approved project files, public product information and fictional test data only; no customer/internal material, private quotes, credential discovery or sensitive uploads.
-- Do not automatically commit, Push, deploy or publish. Each synchronization/release needs the user's explicit authorization for that action; historical V0.1.1 publication does not authorize new releases.
+- Apply the standing GitHub and Site authorization above to completed, sufficiently checked work. Other repositories, audiences and publication destinations require their own authorization.
 - On task completion update DEVELOPMENT_STATUS concisely with changes, verification, unresolved issues, next action and local/remote state. Reducing token use never waives the required security review before an authorized commit or synchronization.

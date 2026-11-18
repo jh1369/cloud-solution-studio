@@ -1,6 +1,8 @@
 # Cloud Solution Studio · Pricing Studio Web V0.3 (TCP catalog/data phase)
 
-Package `0.3.0-dev`, synchronized to GitHub and deployed to the existing private Site from Sites source `fff0d1f` (2026-11-17). Full browser acceptance and TCP quote calculation/mapping remain outstanding. Huawei quotations retain the existing engine. Huawei target billing choices are 按需 / 包月 / 包年, separated from AWS billing. The existing Python mapping CLI remains unchanged. This app uses browser JavaScript modules and a Cloudflare Worker; no duplicate Python quotation system has been introduced. The hosted Worker has no SQLite runtime; the local catalog updater uses SQLite only for catalog/history management.
+Candidate `0.3.1-dev` fixes three issues found during browser acceptance. The private Site runs `0.3.0-dev` from Sites source `fff0d1f`. Authenticated production testing and the native offline file check are still open. [Browser results and checklist](../../docs/PRICING_BROWSER_ACCEPTANCE.md) · [Offline ZIP](https://raw.githubusercontent.com/jh1369/cloud-solution-studio/main/releases/pricing-studio/v0.3.1-dev/Pricing-Studio-0.3.1-dev-Offline.zip)
+
+TCP quotation calculation and mapping remain outstanding. Huawei quotations use the existing engine. Huawei target billing choices are 按需 / 包月 / 包年. The app keeps the AWS source billing method separately. Browser JavaScript modules and a Cloudflare Worker power the web app. The local catalog updater uses SQLite for catalog history.
 
 ## Features
 
@@ -40,7 +42,7 @@ The build embeds existing modules, styles, SheetJS, PDF.js/worker and the offici
 
 Original price evidence/timestamps and seven-day expiry are preserved. Expired/missing prices and unconfirmed mappings stay Pending. The package does not import arbitrary price JSON or manufacture fresh verification. Obtain an updated offline package or use the web app after expiry. Excel Assumptions identifies offline delivery. Close/reload clears resource rows; only language preference may persist.
 
-Verification includes provider/Huawei compatibility, public-document detection, fictional real-PDF table parsing, version diff/review/rollback, frozen price snapshots, local schedule templates and offline/immutable archive checks. See DEVELOPMENT_STATUS for exact current counts. Cloud Browser file:// restrictions and preview-relay failures remain verification limits; unit/packaging tests do not replace browser acceptance.
+Verification includes provider/Huawei compatibility, public-document detection, fictional real-PDF table parsing, version diff/review/rollback, frozen price snapshots, local schedule templates and offline/immutable archive checks. See DEVELOPMENT_STATUS for exact current counts. The acceptance record lists browser tests of the single-page bundle, native file opening and the preview relay separately.
 
 For each completed version, run `npm run release:offline` after updating `package.json`. This runs tests and archives HTML/ZIP, bilingual instructions, source fingerprints/checksums and fictional sample data in `releases/pricing-studio/v<version>/` at the repository root. ZIP output is deterministic; changed content cannot replace an existing archive. Update the [version index](../../releases/pricing-studio/README.md). Share files downloaded from GitHub, not cloud workspace links. No automatic Push or deployment is added.
 
@@ -50,7 +52,7 @@ Local preview uses the same packaged Worker via a small Node HTTP adapter:
 npm run dev
 ```
 
-In this managed environment, use `sites-preview start /workspace/repos/cloud-solution-studio/pricing-studio/web` and open its exact returned URL. The relay currently fails before returning a URL; do not treat this as browser acceptance. On Node 24 behind an inherited environment proxy, use `NODE_USE_ENV_PROXY=1 npm run dev` (or prefix the managed preview command) so official refresh honors that proxy. Keep TLS verification enabled; no credentials or proxy values belong in source. A normal local machine without such a proxy does not need the prefix. Local preview does not deploy or Push.
+In this managed environment, use `sites-preview start /workspace/repos/cloud-solution-studio/pricing-studio/web` and open its exact returned URL. The relay currently fails before returning a URL. The [acceptance record](../../docs/PRICING_BROWSER_ACCEPTANCE.md) describes the independent loopback browser test. On Node 24 behind an inherited environment proxy, use `NODE_USE_ENV_PROXY=1 npm run dev` (or prefix the managed preview command) so official refresh honors that proxy. Keep TLS verification enabled; no credentials or proxy values belong in source. A normal local machine without such a proxy does not need the prefix. Local preview does not deploy or Push.
 
 Refresh the public catalogue only when needed and when access to the documented Huawei EU endpoints is approved:
 

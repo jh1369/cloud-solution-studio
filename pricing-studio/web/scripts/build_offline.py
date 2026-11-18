@@ -85,7 +85,8 @@ def build(output_dir):
         "READ-ME.txt": ("""Cloud Solution Studio / Pricing Studio V0.2 — 离线文件版 / Offline
 
 1. 解压 ZIP 后，用 Chrome / Edge / Firefox 打开 Pricing-Studio-V0.2-Offline.html。
-   或直接下载该 HTML 并双击打开。不要在压缩包预览器或网盘的 HTML 预览窗口中运行。
+   双击打开 HTML。若系统打开文本编辑器，请在浏览器中按 Ctrl+O（Mac 为 Command+O）并选择该文件。
+   不要在压缩包预览器或网盘的 HTML 预览窗口中运行。
 2. 无需安装 Python、Node、插件或登录。断网也能使用。中英文可切换。
 3. 先点“试用虚构示例”，或选择随包 aws-fictional-mvp.csv。清单在本地浏览器内解析。
    支持文字描述、CSV、XLSX 和原有布局的文字 PDF（非 OCR）。
@@ -102,6 +103,7 @@ def build(output_dir):
    仅含所选计价项；磁盘、网络、备份、税及其他配套费用请单列。
 
 Unzip, then double-click the HTML in a modern Chrome, Edge or Firefox browser.
+If a text editor opens, use Open File in your browser (Ctrl+O or Command+O) and select the HTML.
 No server, installation, sign-in or Internet is required. The single HTML includes all runtime assets.
 Use the fictional sample, confirm the design, select independent Huawei billing modes and export Excel.
 Original files stay in browser memory. Only language preference is saved.

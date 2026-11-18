@@ -18,6 +18,13 @@ test('Monthly storage conversion uses explicit reference hours',()=>{const r=par
 test('Unsupported IOPS remains Pending',()=>{const r=parseText('1 个 EBS gp3 500 GB')[0];r.targetId=recommend(r,fixture);r.accepted=true;r.unit='IOPS-Mo';assert.equal(calculate(r,fixture).status,'Pending');});
 test('Aggregate billing rows preserve unknown count and period',()=>{const [r]=normalizeRows([{'AWS Service':'Elastic Compute Cloud','Description':'Linux m6i.2xlarge','Period Aggregate Usage':'1,460','Original Unit':'Hrs','Billing Method':'on-demand'}]);assert.equal(r.quantity,null);assert.equal(r.scope,'aggregate');assert.equal(r.period,'source-period');r.targetId=recommend(r,fixture);r.accepted=true;const v=calculate(r,fixture);assert.equal(v.status,'Period');assert.equal(v.monthly,cost(1,1460,v.item.rate).monthly);});
 test('PDF multiline rows and service context',()=>{const r=parseBillPages(['Elastic Compute Cloud USD 10.00\nEU (Frankfurt) USD 10.00\nAmazon Elastic Compute Cloud running Linux/UNIX USD 10.00\n$0.01 per On Demand Linux\nm6i.2xlarge Instance Hour 1,000 Hrs USD 10.00']);assert.equal(r.length,1);assert.equal(r[0].usage,1000);assert.equal(r[0].service,'ECS');assert.equal(r[0].quantity,null);});
+test('PDF retains the start page for split rows and the current page for single-line rows',()=>{
+ const rows=parseBillPages([
+  'Elastic Compute Cloud USD 14.60\nEU (Frankfurt) USD 14.60\n$0.01 per On Demand Linux',
+  'm6i.2xlarge Instance Hour 1,460 Hrs USD 14.60\nRelational Database Service USD 7.30\nEU (Frankfurt) USD 7.30\nMySQL db.m5.large On Demand 730 Hrs USD 7.30'
+ ]);
+ assert.deepEqual(rows.map(({service,usage,sourcePage})=>[service,usage,sourcePage]),[['ECS',1460,1],['RDS',730,2]]);
+});
 test('CSV rejects nonfinite and negative usage',()=>{for(const usage of ['NaN','Infinity',-1])assert.throws(()=>normalizeRows([{product:'EC2',quantity:1,usage}]));});
 test('CSV unknown usage and quantity remain null',()=>{const [r]=normalizeRows([{product:'EC2'}]);assert.equal(r.usage,null);assert.equal(r.quantity,null);});
 test('Decimal arithmetic rounds half up',()=>{assert.deepEqual(cost(2,730,.1,.15),{monthly:146,scenario:124.1,annual:1489.2});assert.equal(cost(1,1,.005).monthly,.01);});

@@ -267,7 +267,7 @@ export function parseBillPages(pages){
     if(/^(EU|US East|US West|South America|Asia Pacific|Canada|Middle East|Africa) \(.+\)$/.test(label)||label==='Global'){region=label;group='';pending='';continue;}
     if(label.startsWith('总计'))continue;
     const full=(pending+' '+label).trim();const usage=full.match(/^(.*?)\s+([\d,]+(?:\.\d+)?)\s+([A-Za-z][A-Za-z0-9 /_-]*)$/);
-    if(usage){items.push({'AWS Service':service,'AWS Region Label':region,'Billing Group':group,'Description':usage[1],'Period Aggregate Usage':usage[2],'Original Unit':usage[3],'Billing Method':/On Demand/i.test(usage[1])?'on-demand':'需确认','Source Page':start,'AWS Amount USD':match[2]});pending='';}
+    if(usage){items.push({'AWS Service':service,'AWS Region Label':region,'Billing Group':group,'Description':usage[1],'Period Aggregate Usage':usage[2],'Original Unit':usage[3],'Billing Method':/On Demand/i.test(usage[1])?'on-demand':'需确认','Source Page':pending?start:index+1,'AWS Amount USD':match[2]});pending='';}
     else {group=label;pending='';}
    }else if(service){if(!pending)start=index+1;pending=(pending+' '+line).trim();}
   }
