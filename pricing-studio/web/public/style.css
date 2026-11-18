@@ -19,3 +19,10 @@
 .provider-select{display:flex;align-items:center;gap:6px;color:#d8c7ed;white-space:nowrap}
 .provider-select select{padding:5px 7px;border:1px solid #64427c;border-radius:5px;background:#20152f;color:#e5cbfa;font:inherit}
 .tcp-price-evidence a{color:#d8b5ff;text-decoration:underline;text-underline-offset:2px}
+
+#inventory-review{width:min(900px,94vw);max-height:88vh;color:#eee4fa;background:#171021;border:1px solid #64427c;border-radius:12px;padding:20px}
+#inventory-review::backdrop{background:#080510bb}
+#inventory-drafts{display:grid;gap:8px;max-height:57vh;overflow:auto}
+.inventory-draft{border:1px solid #513164;border-radius:8px;padding:10px}
+.inventory-draft pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.inventory-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:14px}

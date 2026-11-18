@@ -7,16 +7,16 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-18，Europe/Berlin |
-| 当前优先目标 / 模式 | TCP EU-DE 按需报价和 Excel，离线版暂停，单主 Agent |
-| 本轮检查基线 | `main` / `d8147a07e372c7af64f6bbf1cdcfccc6c1a4377e`，起始私有站版 0.3.2-dev |
+| 当前优先目标 / 模式 | Huawei 规格匹配和本机智能导入，离线版暂停，单主 Agent |
+| 本轮检查基线 | `main` / `481612a48e27b76b7892dc3860da1da434306c6b`，起始私有站版 0.3.3-dev |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 私有站第 7 版已部署 `0.3.3-dev`。通过 Sites 服务访问验收 TCP 和 Huawei 实际下载。原所有者访问范围复查通过 |
+| 当前网页版本 | 私有站第 8 版已部署 `0.3.4-dev`，生产浏览器报价和下载通过。真实模型在本机 HTTP 环回独立验收。原所有者访问范围复查通过 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| 当前 Sites 部署源码 | `438049263a00cc8ccae6bfaaa72408070bb9a544`，第 7 版私有部署 succeeded（2026-11-18，Europe/Berlin）。上一版为 `0cdb286b` |
-| 整体进度 | TCP EU-DE 按需报价已上线。生产初始目录使用有时效的官方快照，生产对象存储绑定和托管调度待接入 |
-| 本轮同步范围 | TCP 按需映射、价格证据、Excel 导出和生产浏览器回归，离线工作暂停 |
+| 当前 Sites 部署源码 | `9f324898777511eb5ca3ee5d6c772d4920bd2ee8`，第 8 版私有部署 succeeded（2026-11-18，Europe/Berlin）。上一版为 `4380492` |
+| 整体进度 | Huawei 精确规格匹配及本机模型标准化已通过验收。TCP EU-DE 生产目录有独立有效期 |
+| 本轮同步范围 | Huawei 精确 SKU 匹配、标准化预览和五表导出，离线工作暂停 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -402,3 +402,10 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **修改** 用有效官方目录验证地区、SKU、配置和计费单位。私有站首次发布使用现有核验快照，原核验时间为 `2026-11-18T14:58:38.490856+00:00`，有效至柏林时间 11 月 20 日 15:58:38。可用的 Worker 存储绑定优先。**删除** 无。
 - **验收** Chromium 156.0.8078.79 和 openpyxl 3.1.5 重开生产真实下载件。9 行虚构资源中 4 行计价、5 行待复核，月度 €43.71，来源账期 €1.14。两个 Excel 入口和过期场景均通过。Huawei 按需、包月、包年各实际下载并重开。96 项 JavaScript 和 42 项 Python 回归全部通过。[浏览器证明](PRICING_BROWSER_ACCEPTANCE.md#2026-11-18--tcp-eu-de-按需报价)
 - **同步与部署** GitHub main 接收本轮源码与虚构夹具。私有站第 7 版 `0.3.3-dev` 已成功部署。沿用原站点访问范围和离线 ZIP。正式对象存储绑定、连续核验、并发发布及检测时间戳留待后续。未同步下载件、原始 PDF 或 SQLite。
+
+### 2026-11-18 — Huawei 规格匹配与本机模型导入
+
+- **新增** ECS、EVS、DCS 和 RDS 实例的规则匹配。同区同计费目录存在唯一符合规格的记录时自动选用，按公开价格证据校验和计算。未指定的通用 ECS 配置与普通 SSD 的估算假设可见。部署模式、节点数、复杂性能要求和无法确认的价格进入 Pending。人工选型优先。**删除** 无。
+- **修改** 非标准 UTF-8 CSV 和多工作表 XLSX 在本机服务使用结构化模型预览，保留原始单元格、工作表和行号。用户确认后才计价。标准模板继续直接导入。托管站提供手动预览，本机模型通过独立环回适配器配置。TCP 报价路径和离线归档沿用既有版本。
+- **回归** 在 `pricing-studio/web` 使用 Node 24.22.1 运行线上测试 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，103 项通过。Python 3.12.14 的目录、核验、PDF、调度和发布五组共 42 项通过，0 失败。本机 Qwen 实际完成两个非标准场景。Chromium 下载后由 openpyxl 重开核对，使用真实公开目录及虚构输入。生产站三个公开价格查询成功。[浏览器验收](PRICING_BROWSER_ACCEPTANCE.md#2026-11-18--huawei-规格匹配与智能导入)
+- **同步与部署** GitHub 分支 `feat/huawei-pricing-import`，私有站第 8 版 `0.3.4-dev`。正式用户自行配置可信本机模型、限制浏览器来源并使用本机认证。模型预览有范围限制，不保证所有表格字段可自动识别。客户文件、模型权重、下载工作簿与凭证均留在受控环境。[模型配置](../pricing-studio/web/README.md#model-assisted-csv-and-excel-on-the-user-machine)

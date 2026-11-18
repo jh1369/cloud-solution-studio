@@ -99,7 +99,7 @@ export function normalizeRows(objects){
  const targetBilling=targetMode(get(raw,'target_billing')||'ONDEMAND');
  const targetQuantity=finite(get(raw,'target_quantity'),'目标资源数量',true);
  return {id:crypto.randomUUID(),product,specification:spec,region:String(get(raw,'region')),quantity,usage,unit:explicitUnit||(['ECS','RDS','DCS','DMS Kafka','ELB','NAT Gateway','CCE'].includes(service)?'hour':''),billing:String(get(raw,'billing_method')||'未提供'),targetBilling,targetQuantity,capacity,service,scope:aggregate?'aggregate':'resource',period:String(get(raw,'period')||(aggregate?'source-period':'monthly')),notes:aggregate?'来源账期累计用量，未推断资源数量；需确认是否完整月。':!explicitUnit?'用量单位根据服务推定，请核对。':'',accepted:false,targetId:'',manualRate:null,
-  sourceService:service,unitExplicit:!!explicitUnit,tcpTarget:String(raw.tcp_target_sku||'').trim(),tcpTargetRegion:String(raw.tcp_target_region||'').trim(),tcpTargetBilling:targetMode(raw.tcp_target_billing||'ONDEMAND')};
+  sourceService:service,unitExplicit:!!explicitUnit,huaweiTargetRegion:String(raw.huawei_target_region||'').trim(),tcpTarget:String(raw.tcp_target_sku||'').trim(),tcpTargetRegion:String(raw.tcp_target_region||'').trim(),tcpTargetBilling:targetMode(raw.tcp_target_billing||'ONDEMAND')};
  });
 }
 export function awsShape(text){
@@ -213,8 +213,9 @@ export function calculate(row,catalog,options={}){
 function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}){
  const pending=pendingResult;
  const mode=billingOf(row),item=catalog.items.find(price=>price.id===row.targetId);
+ if(row.huaweiTargetRegion&&row.huaweiTargetRegion!==REGION)return pending('', 'HW_TARGET_REGION');
  if(!Object.hasOwn(BILLING_MODES,mode))return pending('华为云目标计费模式仅支持按需、包月、包年。','PRICE_MODE');
- if(!item)return pending(`请为${BILLING_MODES[mode]}选择已验证的目标规格；未获取价格的服务保持 Pending。`,'PRICE_MISSING');
+ if(!item)return pending(`请为${BILLING_MODES[mode]}选择已验证的目标规格；未获取价格的服务保持 Pending。`,row.huaweiMatch||'PRICE_MISSING');
  if(item.billingMode!==mode)return pending('所选官方价格与华为云目标计费模式不一致，请重新选择。','PRICE_MODE');
  if(!row.accepted)return pending('请核对并确认目标规格、架构、引擎、计费模式和部署方式。','MAPPING_REVIEW');
  if(item.service!==row.service)return pending('目标产品族不匹配。','MAPPING_SERVICE');
@@ -222,7 +223,7 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
  if(!validation.valid)return pending(validation.reason,validation.code);
  if(!['resource','aggregate'].includes(row.scope)||!['monthly','source-period'].includes(row.period))return pending('Unsupported usage scope or billing period.','INPUT_PERIOD');
  const discountNumber=finite(discount,'折扣');if(discountNumber>1)return pending('Invalid quantity, usage, discount or reference hours.');
- const quantity=row.targetQuantity??row.quantity;
+ const quantity=row.targetQuantity??row.quantity??row.huaweiQuantity;
  if(mode!=='ONDEMAND'){
   if(row.period==='source-period')return pending('累计账单用量不能推断订阅方案；请明确目标数量、容量并选择完整订阅方案。','SUBSCRIPTION_REVIEW');
   if(quantity===null||quantity===undefined)return pending('包月/包年需要明确的目标资源数量，不能从累计账单小时数推断。','QUANTITY_REQUIRED');
@@ -240,12 +241,16 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
   return {status:'Valid',reason:mode==='YEARLY'?'独立官方包年价；首期按一年预付，月均金额仅作12月摊销比较。':'独立官方包月价；按一个月预付，年度为同方案连续12个月的情景。',monthly,scenario,annual,item,billingMode:mode,termPublic:contract.monthly,termScenario:contract.scenario,termLabel:mode==='YEARLY'?'1年':'1个月',upfrontScenario:contract.scenario,effectiveUsage:multiplier,quantity};
  }
  if(quantity==null&&row.scope!=='aggregate')return pending('请补充目标资源数量。','QUANTITY_REQUIRED');
- if(row.usage===null)return pending('请补充用量。','USAGE_REQUIRED');
- finite(row.usage,'用量');if(row.scope!=='aggregate')finite(quantity,'目标资源数量');
+ const monthlyReference=row.scope==='resource'&&row.period==='monthly'&&row.usage==null;
+ const capacityMonth=monthlyReference&&item.size&&row.huaweiUsageAssumption==='HW_STORAGE_MONTH';
+ const hourMonth=monthlyReference&&!item.size&&row.huaweiUsageAssumption==='HW_MONTH_HOURS';
+ const billable=capacityMonth?row.capacity:hourMonth?hours:row.usage;
+ if(billable==null)return pending('请补充用量。','USAGE_REQUIRED');
+ finite(billable,'用量');if(row.scope!=='aggregate')finite(quantity,'目标资源数量');
  if(row.scope!=='aggregate'&&(!Number.isInteger(quantity)||quantity<=0))return pending('资源数量必须是正整数。','QUANTITY_INVALID');
- let usage=row.usage;const unit=String(row.unit||'').toLowerCase();
+ let usage=billable;const unit=capacityMonth?'GB-month'.toLowerCase():hourMonth?'hour':String(row.unit||'').toLowerCase();
  if(item.unit==='GB-hour'){
-  if(['gb-month','gb-mo','gb-months'].includes(unit)){
+  if(['gb-month','gb-mo','gb-months'].includes(unit)||row.huaweiMatch&&unit==='gib-month'){
    const referenceHours=finite(hours,'月小时数');
    if(referenceHours<=0||referenceHours>744)return pending('Invalid quantity, usage, discount or reference hours.');
    usage*=referenceHours;

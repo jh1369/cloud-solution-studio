@@ -50,12 +50,12 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
  }
  const output=rows.map(row=>calculate(row,catalog,opts));
  add('Input',[
-  ['Row','Product','Specification','AWS Region','Resource Count','Usage','Unit','Usage Scope','Usage Period','AWS Billing Method','Source Page','Target Quantity','Huawei Billing Mode','Capacity GB'],
-  ...rows.map((row,i)=>[i+1,row.product,row.specification,row.region,row.quantity,row.usage,row.unit,row.scope,row.period,row.billing,row.sourcePage??null,row.targetQuantity??null,billingOf(row),row.capacity??null])
+  ['Row','Product','Specification','AWS Region','Resource Count','Usage','Unit','Usage Scope','Usage Period','AWS Billing Method','Source Page','Target Quantity','Huawei Billing Mode','Capacity GB','Source Sheet','Source Row','Original Fields'],
+  ...rows.map((row,i)=>[i+1,row.product,row.specification,row.region,row.quantity,row.usage,row.unit,row.scope,row.period,row.billing,row.sourcePage??null,row.targetQuantity??null,billingOf(row),row.capacity??null,row.importSource?.sheet??null,row.importSource?.row??null,row.importSource?JSON.stringify(row.importSource.cells):null])
  ]);
  add('Service Mapping',[
-  ['Row','AWS Product','Target Service','Target SKU','Target Description','Region','Confirmed','Notes','Huawei Billing Mode','Target Quantity','Mapping Review'],
-  ...rows.map((row,i)=>{const price=catalog.items.find(p=>p.id===row.targetId);return[i+1,row.product,row.service,price?.sku??null,price?.description??null,REGION,row.accepted?'Yes':'No',translateMessage(row.notes,language),billingLabel(billingOf(row),language),row.targetQuantity??row.quantity,mappingReview(row,price).map(issue=>mappingLabel(issue,language)).join(' ')];})
+  ['Row','AWS Product','Target Service','Target SKU','Target Description','Region','Confirmed','Notes','Huawei Billing Mode','Target Quantity','Mapping Review','Match and Assumptions'],
+  ...rows.map((row,i)=>{const price=catalog.items.find(p=>p.id===row.targetId);return[i+1,row.product,row.service,price?.sku??null,price?.description??null,REGION,row.accepted?'Yes':'No',translateMessage(row.notes,language),billingLabel(billingOf(row),language),row.targetQuantity??row.quantity??row.huaweiQuantity,mappingReview(row,price).map(issue=>mappingLabel(issue,language)).join(' '),[...(row.huaweiAssumptions??[]),row.huaweiUsageAssumption].filter(Boolean).map(reasonCode=>reasonLabel({reasonCode},language)).join(' ')];})
  ]);
  add('Public Pricing',[
   ['Row','Price Status','Product ID','SKU','Unit Price','Currency','Unit','Verified At','Official Source','Official Evidence','Huawei Billing Mode','Verified Period Type','Verified Period Count'],

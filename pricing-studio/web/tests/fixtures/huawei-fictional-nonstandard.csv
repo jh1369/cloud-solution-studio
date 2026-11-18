@@ -1,0 +1,7 @@
+Fictional migration pilot,,
+条目,设备要求,台套
+虚拟机,4 vCPU / 16 GiB 云主机 Linux x86,1
+缓存说明,Redis 2GB 单机 3套,
+硬盘,100 GiB General Purpose SSD 云盘,2
+缓存,2G Redis,1
+未知服务,Fictional Archive Appliance,1

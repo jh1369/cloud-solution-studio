@@ -117,3 +117,21 @@ Sites 第 6 版的生产 Worker 返回在线首页 `0.3.2-dev`。Chromium 156.0.
 - **清单与结果** 导入 [虚构 CSV](../pricing-studio/web/tests/fixtures/aws-fictional-tcp.csv)。ECS 2×100 小时为 €22.77（PDF 52 页），EVS 50 GiB-month 为 €3.30（93 页），RDS 100 小时为 €17.64（81 页）。月度小计 €43.71。ECS 累计 10 小时的账期小计 €1.14。待复核 5 行对应 GP SSD v2、架构不匹配、无核验 SKU、目标地区超范围、GB-month 口径不明确。页面和 Excel 原因一致，两列金额均为空。
 - **下载与过期** 两个导出入口生成的工作簿均重开，核对 Input、Service Mapping、Public Pricing、Quotation 和 Assumptions。复核状态、用量、币种、显示金额、单价、PDF 页码、原文 URL、核验时间和 SHA-256 吻合。右侧下载 SHA-256 `25d042977765d9207f1eb6b2bc1f3d42fb0b7030c6952dc47ba30556a84e73ac`，顶栏下载 `ec97e984613df6db7b0086450a1e58177a7f4a550c714fab3e28b3558bbc4b0d`。模拟浏览器时钟前移 49 小时后，页面与过期下载 9 行均待复核，金额留空。Worker 快照也通过精确 48 小时边界回归。
 - **Huawei 回归与测试** 生产浏览器依次切回 Huawei 并确认按需、包月、包年，再实际下载并重开三份 XLSX。USD 计价及订阅首期预付符合各模式。执行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs` 通过 96 项，Python 目录、更新、PDF、调度、发布五组共 42 项通过。沿用私有站旧 ZIP，未开展离线包装或浏览器验收。
+
+
+## 2026-11-18 — Huawei 规格匹配与智能导入
+
+验收基线 `481612a48e27b76b7892dc3860da1da434306c6b`，候选版本 `0.3.4-dev`。执行人 Codex，Chromium 156.0.8078.79 + Playwright，openpyxl 3.1.5。使用公开 Huawei EU 价格和虚构清单。客户端本机流程以 HTTP 环回运行，模型为 llama.cpp b12521 + Qwen2.5-1.5B-Instruct Q4_K_M。
+
+| 流程 | 结果 |
+| --- | --- |
+| 标准 CSV、含 Notes 的标准 XLSX | 两者直接导入 4 行，无模型请求。按需、包月、包年分别实际下载并重开核查，订阅模式保留首期预付。 |
+| 文字匹配和手动覆盖 | 裸 `2G Redis` 保留容量与部署复核原因。ECS `4 vCPU / 16 GiB` 选择 `s6.xlarge.4.linux`，通用 SSD 100 GiB 使用 `GPSSD` 估算。切换 ECS 到 `c9.xlarge.4.linux` 并确认后，刷新参考小时未覆盖该 SKU。 |
+| 非标准 CSV | 本机模型实际返回规范 JSON，经原单元格校验和确认后计价 3 行、Pending 2 行。重复导入同一文件复用响应。月度小计 USD 206.59。 |
+| 非标准两表 XLSX | 正确保留表名和物理行号。模型漏报、标题和错列经过预览核对，手动调整纳入行及来源区域后计价 3 行、Pending 1 行。月度小计 USD 206.59。 |
+| 模型故障 | 浏览器注入超时与无效结构响应，原始单元格仍可编辑，取消保留原报价。自动测试另外覆盖跨域、错行、重复行、不符合范围和无法从原行核实的数值。 |
+| 工作簿复核 | 两个非标准下载均重开五表，核对 ECS USD 111.25、EVS USD 20.88、DCS USD 74.46，以及按需模式、SKU、单价与官方来源。Pending 金额为空，来源字段和修正值可追溯。 |
+
+CSV 下载 SHA-256 `74d5d8fc73d3481663f27bf64e2b7c55efb31604bd1c61e83eba0a53c338a4fa`。多表下载 SHA-256 `bb1198a038a92099eeaa504366ae984f151c3aa18db57a02b3ea74dad22f5110`。[虚构 CSV](../pricing-studio/web/tests/fixtures/huawei-fictional-nonstandard.csv) · [本机模型运行说明](../pricing-studio/web/README.md#model-assisted-csv-and-excel-on-the-user-machine)
+
+生产私有站第 8 版由 Sites 服务访问验收，部署源码 `9f324898777511eb5ca3ee5d6c772d4920bd2ee8`。Chromium 以生产域名运行，新资源组和正式资产字节与仓库对应。三条已计价行的官方刷新 HTTP 200、3 项收到有效结果，托管站没有模型分析按钮且模型 POST 返回 405。浏览器实际生产下载 SHA-256 `8f644387684eb91568363da4b41374c4f439e847e37c9489bca34faf8e4c14a6`，重开核对五表及 Pending 空白。交互式登录与离线发布不在本轮验收。

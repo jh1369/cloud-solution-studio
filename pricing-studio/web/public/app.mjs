@@ -8,6 +8,10 @@ const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
 const storage=(()=>{try{return window.localStorage;}catch{return undefined;}})();
 const offlineBundle=window.PRICING_STUDIO_OFFLINE||null;
+const huaweiMatching=offlineBundle?null:await import('./huawei-match.mjs');
+const inventoryReview=offlineBundle?null:(await import('./inventory-review.mjs')).createInventoryReview({
+ getLanguage:()=>language,onConfirm:incoming=>setRows(incoming),onError:error=>report(error)
+});
 let language=readLanguage(storage);
 let catalog={items:[],ttlDays:7},rows=[],page=0,activeView='studio',mappingSelected=false,busy=false,catalogState='loading';
 let tcpStatus={provider:'tcp',status:'NEVER_CHECKED'},tcpLoaded=false,tcpBusy=false;
@@ -19,7 +23,24 @@ function toast(message,error=false){
  const box=$('#message');box.textContent=message;box.classList.toggle('error',error);box.hidden=false;
  clearTimeout(toast.timer);toast.timer=setTimeout(()=>{box.hidden=true;},error?9000:5500);
 }
-function report(error,fallback='error.file'){toast(translateMessage(error?.message||T(fallback),language),true);}
+function report(error,fallback='error.file'){
+ const message=error?.message||T(fallback);
+ toast(message.startsWith('inventory.')?T(message):translateMessage(message,language),true);
+}
+function selectHuawei(row){
+ huaweiMatching.applyHuaweiMatch(huaweiMatching.identifyHuaweiRow(row),catalog);
+}
+function setBilling(row,mode){
+ if(provider==='huawei'&&huaweiMatching&&row.huaweiSelection!=='manual'){
+  row.targetBilling=mode;selectHuawei(row);
+ }else{
+  switchBilling(row,mode,catalog);
+  if(provider==='huawei'&&huaweiMatching){
+   row.huaweiAssumptions=[];
+   huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
+  }
+ }
+}
 function settings(){
  const hours=Number($('#hours').value),discount=Number($('#discount').value)/100;
  if(!Number.isFinite(hours)||hours<=0||hours>744)throw Error(T('error.hours'));
@@ -203,6 +224,7 @@ $('#target-provider').addEventListener('change',event=>{
  if(offlineBundle)return;
  provider=event.target.value;page=0;renderProvider();
  if(provider==='tcp')loadTCPQuote();
+ else if(huaweiMatching)rows.forEach(selectHuawei);
  render();
 });
 $$('[data-view]').forEach(button=>button.addEventListener('click',()=>view(button.dataset.view)));
@@ -215,7 +237,11 @@ $('#description').addEventListener('input',()=>{$('#char-count').textContent=T('
 function setRows(incoming,append=false){
  if(!incoming.length)throw Error(T('error.noResources'));
  const candidate=append?rows.concat(incoming):incoming;if(candidate.length>2000)throw Error(T('error.limit'));
- incoming.forEach(row=>{row.targetId=recommend(row,catalog);});rows=candidate;page=0;render();
+ incoming.forEach(row=>{
+  if(provider==='huawei'&&huaweiMatching)selectHuawei(row);
+  else row.targetId=recommend(row,catalog);
+ });
+ rows=candidate;page=0;render();
  toast(T('toast.parsed',{count:incoming.length}));
 }
 $('#parse').addEventListener('click',()=>{try{setRows(parseText($('#description').value));}catch(error){report(error);}});
@@ -236,8 +262,23 @@ $('#resources').addEventListener('change',event=>{
  row[field]=field==='accepted'?input.checked:['quantity','targetQuantity','capacity','usage'].includes(field)?input.value===''?null:Number(input.value):input.value;
  if(field==='unit')row.unitExplicit=!!input.value;
  if(field==='specification'&&provider==='tcp'){row.targetId=recommend(row,catalog);row.accepted=false;}
- if(field==='targetBilling')switchBilling(row,input.value,catalog);
- if(['targetId','service','targetQuantity','capacity','usage','unit','period'].includes(field)){row.accepted=false;if(field==='service')row.targetId='';}
+ if(field==='targetBilling')setBilling(row,input.value);
+ if(provider==='huawei'&&huaweiMatching){
+  if(field==='targetId'||field==='accepted'){
+   row.huaweiSelection='manual';row.huaweiCandidates=null;
+   if(field==='targetId'){
+    row.accepted=false;row.huaweiAssumptions=[];row.huaweiMatch=row.targetId?'HW_MATCHED':null;
+    huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
+   }
+  }else if(['service','targetQuantity','capacity','usage','unit','period','specification','huaweiTargetRegion'].includes(field)){
+   if(field==='service'){row.targetId='';row.huaweiSelection=null;}
+   row.accepted=false;
+   if(row.huaweiSelection!=='manual')selectHuawei(row);
+   else huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
+  }
+ }else if(['targetId','service','targetQuantity','capacity','usage','unit','period'].includes(field)){
+  row.accepted=false;if(field==='service')row.targetId='';
+ }
  render();
 });
 $('#resources').addEventListener('click',event=>{
@@ -247,7 +288,7 @@ $('#resources').addEventListener('click',event=>{
 });
 $('#prev-page').onclick=()=>{page--;render();};$('#next-page').onclick=()=>{page++;render();};
 $('#bulk-billing').addEventListener('change',event=>{
- if(!event.target.value)return;rows.forEach(row=>switchBilling(row,event.target.value,catalog));
+ if(!event.target.value)return;rows.forEach(row=>setBilling(row,event.target.value));
  render();event.target.value='';toast(T('toast.switched'));
 });
 $('#hours').addEventListener('change',render);$('#discount').addEventListener('change',render);
@@ -279,11 +320,20 @@ async function importFile(file){
    parsed=parseBillPages(pages);
   }else if(/\.(csv|xlsx)$/i.test(file.name)){
    if(!window.XLSX)throw Error(T('error.excelModule'));
-   const book=window.XLSX.read(bytes,{type:'array',cellFormula:false,cellHTML:false});
-   const worksheet=book.Sheets[book.SheetNames.includes('Input')?'Input':book.SheetNames[0]];
-   parsed=normalizeRows(window.XLSX.utils.sheet_to_json(worksheet,{defval:''}));
+   const huaweiCSV=provider==='huawei'&&inventoryReview&&/\.csv$/i.test(file.name);
+   let input=bytes;
+   if(huaweiCSV){
+    try{input=new TextDecoder('utf-8',{fatal:true}).decode(bytes);}
+    catch{throw Error('inventory.encoding');}
+   }
+   const book=window.XLSX.read(input,{type:huaweiCSV?'string':'array',cellFormula:false,cellHTML:false});
+   if(provider==='huawei'&&inventoryReview)parsed=inventoryReview.read(book,window.XLSX);
+   else{
+    const worksheet=book.Sheets[book.SheetNames.includes('Input')?'Input':book.SheetNames[0]];
+    parsed=normalizeRows(window.XLSX.utils.sheet_to_json(worksheet,{defval:''}));
+   }
   }else throw Error(T('error.fileType'));
-  setRows(parsed);
+  if(parsed)setRows(parsed);
  }catch(error){report(error);}finally{
   if(pdf){try{await pdf.destroy();}catch{/* Cleanup failure must not leave import controls locked. */}}
   $('#file').value='';busy=false;render();
@@ -359,6 +409,11 @@ try{
  })();
  if(!Array.isArray(data.items))throw Error(T('error.catalog'));
  catalog=data;updateCatalogState();
- rows.forEach(row=>{if(!row.targetId&&!row.accepted)row.targetId=recommend(row,catalog);});
+ rows.forEach(row=>{
+  if(!row.targetId&&!row.accepted){
+   if(provider==='huawei'&&huaweiMatching)selectHuawei(row);
+   else row.targetId=recommend(row,catalog);
+  }
+ });
  render();renderCatalogueMetadata();
 }catch(error){catalogState='unavailable';renderConnection();renderCatalogueMetadata();toast(T('error.catalog'),true);}

@@ -1,0 +1,142 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+import {normalizeRows,parseText,calculate} from '../public/engine.mjs';
+import {identifyHuaweiRow,applyHuaweiMatch} from '../public/huawei-match.mjs';
+import {readInventory,reviewInventory,confirmInventory} from '../public/inventory-import.mjs';
+import {createLocalInventoryEndpoint} from '../scripts/local_inventory_api.mjs';
+
+const catalog=JSON.parse(readFileSync(new URL('../public/catalog.json',import.meta.url)));
+const now=Date.parse(catalog.verifiedAt)+600000;
+const match=(input,source=catalog)=>applyHuaweiMatch(identifyHuaweiRow(input),source);
+const selection=row=>catalog.items.find(item=>item.id===row.targetId)?.sku;
+const resource=text=>match(parseText(text)[0]);
+
+test('match ECS and generic SSD without using rate to choose, with visible defaults',()=>{
+ const ecs=resource('1 台 4 vCPU / 16 GiB 云主机');
+ assert.equal(selection(ecs),'s6.xlarge.4.linux');
+ assert.deepEqual(ecs.huaweiAssumptions,['HW_DEFAULT_LINUX','HW_DEFAULT_X86','HW_DEFAULT_GENERAL']);
+ assert.equal(ecs.huaweiUsageAssumption,'HW_MONTH_HOURS');
+ assert.equal(calculate(ecs,catalog,{now}).monthly,111.25);
+ const evs=resource('2 块 100 GiB SSD 云盘');
+ assert.equal(selection(evs),'GPSSD');
+ assert.equal(evs.capacity,100);
+ assert.equal(calculate(evs,catalog,{now}).monthly,20.88);
+ assert.equal(resource('1 台 4 vCPU / 16 GiB ARM x86 云主机').huaweiMatch,'HW_ECS_CONFLICT');
+ assert.equal(resource('1 台 256 vCPU / 999 GiB 云主机').huaweiMatch,'HW_NO_MATCH');
+ assert.equal(resource('1 块 100 GiB Premium SSD 云盘').huaweiMatch,'HW_DISK_PERFORMANCE');
+});
+
+test('DCS never invents a topology or standby size; explicit single and two nodes price',()=>{
+ const bare=resource('2G Redis');
+ assert.equal(bare.service,'DCS');
+ assert.equal(bare.capacity,2);
+ assert.equal(bare.huaweiMatch,'HW_CACHE_MODE');
+ const HA=resource('Redis 2GB 主备 3套');
+ assert.equal(HA.huaweiMatch,'HW_MULTIPLE');
+ assert.ok(HA.huaweiCandidates.length>1);
+ assert.equal(selection(resource('Redis 2GB 主备 2节点 3套')),'redis.ha.xu1.large.r2.2');
+ const single=resource('Redis 2GB 单机 3套');
+ assert.equal(selection(single),'redis.single.xu1.large.2');
+ assert.equal(calculate(single,catalog,{now}).monthly,74.46);
+ assert.equal(calculate(single,catalog,{now:now+8*86400000}).monthly,null);
+});
+
+test('RDS compute-only scope, region, unmatched service and manual selection',()=>{
+ const [row]=normalizeRows([{product:'RDS',specification:'db.m5.large MySQL 8.0 Single-AZ Cloud SSD instance only',quantity:1}]);
+ assert.equal(selection(match(row)),'rds.mysql.n1.large.4');
+ assert.equal(calculate(row,catalog,{now}).monthly,100.01);
+ assert.equal(resource('RDS db.m5.large MySQL Single-AZ').huaweiMatch,'HW_DB_PARAMETERS');
+ const [wrong]=normalizeRows([{product:'EC2',specification:'4 vCPU 16 GiB Linux',quantity:1,huawei_target_region:'cn-east-3'}]);
+ assert.equal(match(wrong).huaweiMatch,'HW_TARGET_REGION');
+ const manually={...resource('1 台 4 vCPU 16 GiB 云主机'),targetId:'manual',accepted:false,huaweiSelection:'manual'};
+ assert.equal(match(manually).targetId,'manual');
+ assert.equal(resource('ELB dedicated bandwidth').huaweiMatch,'HW_MANUAL_SERVICE');
+ assert.equal(resource('OBS S3 requests').huaweiMatch,'HW_NO_PLAN');
+});
+
+const sandbox={};
+vm.runInNewContext(readFileSync(new URL('../public/vendor/xlsx.full.min.js',import.meta.url),'utf8'),sandbox);
+const {XLSX}=sandbox;
+function workbook(fixture){
+ const data=readFileSync(new URL('./fixtures/'+fixture,import.meta.url));
+ return fixture.endsWith('.csv')?XLSX.read(data.toString('utf8'),{type:'string'}):XLSX.read(new Uint8Array(data),{type:'array'});
+}
+
+test('standard sheets bypass the model and nonstandard workbooks retain physical row coordinates',()=>{
+ for(const name of ['aws-fictional-mvp.csv','aws-fictional-mvp.xlsx']){
+  const result=readInventory(workbook(name),XLSX);
+  assert.equal(result.standard.length,4);
+  assert.equal(result.source,undefined);
+ }
+ const ws=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(ws,XLSX.utils.aoa_to_sheet([['Fictional notes'],[],['台套','配置'],[1,'4 vCPU 16 GiB x86 Linux 云主机']]),'Compute');
+ XLSX.utils.book_append_sheet(ws,XLSX.utils.aoa_to_sheet([['Redis 2GB 单机 3套']]),'Cache');
+ const {source}=readInventory(ws,XLSX);
+ assert.deepEqual(Array.from(source,row=>[row.sheet,row.row]),[['Compute',1],['Compute',3],['Compute',4],['Cache',1]]);
+ const review=reviewInventory(source,{rows:[{id:1,kind:'note'},{id:2,kind:'header'},{id:3,kind:'resource',product:'ECS'},
+  {id:4,kind:'resource',product:'DCS',quantity:3,capacity_gb:2}]});
+ const [compute,cache]=confirmInventory(review);
+ assert.equal(compute.importSource.row,4);
+ assert.equal(compute.quantity,1);
+ assert.equal(cache.importSource.sheet,'Cache');
+ assert.equal(selection(match(cache)),'redis.single.xu1.large.2');
+});
+
+test('invalid or fabricated structured values are flagged and missing rows survive review',()=>{
+ const {source}=readInventory(workbook('huawei-fictional-nonstandard.csv'),XLSX);
+ assert.equal(source[3].cells[1],'Redis 2GB 单机 3套');
+ const review=reviewInventory(source,{rows:[{id:3,kind:'resource',quantity:-1,usage:9999,capacity_gb:'16',
+  specification:'128 CPUs',usage_period:'source-period'},{id:4,kind:'resource',quantity:2.5}]});
+ assert.ok(review[0].include);
+ assert.ok(review[2].specification.includes('vCPU'));
+ assert.equal(review[2].quantity,1);
+ assert.ok(review[2].warnings.includes('quantity'));
+ assert.equal(review[2].usage_period,undefined);
+ assert.ok(review[2].warnings.includes('specification'));
+ assert.ok(review[3].warnings.includes('quantity'));
+ for(const rows of [[{id:1,kind:'resource',price:1}],[{id:9,kind:'note'}],[{id:1,kind:'note'},{id:1,kind:'header'}],[{id:2}]]){
+  assert.throws(()=>reviewInventory(source,{rows}),/modelSyntax/);
+ }
+});
+
+const url='http://127.0.0.1:4814/api/inventory/model';
+const source=[{id:1,sheet:'Fictional',row:3,cells:['Redis 2GB 单机 3套']}];
+const post=(overrides={})=>new Request(url,{method:'POST',headers:{Origin:new URL(url).origin,'Sec-Fetch-Site':'same-origin','Content-Type':'application/json',...overrides},body:JSON.stringify({rows:source})});
+
+test('local model route enforces origin and exposes structured output without a cloud route',async()=>{
+ let sent=0;
+ const route=createLocalInventoryEndpoint({model:'fictional',port:'4813',token:'fictional-local-test',fetcher:async(target,params)=>{
+  sent++;
+  assert.equal(target,'http://127.0.0.1:4813/v1/chat/completions');
+  assert.equal(params.headers.Authorization,'Bearer fictional-local-test');
+  const packet=JSON.parse(params.body);
+  assert.equal(packet.response_format.json_schema.strict,true);
+  assert.equal(packet.temperature,0);
+  assert.deepEqual(JSON.parse(packet.messages[1].content),[{id:1,sheet:'Fictional',cells:source[0].cells}]);
+  return Response.json({choices:[{message:{content:'{"rows":[{"id":1,"kind":"resource","quantity":3}]}'}}]});
+ }});
+ assert.equal((await route(post({Origin:'https://elsewhere.example'}))).status,403);
+ assert.equal((await route(post({'Sec-Fetch-Site':'cross-site'}))).status,403);
+ assert.equal(sent,0);
+ assert.deepEqual(await (await route(new Request(url))).json(),{available:true});
+ assert.equal((await route(post())).status,200);
+ assert.equal(sent,1);
+ assert.equal((await createLocalInventoryEndpoint()(post())).status,404);
+});
+
+test('model timeout and malformed responses return stable errors',async()=>{
+ const get=(fetcher,timeout=200)=>createLocalInventoryEndpoint({model:'fictional',port:'4813',fetcher,timeout});
+ const parse=await get(async()=>Response.json({choices:[{message:{content:'not JSON'}}]}))(post());
+ assert.deepEqual(await parse.json(),{error:'inventory.modelSyntax'});
+ const noRows=await get(async()=>Response.json({choices:[{message:{content:'{}'}}]}))(post());
+ assert.equal(noRows.status,502);
+ const timeout=await get(async(_, {signal})=>new Promise((_,reject)=>{
+  signal.addEventListener('abort',()=>reject(signal.reason));
+  const keepAlive=setTimeout(()=>{},100);
+  signal.addEventListener('abort',()=>clearTimeout(keepAlive));
+ }),5)(post());
+ assert.equal(timeout.status,504);
+ assert.deepEqual(await timeout.json(),{error:'inventory.timeout'});
+});
