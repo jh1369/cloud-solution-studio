@@ -8,16 +8,16 @@
 | --- | --- |
 | 更新日期 | 2026-11-18，Europe/Berlin |
 | 当前优先目标 / 模式 | Pricing Studio 私有在线版浏览器验收优先；离线版准备与测试暂停，单主 Agent |
-| 本轮检查基线 | `main` / `227ff50d2dcfc4fd77e86e749bc9f5604eaeeddb`，GitHub 候选包 0.3.1-dev |
+| 本轮检查基线 | `main` / `a69bb13106b83d5bee1cfcff4810a1bdc7087b14`，修复前 0.3.1-dev |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | GitHub 交接版本 `0.3.1-dev` 修复报价卡导出按钮、核价失败提示及 PDF 页码。Sites 核对的最近部署对应 `0.3.0-dev`；页面显示版本及登录后流程待验。用户已暂停离线版工作 |
+| 当前网页版本 | 在线修复候选 `0.3.2-dev`，修复源码 `45770a6`。私有站最近部署对应 `0.3.0-dev`，登录后显示版本待核对 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
 | 当前 Sites 部署源码 | `fff0d1fe414b09464089a4f6734b6a03f56738ff`；V0.3 数据阶段原生私有部署 succeeded（2026-11-17 18:16 Europe/Berlin）；原 V0.2 为 `64eaa80` |
 | 整体进度 | TCP 官方 PDF → 结构化候选目录、通用 Adapter/Updater、差异/审批/历史、本地调度配置及小型状态卡已实现；首次 TCP 基线未批准，完整 TCP 自动报价未完成 |
-| 本轮同步范围 | 在线优先；已同步的 0.3.1-dev 候选及上轮归档见下行，本轮仅同步在线验收进度及离线暂停决定 |
-| 同步结果 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
+| 本轮同步范围 | 在线分批核价、导出一致性修复、浏览器回归及验收记录；离线工作暂停 |
+| 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
 
@@ -358,3 +358,10 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **基线与平台核对** GitHub main `227ff50d2dcfc4fd77e86e749bc9f5604eaeeddb`，候选包 0.3.1-dev。Sites 最新第 5 版部署成功，源码 `fff0d1fe414b09464089a4f6734b6a03f56738ff` 对应 0.3.0-dev。
 - **实测** Codex 使用共享桌面 Chromium 156.0.8078.79，两次从私有生产入口进入 OpenAI 登录页。登录后版本、虚构导入、三模式、在线核价、失败提示和导出仍阻塞。生产下载件 0 份。上轮本地 HTTP 的 12 份下载件单独保留。
 - **范围与同步** 离线原生文件打开受环境策略限制，用户已暂停该项。尚无本轮生产业务缺陷可定位。未改运行代码，未重跑业务回归。本次提交仅同步两份文档；站点部署继续沿用上表记录。P0 下一步是获准账号进入工作台后完成在线矩阵；两项 TCP 问题继续单独跟踪。
+
+### 2026-11-18 — 在线分批核价与 Excel 一致性修复
+
+- **修改** 每批独立尝试，只收集当前批次内通过价格证据校验的结果，全部批次结束后一次更新。两个导出入口与页面使用同一份目录，导出时统一检查有效期。在线候选版本 0.3.2-dev。**新增** 11 个虚构 SKU 的 Chromium 回归及下载核验摘要。**删除** 无。
+- **复现及复验** 审核基线首批 503 后遗漏第 11 项；第二批等待中页面 90 USD、XLSX 250 USD。修复后两个场景通过，失败项保留原证据，过期和缺价行金额为空。10 份分批下载和 9 份在线主流程下载均已重开五表。真实华为云公开核价按三种模式各成功 3 项。[浏览器验收及复跑命令](PRICING_BROWSER_ACCEPTANCE.md)
+- **回归** 在 `pricing-studio/web/` 运行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，82 项通过、0 失败。运行 `python -m unittest discover -s tests -p test_catalog.py`，4 项通过、0 失败。Node 24.22.1、Python 3.12.14。按本轮范围跳过离线打包和验收。
+- **同步与阻塞** 本次提交同步经过本地回归的在线修复源码 `45770a63bb43c654ae861944cea9ce87c1fa395f` 及证据。生产站仍需获准账号完成登录，工作台版本及生产下载件待实测。在线候选尚未部署。两项 TCP 问题继续单独处理。

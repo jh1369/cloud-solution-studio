@@ -1,5 +1,27 @@
 # Pricing Studio 浏览器验收记录
 
+## 2026-11-18 在线分批核价与 Excel
+
+执行人 Codex。审核基线 `main/a69bb13106b83d5bee1cfcff4810a1bdc7087b14`。修复源码 `45770a63bb43c654ae861944cea9ce87c1fa395f`，本地页面和 package.json 显示 `0.3.2-dev`。以下本地检查使用 Debian Chromium 156.0.8078.79、Playwright 和 openpyxl 3.1.5。
+
+| 场景 | 基线复现 | 本地修复版实测 |
+| --- | --- | --- |
+| 11 个虚构 SKU，首批 10 项返回 503 | 浏览器未发出第 11 项的请求 | 通过。第二批实际发出；等待时两个入口均导出原小计 90 USD，结束后均为 110 USD。首批 10 项的旧证据和时间逐行相同，包含 1 项过期、1 项缺价。 |
+| 首批 8 项成功、2 项 Pending，第二批延迟 | 页面为 90 USD，顶部实际下载件为 250 USD | 通过。第二批返回前两个入口均为 90 USD，结束后均为 270 USD。单价、SKU、时间、证据及 Pending 空金额已核对。 |
+| 页面打开后跨过有效期 | — | 通过。仅推进测试页时钟，点击两个入口分别导出，页面和工作簿均为 11 项 Pending、空金额，保留原核验时间。 |
+| 本地 Web + Worker 主流程 | — | 通过。选择仓库虚构 CSV、XLSX 各 4 行，文字 PDF 2 行。导入未确认、三模式重新确认、15% 折扣、中译英及重载清空均实测。PDF 的来源页 1、2，用量 1,460、730 小时，折后账期小计 463.27 USD，年度空白。 |
+| 真实官方核价及连接失败 | — | 通过。本地 Worker 请求华为云官方公开接口，按需、包月、包年各 3 项，共 9 项成功。比对返回产品、单价、证据、时间与下载件。另在浏览器中阻断一次请求，页面出现英文失败提示，失败前后 Pricing 和 Quotation 表逐行相同。 |
+| 生产站登录后的工作台 | — | **阻塞。** 本轮从私有入口进入 OpenAI Welcome back，安全登录请求未完成。Sites 第 5 版部署状态为 succeeded，部署源码 `fff0d1fe414b09464089a4f6734b6a03f56738ff` 对应 `0.3.0-dev`。登录后的页面版本、上述生产流程和下载仍待验；生产下载件 0 份。 |
+
+本地真实公开价小计（USD），顺序为折后月费或月均、年度情景、首期预付：按需 507.64 / 6,091.57 / 空白；包月 383.72 / 4,604.59 / 383.72；包年 321.18 / 3,854.20 / 3,854.20。11 SKU 故障测试使用独立的虚构费率。
+
+每个导出均等待浏览器下载事件后保存。openpyxl 重开本地 19 份工作簿（分批及失效场景 10 份，主流程 9 份），核对 Input、Service Mapping、Public Pricing、Quotation、Assumptions。[下载件大小、SHA-256、场景和金额](evidence/pricing-browser-acceptance/online-batch-0.3.2-dev.json)
+
+复跑分批用例：在 `pricing-studio/web/` 运行 `python -m http.server 4173 --bind 127.0.0.1 --directory public`，然后用可加载 Playwright 的 Node 环境运行 `CHROMIUM_PATH=/usr/bin/chromium node tests/browser/batch-refresh.cjs`。测试只向 loopback 提交虚构请求。另行运行的真实核价使用同一 Worker 的本地 HTTP 适配器。本轮本地集成构建复用上轮归档的下载资源，未生成离线包。
+
+### 先前验收记录
+
+
 2026-11-18（Europe/Berlin）。实测基线为 `main` 的 `eed9a72b2cb4bd2da6b518dd6b4ac8c03db456f0`，包版本为 `0.3.0-dev`。测试期间合入了调研文档 `b40a6ca`。三项修复在候选包 `0.3.1-dev` 上复验。测试使用 Debian Chromium `156.0.8078.79` 的真实桌面会话、虚构资源清单、华为云公开目录和独立故障夹具。
 
 ## 2026-11-18 重试 · 在线版优先
