@@ -1,7 +1,8 @@
 import {buildWorkbook} from './excel.mjs';
 import {normalizeRows,parseText,recommend,calculate,parseBillPages,switchBilling,priceValidation} from './engine.mjs';
+import {tcpQuoteRows,tcpQuoteTotals} from './providers.mjs';
 import {t,billingLabel,dateLabel,translateMessage,readLanguage,saveLanguage,applyTranslations,serviceLabel} from './i18n.mjs';
-import {escapeHTML,icon,money,emptyResources,resourceHTML,summaryModel,breakdownHTML,catalogueHTML} from './ui.mjs';
+import {escapeHTML,icon,money,emptyResources,resourceHTML,tcpResourceHTML,summaryModel,breakdownHTML,catalogueHTML} from './ui.mjs';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
@@ -10,6 +11,7 @@ const offlineBundle=window.PRICING_STUDIO_OFFLINE||null;
 let language=readLanguage(storage);
 let catalog={items:[],ttlDays:7},rows=[],page=0,activeView='studio',mappingSelected=false,busy=false,catalogState='loading';
 let tcpStatus={provider:'tcp',status:'NEVER_CHECKED'},tcpLoaded=false,tcpBusy=false;
+let provider='huawei',tcpPublication={state:null,catalog:null},tcpQuoteLoading=false,tcpExpiryTimer;
 const T=(key,vars)=>t(key,language,vars);
 const E=escapeHTML;
 
@@ -38,15 +40,17 @@ function openMapping(){
  $('#mapping-section').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
 }
 function renderConnection(){
- const connection=$('.connection');connection.classList.toggle('expired',catalogState==='expired');connection.classList.toggle('unavailable',catalogState==='unavailable');
- $('#connection-label').textContent=T(catalogState==='loading'?'top.loading':catalogState==='expired'?'top.expired':catalogState==='unavailable'?'top.unavailable':offlineBundle?'offline.snapshot':'top.connected');
+ const expired=Date.now()-Date.parse(tcpPublication.state?.lastVerifiedAt)>48*3600000||tcpPublication.state?.effectiveState==='STALE';
+ const state=provider==='huawei'?catalogState:tcpQuoteLoading?'loading':expired?'expired':tcpPublication.catalog?'ready':'unavailable';
+ const connection=$('.connection');connection.classList.toggle('expired',state==='expired');connection.classList.toggle('unavailable',state==='unavailable');
+ $('#connection-label').textContent=T(state==='loading'?'top.loading':state==='expired'?'top.expired':state==='unavailable'?'top.unavailable':offlineBundle?'offline.snapshot':'top.connected');
 }
 function renderMetrics(output,now){
  $('#metric-resources').textContent=rows.length.toLocaleString(language==='en'?'en-US':'zh-CN');
  const ready=output.filter(result=>result.status==='Valid'||result.status==='Period').length;
  $('#metric-confirmed').innerHTML=`${ready} <em>/ ${rows.length}</em>`;
- const count=catalog.items.filter(plan=>priceValidation(plan,catalog,{now}).valid).length;
- $('#metric-plans').textContent=catalog.items.length?count.toLocaleString(language==='en'?'en-US':'zh-CN'):'—';
+ const count=provider==='tcp'?(now-Date.parse(tcpPublication.state?.lastVerifiedAt)<=48*3600000?tcpPublication.catalog?.items.length:0):catalog.items.filter(plan=>priceValidation(plan,catalog,{now}).valid).length;
+ $('#metric-plans').textContent=count?count.toLocaleString(language==='en'?'en-US':'zh-CN'):'—';
 }
 function renderSummary(output,now){
  const summary=summaryModel(rows,output,language);
@@ -59,11 +63,28 @@ function renderSummary(output,now){
  $('#coverage').textContent=summary.coverage;$('#quote-note').textContent=summary.note;
  $('#breakdown').innerHTML=breakdownHTML(summary,language);renderMetrics(output,now);
 }
+function renderTCPSummary(output,now){
+ const totals=tcpQuoteTotals(output);
+ $('#monthly-label').textContent=T('tcp.quote.subtotal');$('#monthly-money').textContent=money(totals.monthly,'EUR');
+ $('#annual-label').textContent=T('tcp.quote.periodSubtotal');$('#annual-money').textContent=money(totals.period,'EUR');
+ $('#upfront-row').hidden=true;
+ $('#quote-status').textContent=T(!rows.length?'status.waiting':totals.pendingCount?'tcp.quote.pendingCount':'tcp.quote.priced',{count:totals.pendingCount});
+ $('#quote-status').className='badge '+(!rows.length?'neutral':totals.pendingCount?'pending':'valid');
+ $('#coverage').textContent=T('quote.coverage',{ready:totals.ready,total:rows.length});
+ $('#quote-note').textContent=T('tcp.quote.note');
+ renderMetrics(output,now);
+}
 function render({now=Date.now()}={}){
  let output;
+ const isTCP=provider==='tcp';
  try{
-  const options={...settings(),now};
-  output=rows.map(row=>calculate(row,catalog,options));renderSummary(output,now);
+  if(isTCP){
+   output=tcpQuoteRows(rows,tcpPublication.catalog,{updateState:tcpPublication.state,now});
+   renderTCPSummary(output,now);
+  }else{
+   const options={...settings(),now};
+   output=rows.map(row=>calculate(row,catalog,options));renderSummary(output,now);
+  }
  }catch(error){
   $('#monthly-money').textContent='—';$('#annual-money').textContent='—';$('#scenario-money').textContent='—';
   $('#upfront-row').hidden=true;$('#upfront-money').textContent='—';$('#coverage').textContent='—';$('#breakdown').textContent='—';
@@ -73,15 +94,47 @@ function render({now=Date.now()}={}){
  }
  page=Math.min(page,Math.max(0,Math.ceil(rows.length/10)-1));
  $('#resource-count').textContent=rows.length;
- $('#export').disabled=!rows.length;$('#quote-export').disabled=!rows.length;
+ $('#export').disabled=!rows.length||(isTCP&&tcpQuoteLoading);$('#quote-export').disabled=$('#export').disabled;
  $('#confirm-all').disabled=!rows.some(row=>row.targetId&&!row.accepted);
- $('#refresh-prices').disabled=!!offlineBundle||busy||!rows.some(row=>row.targetId);
+ $('#refresh-prices').disabled=!!offlineBundle||busy||(isTCP?tcpQuoteLoading:!rows.some(row=>row.targetId));
  $('#parse').disabled=busy;$('#file').disabled=busy;
- $('#resources').innerHTML=rows.length?resourceHTML(rows,output,catalog,language,page,now):emptyResources(language);
+ $('#resources').innerHTML=!rows.length?emptyResources(language):isTCP?tcpResourceHTML(rows,output,tcpPublication.state,language,page):resourceHTML(rows,output,catalog,language,page,now);
  $('#resource-pagination').hidden=rows.length<=10;
  $('#page-info').textContent=T('pagination.info',{start:page*10+1,end:Math.min(page*10+10,rows.length),total:rows.length});
  $('#prev-page').disabled=page===0;$('#next-page').disabled=(page+1)*10>=rows.length;
  renderConnection();
+ return output;
+}
+function renderProvider(){
+ const isTCP=provider==='tcp';
+ for(const element of $$('[data-huawei-quote]'))element.hidden=isTCP;
+ for(const element of $$('[data-tcp-quote]'))element.hidden=!isTCP;
+ $('#target-provider-control').hidden=!!offlineBundle;
+ $('#refresh-prices span').textContent=T(isTCP?'tcp.quote.reload':offlineBundle?'offline.refresh':'quote.refresh');
+ $('#mapping-notice').textContent=T(isTCP?'tcp.quote.notice':'mapping.notice');
+ $('#quote-evidence').textContent=T(isTCP?'tcp.quote.evidence':'evidence.text');
+ $('#metric-plans-hint').textContent=T(isTCP?'tcp.quote.hint':'metric.plansHint');
+ $('.migration-hero').setAttribute('aria-label',isTCP?'AWS to T-Cloud Public':'AWS to Huawei Cloud Public');
+}
+async function loadTCPQuote(){
+ if(tcpQuoteLoading)return;
+ tcpQuoteLoading=true;render();clearTimeout(tcpExpiryTimer);
+ try{
+  const response=await fetch('/api/catalog/tcp/catalog',{cache:'no-store'});
+  if(!response.ok)throw Error('TCP catalog unavailable');
+  const data=await response.json();
+  if(data?.state?.provider!=='tcp')throw Error('Invalid TCP publication');
+  tcpPublication=data;
+  if(data.catalog&&data.state.effectiveState==='ACTIVE'){
+   const deadline=Date.parse(data.state.lastVerifiedAt)+48*3600000;
+   if(Number.isFinite(deadline)&&deadline>Date.now())tcpExpiryTimer=setTimeout(()=>{if(provider==='tcp')render();},deadline-Date.now()+1);
+  }
+ }catch{
+  tcpPublication={state:null,catalog:null};
+ }finally{
+  tcpQuoteLoading=false;
+  if(provider==='tcp')render();
+ }
 }
 function renderCatalogueMetadata(){
  $('#catalog-summary').textContent=T('catalog.summary',{plans:catalog.items.length,services:new Set(catalog.items.map(plan=>plan.service)).size});
@@ -131,7 +184,7 @@ $('#tcp-check').addEventListener('click',async()=>{
 });
 function localize(){
  document.documentElement.lang=language==='en'?'en':'zh-CN';document.title=T('app.title');
- applyTranslations(document,language);refreshCrumb();
+ applyTranslations(document,language);refreshCrumb();renderProvider();
  renderTCPStatus();
  if(offlineBundle){
   $('#refresh-prices').title=T('offline.noRefresh');
@@ -146,6 +199,12 @@ function setLanguage(next){
  saveLanguage(storage,language);localize();
 }
 $('#language-toggle').addEventListener('click',()=>setLanguage(language==='en'?'zh':'en'));
+$('#target-provider').addEventListener('change',event=>{
+ if(offlineBundle)return;
+ provider=event.target.value;page=0;renderProvider();
+ if(provider==='tcp')loadTCPQuote();
+ render();
+});
 $$('[data-view]').forEach(button=>button.addEventListener('click',()=>view(button.dataset.view)));
 $('#mapping-nav').addEventListener('click',openMapping);
 $$('[data-input]').forEach(button=>button.addEventListener('click',()=>{
@@ -175,6 +234,8 @@ $('#resources').addEventListener('change',event=>{
  const owner=event.target.closest('[data-id]'),row=rows.find(item=>item.id===owner?.dataset.id);if(!row)return;
  const input=event.target;
  row[field]=field==='accepted'?input.checked:['quantity','targetQuantity','capacity','usage'].includes(field)?input.value===''?null:Number(input.value):input.value;
+ if(field==='unit')row.unitExplicit=!!input.value;
+ if(field==='specification'&&provider==='tcp'){row.targetId=recommend(row,catalog);row.accepted=false;}
  if(field==='targetBilling')switchBilling(row,input.value,catalog);
  if(['targetId','service','targetQuantity','capacity','usage','unit','period'].includes(field)){row.accepted=false;if(field==='service')row.targetId='';}
  render();
@@ -240,9 +301,13 @@ function exportExcel(){
   if(!window.XLSX)throw Error(T('error.excelModule'));
   const now=Date.now();
   // A displayed plan can expire while the page is idle or a refresh is pending.
-  render({now});
-  const book=buildWorkbook(window.XLSX,rows,catalog,{...settings(),now,language,delivery:offlineBundle?'offline':'web'},$('#project-name').value);
-  window.XLSX.writeFile(book,'Huawei-Cloud-Quotation-'+new Date().toISOString().slice(0,10)+'.xlsx');toast(T('toast.exported'));
+  const output=render({now});
+  if(!output||provider==='tcp'&&tcpQuoteLoading)return;
+  const options={now,language,delivery:offlineBundle?'offline':'web'};
+  const isTCP=provider==='tcp';
+  const book=buildWorkbook(window.XLSX,rows,isTCP?tcpPublication.catalog:catalog,
+   isTCP?{...options,provider,output,updateState:tcpPublication.state}:{...options,...settings()},$('#project-name').value);
+  window.XLSX.writeFile(book,(isTCP?'TCP':'Huawei-Cloud')+'-Quotation-'+new Date(now).toISOString().slice(0,10)+'.xlsx');toast(T('toast.exported'));
  }catch(error){report(error);}
 }
 $('#export').addEventListener('click',exportExcel);$('#quote-export').addEventListener('click',exportExcel);
@@ -250,6 +315,7 @@ $('#catalog-search').addEventListener('input',renderCatalog);$('#catalog-service
 $('#export-evidence').addEventListener('click',()=>download(JSON.stringify(catalog,null,2),'huawei-official-price-evidence.json','application/json'));
 $('#refresh-prices').addEventListener('click',async()=>{
  if(offlineBundle){toast(T('offline.noRefresh'),true);return;}
+ if(provider==='tcp'){await loadTCPQuote();return;}
  const ids=[...new Set(rows.map(row=>row.targetId).filter(Boolean))];if(!ids.length||busy)return;
  const updates=new Map();
  busy=true;render();toast(T('toast.refreshing'));

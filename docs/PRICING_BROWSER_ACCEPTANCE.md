@@ -108,3 +108,12 @@ Sites 第 6 版的生产 Worker 返回在线首页 `0.3.2-dev`。Chromium 156.0.
 恢复生产复验时，在共享浏览器访问原站并选择 Continue with ChatGPT，使用获准账号登录后交还控制。[私有生产站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
 
 候选版本在 `pricing-studio/web/` 执行 `npm run release:offline`，83 项 JS 和 34 项 Python 测试通过，0 失败。环境为 Node 24.22.1、Python 3.12.14、openpyxl 3.1.5。相同源码重建得到相同 ZIP。候选源码及离线包已合入 `main`，提交为 `836b740`。GitHub 下载的 ZIP 与实测归档逐字节相同。私有生产站当前为 `0.3.0-dev`。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) · [开发状态](DEVELOPMENT_STATUS.md)
+
+
+## 2026-11-18 — TCP EU-DE 按需报价
+
+- **范围** GitHub 审查起点 `d8147a07e372c7af64f6bbf1cdcfccc6c1a4377e`。私有站第 7 版 `0.3.3-dev`，部署源码 `438049263a00cc8ccae6bfaaa72408070bb9a544`。执行人 Codex。Chromium 156.0.8078.79 用 Playwright 执行，openpyxl 3.1.5 重开浏览器下载。生产资产经 Sites 授权服务访问取得，校验 HTTPS 和源文件字节。交互登录流程沿用既有验收。
+- **官方证据** EU-DE、EUR、Open Elastic。目录 `tcp-2026-10-09-c88c0aff01e08ade-tcp-pdf-0.3.0-3`，生效对象 SHA-256 `9a3a2e8480859b097ca272f43a1089403b3c79c896dfc84f125d441eb71fb8ec`，核验时间 `2026-11-18T14:58:38.490856+00:00`。先使用模拟 R2 验证真实目录，再通过原核验时间的快照验证实际生产 Worker。两种路径均通过。[TCP 官方 PDF](https://www.t-cloud-public.com/_Resources/Persistent/5/b/4/9/5b49ccec9ceef6d52f461deff50098200b81665f/t-cloud-public-servicedescription.pdf)
+- **清单与结果** 导入 [虚构 CSV](../pricing-studio/web/tests/fixtures/aws-fictional-tcp.csv)。ECS 2×100 小时为 €22.77（PDF 52 页），EVS 50 GiB-month 为 €3.30（93 页），RDS 100 小时为 €17.64（81 页）。月度小计 €43.71。ECS 累计 10 小时的账期小计 €1.14。待复核 5 行对应 GP SSD v2、架构不匹配、无核验 SKU、目标地区超范围、GB-month 口径不明确。页面和 Excel 原因一致，两列金额均为空。
+- **下载与过期** 两个导出入口生成的工作簿均重开，核对 Input、Service Mapping、Public Pricing、Quotation 和 Assumptions。复核状态、用量、币种、显示金额、单价、PDF 页码、原文 URL、核验时间和 SHA-256 吻合。右侧下载 SHA-256 `25d042977765d9207f1eb6b2bc1f3d42fb0b7030c6952dc47ba30556a84e73ac`，顶栏下载 `ec97e984613df6db7b0086450a1e58177a7f4a550c714fab3e28b3558bbc4b0d`。模拟浏览器时钟前移 49 小时后，页面与过期下载 9 行均待复核，金额留空。Worker 快照也通过精确 48 小时边界回归。
+- **Huawei 回归与测试** 生产浏览器依次切回 Huawei 并确认按需、包月、包年，再实际下载并重开三份 XLSX。USD 计价及订阅首期预付符合各模式。执行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs` 通过 96 项，Python 目录、更新、PDF、调度、发布五组共 42 项通过。沿用私有站旧 ZIP，未开展离线包装或浏览器验收。

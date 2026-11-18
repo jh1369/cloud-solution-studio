@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
+import {gzipSync} from 'node:zlib';
 import worker from '../dist/server/index.js';
+import {readTCPPublication,tcpReleaseStore} from '../tcp_publication.mjs';
 
 const fixture = fileURLToPath(new URL('./fixtures/tcp_publication_fixture.py', import.meta.url));
 const {objects, now, pdf} = JSON.parse(execFileSync('python3.12', [fixture], {encoding: 'utf-8'}));
@@ -173,6 +175,19 @@ test('48-hour expiry is enforced even during a read and future verification is r
   bucket.reads.length = 0;
   assert.equal((await (await get('status', bucket)).json()).effectiveState, 'STALE');
   assert.deepEqual(bucket.reads, [currentKey]);
+});
+
+test('a verified release snapshot keeps its original verification and expires',async()=>{
+  const catalog=Buffer.from(objects[catalogKey].text);
+  const store=tcpReleaseStore({sha256:baseline.catalog.sha256,state:Buffer.from(objects[currentKey].text).toString('base64'),
+    catalog:gzipSync(catalog).toString('base64'),size:catalog.length});
+  const verified=Date.parse(now);
+  const active=await readTCPPublication(store,()=>verified);
+  assert.equal(active.state.lastVerifiedAt,now);
+  assert.equal(active.catalog.versionId,baseline.currentVersion);
+  const stale=await readTCPPublication(store,()=>verified+48*3600000+1);
+  assert.equal(stale.state.effectiveState,'STALE');
+  assert.equal(stale.catalog,null);
 });
 
 test('oversized and unavailable storage objects fail closed', async t => {

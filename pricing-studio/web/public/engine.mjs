@@ -94,11 +94,12 @@ export function normalizeRows(objects){
  const service=family(product,get(raw,'group'));
  const quantity=aggregate?null:finite(get(raw,'quantity'),'数量',true);
  const usage=finite(get(raw,'usage'),'用量',true);
- const explicitUnit=String(get(raw,'unit'));
+ const explicitUnit=String(get(raw,'unit')).trim();
  const capacity=finite(get(raw,'capacity'),'容量 GB',true)??(!aggregate&&service==='EVS'&&['gb-month','gb-mo'].includes(explicitUnit.toLowerCase())?usage:null);
  const targetBilling=targetMode(get(raw,'target_billing')||'ONDEMAND');
  const targetQuantity=finite(get(raw,'target_quantity'),'目标资源数量',true);
- return {id:crypto.randomUUID(),product,specification:spec,region:String(get(raw,'region')),quantity,usage,unit:explicitUnit||(['ECS','RDS','DCS','DMS Kafka','ELB','NAT Gateway','CCE'].includes(service)?'hour':''),billing:String(get(raw,'billing_method')||'未提供'),targetBilling,targetQuantity,capacity,service,scope:aggregate?'aggregate':'resource',period:String(get(raw,'period')||(aggregate?'source-period':'monthly')),notes:aggregate?'来源账期累计用量，未推断资源数量；需确认是否完整月。':!explicitUnit?'用量单位根据服务推定，请核对。':'',accepted:false,targetId:'',manualRate:null};
+ return {id:crypto.randomUUID(),product,specification:spec,region:String(get(raw,'region')),quantity,usage,unit:explicitUnit||(['ECS','RDS','DCS','DMS Kafka','ELB','NAT Gateway','CCE'].includes(service)?'hour':''),billing:String(get(raw,'billing_method')||'未提供'),targetBilling,targetQuantity,capacity,service,scope:aggregate?'aggregate':'resource',period:String(get(raw,'period')||(aggregate?'source-period':'monthly')),notes:aggregate?'来源账期累计用量，未推断资源数量；需确认是否完整月。':!explicitUnit?'用量单位根据服务推定，请核对。':'',accepted:false,targetId:'',manualRate:null,
+  sourceService:service,unitExplicit:!!explicitUnit,tcpTarget:String(raw.tcp_target_sku||'').trim(),tcpTargetRegion:String(raw.tcp_target_region||'').trim(),tcpTargetBilling:targetMode(raw.tcp_target_billing||'ONDEMAND')};
  });
 }
 export function awsShape(text){

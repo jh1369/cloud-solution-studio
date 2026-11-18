@@ -1,12 +1,36 @@
 import {SERVICES,billingOf,priceValidation,mappingReview,sumMoney} from './engine.mjs';
 import {t,billingLabel,unitLabel,dateLabel,serviceLabel,translateMessage,reasonLabel,mappingLabel} from './i18n.mjs';
 export const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export const money=value=>value===null||value===undefined?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(value);
+export const money=(value,currency='USD')=>value===null||value===undefined?'—':new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:2}).format(value);
 export const icon=name=>`<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 export const COLORS=['#c36bf1','#e8b775','#78cbb6','#8c90e6','#e790bf','#a5baca'];
 export function emptyResources(language='zh'){
  const T=(key,vars)=>t(key,language,vars);
  return `<div class="empty-state"><div class="empty-art">${icon('map')}</div><h3>${T('empty.title')}</h3><p>${T('empty.text')}</p><button class="text-button" data-sample>${T('empty.sample')} →</button></div>`;
+}
+export function tcpResourceHTML(rows,output,state,language='zh',page=0){
+ const T=(key,vars)=>t(key,language,vars),E=escapeHTML;
+ return rows.slice(page*10,page*10+10).map((row,index)=>{
+  const result=output[page*10+index],price=result.item,sku=result.mapping.sku;
+  const pending=result.status==='Pending',aggregate=row.scope==='aggregate';
+  const number=(label,field,value)=>`<label><span>${E(T(label))}</span><input type="number" min="0" step="any" data-field="${field}" value="${E(value??'')}"></label>`;
+  return `<article class="resource-row" data-id="${E(row.id)}">
+   <div class="resource-head"><span class="service-icon">${icon(row.service==='EVS'?'layers':'server')}</span><div class="resource-name">${E(row.product)}<small>${E(row.specification)}${row.region?' · '+E(row.region):''}</small></div><span class="badge ${pending?'pending':'valid'}">${T(pending?'tcp.quote.pending':'tcp.quote.priced')}</span><button class="delete-row" data-delete="${E(row.id)}" aria-label="${T('resource.delete')}">×</button></div>
+   <div class="field-grid">
+    <label><span>${T('tcp.quote.sourceSpec')}</span><input data-field="specification" value="${E(row.specification)}"></label>
+    <label><span>${T('tcp.quote.sku')}</span><input data-field="tcpTarget" value="${E(row.tcpTarget??'')}" placeholder="${E(sku??'')}"></label>
+    ${aggregate?'':number('resource.quantity','targetQuantity',row.targetQuantity??row.quantity)}
+    ${number(aggregate?'resource.aggregateUsage':'resource.monthlyUsage','usage',row.usage)}
+    <label><span>${T('resource.unit')}</span><select data-field="unit">${[...new Set([row.unit,'','hour','GiB-month'])].map(unit=>`<option value="${E(unit)}" ${unit===row.unit&&row.unitExplicit||!unit&&!row.unitExplicit?'selected':''}>${E(unit||T('resource.unspecified'))}</option>`).join('')}</select></label>
+    <label><span>${T('resource.period')}</span><select data-field="period"><option value="monthly" ${row.period==='monthly'?'selected':''}>${T('resource.fullMonth')}</option><option value="source-period" ${row.period==='source-period'?'selected':''}>${T('resource.sourcePeriod')}</option></select></label>
+    ${row.tcpTargetRegion&&row.tcpTargetRegion!=='EU-DE'?`<label><span>${T('project.region')}</span><select data-field="tcpTargetRegion"><option>${E(row.tcpTargetRegion)}</option><option>EU-DE</option></select></label>`:''}
+    ${row.tcpTargetBilling&&row.tcpTargetBilling!=='ONDEMAND'?`<label><span>${T('resource.billing')}</span><select data-field="tcpTargetBilling"><option value="${E(row.tcpTargetBilling)}">${E(row.tcpTargetBilling)}</option><option value="ONDEMAND">${T('mode.ONDEMAND')}</option></select></label>`:''}
+   </div>
+   <div class="row-notes">${E(T('resource.awsBilling',{billing:translateMessage(row.billing,language)}))}</div>
+   ${price?`<div class="row-notes tcp-price-evidence">${E(price.sku??price.productLabel)} · ${E(price.amount)} EUR/${E(price.unit)} · <a href="${E(price.evidence.url)}#page=${price.evidence.pages[0]}" target="_blank" rel="noopener">${E(T('tcp.quote.source',{page:price.evidence.pages.join(', ')}))}</a> · ${E(dateLabel(state.lastVerifiedAt,language))}</div>`:`<div class="row-notes tcp-review">${E(reasonLabel(result,language))}</div>`}
+   <div class="row-bottom"><span>${T('mode.ONDEMAND')} · EU-DE</span><div class="row-cost">${money(result.termPublic,'EUR')}</div></div>
+  </article>`;
+ }).join('');
 }
 export function resourceHTML(rows,output,catalog,language='zh',page=0,now=Date.now()){
  const T=(key,vars)=>t(key,language,vars),E=escapeHTML;

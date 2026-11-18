@@ -1,6 +1,6 @@
 # Pricing Studio V0.3 — TCP catalog and auto-update
 
-The Python updater publishes qualifying TCP catalogs automatically. Web + Worker provides the status interface and existing Huawei quotations. TCP quote mapping and calculation remain future work.
+The Python updater publishes qualifying TCP catalogs automatically. Web + Worker provides the status interface and existing Huawei quotations. The online workspace quotes selected ECS, EVS and RDS pay-per-use lines in EU-DE and exports the same results to Excel.
 
 ## Official source and verified baseline
 
@@ -98,6 +98,14 @@ Bind the private bucket to the Worker as `TCP_CATALOG_BUCKET`. The Worker uses s
 
 Both GET responses use `Cache-Control: no-store`. The Worker accepts no bucket URL or object key from callers. Keep the bucket private and use the existing Site access gate. SHA-256 detects inconsistencies and corruption, while access control establishes which writer the Worker trusts. The local development bridge can still use SQLite over its fixed status and check commands.
 
+## EU-DE pay-per-use quotations
+
+Select T-Cloud Public in the online workspace and import the AWS inventory. The initial mapping scope uses exact AWS source profiles and explicit official target products. ECS maps `m5.large Linux` and `m6i.large Linux` to an eligible 2 vCPU, 8 GiB open-Linux flavor. RDS maps `db.m5.large MySQL Single-AZ` to an eligible equivalent-size single MySQL instance. The mapping covers the listed rate dimensions. Separately price storage, backup, networking and other ancillary charges.
+
+For EVS, the operator names `EVS Common I/O` or `EVS High I/O` in the `tcp_target_sku` import column or the row editor and confirms GiB-month usage in the input unit. Ambiguous GB-month and GP SSD v2, IOPS, throughput and snapshot terms require review. An optional `tcp_target_region` must be EU-DE and an optional `tcp_target_billing` must be on demand. Monthly and source-period totals stay separate. Pending lines retain reasons and have empty amounts in the `Quotation` worksheet.
+
+The initial private Site release uses a verified snapshot because the production bucket binding is pending. Build with `TCP_RELEASE_PUBLICATION` pointing to the release inputs in the documented object layout. Build verifies the catalog hash and size. The same Worker reader verifies the original state and expires it 48 hours after its original successful verification. A configured bucket takes precedence for every result. The release input and publication artifacts are kept outside GitHub. [Browser acceptance](PRICING_BROWSER_ACCEPTANCE.md)
+
 ## Managed scheduling and delivery plan
 
 Use a single managed Linux job with a persistent SQLite volume and scoped credentials. Adapt the existing systemd timer to run `publish` daily and alert on errors, Pending or missed verification. Confirm that the approved Worker environment supports the private bucket binding, then run an initial check, an unchanged check and an interruption or expiry smoke test. Production storage and scheduling are pending. When TCP quotations are introduced, snapshots should pin the exact catalog hash and version, source hash, verification time, assumptions and amounts.
@@ -106,4 +114,4 @@ Use a single managed Linux job with a persistent SQLite volume and scoped creden
 
 Core PDF/update tests ran before schedule integration. Tests use fictional prices/rows and a generated real miniature PDF, independently test money/unit/term distinctions, malformed/merged/cross-page rows, zero vs n.a., duplicate conflicts, source discovery, update gates, immutable/pinned versions, rollback, failed fetch/parse, and provider compatibility. Public-PDF extraction is a separate real-data smoke check. Regression counts and browser/deployment results belong in DEVELOPMENT_STATUS.
 
-Tier charge boundaries, free tiers, physical/GPU licensing, RDS ancillary storage and ELB LCU composition still need deterministic rules. For TCP automatic quotes, start with exact mapping for a small set of simple SKUs in one region, then reconcile units, calendar usage, ancillary resources and Excel evidence before expanding.
+Tier charge boundaries, free tiers, physical/GPU licensing, RDS ancillary storage and ELB LCU composition still need deterministic rules. The initial EU-DE release includes exact ECS, EVS and RDS pay-per-use mappings. Additional profiles, ancillary resources and billing plans still need deterministic validation.

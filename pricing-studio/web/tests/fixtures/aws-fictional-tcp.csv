@@ -1,0 +1,10 @@
+product,specification,region,quantity,usage,billing_method,unit,usage_scope,usage_period,tcp_target_sku,tcp_target_region
+EC2,m6i.large Linux,eu-central-1,2,100,on-demand,hour,resource,monthly,,
+EBS,gp2,eu-central-1,1,50,on-demand,GiB-month,resource,monthly,EVS High I/O,
+RDS,db.m5.large MySQL Single-AZ,eu-central-1,1,100,on-demand,hour,resource,monthly,,
+EC2,m5.large Linux,eu-central-1,,10,on-demand,hour,aggregate,source-period,,
+EBS,gp3,eu-central-1,1,20,on-demand,GiB-month,resource,monthly,EVS GP SSD v2 space,
+EC2,m6g.large Linux,eu-central-1,1,100,on-demand,hour,resource,monthly,,
+EC2,m6i.large Linux,eu-central-1,1,100,on-demand,hour,resource,monthly,s3.large.999,
+RDS,db.m5.large MySQL Single-AZ,eu-central-1,1,100,on-demand,hour,resource,monthly,,EU-NL
+EBS,gp2,eu-central-1,1,50,on-demand,GB-month,resource,monthly,EVS High I/O,
