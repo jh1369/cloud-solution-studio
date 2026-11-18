@@ -1,4 +1,4 @@
-// Read-only online detection. Full parsing, history and promotion run in the local updater.
+// Read-only online detection. Full parsing, history and promotion run in the Python updater.
 export const TCP_PRICE_PAGE='https://www.t-cloud-public.com/en/prices/price-calculator';
 function official(url){const parsed=new URL(url);if(parsed.protocol!=='https:'||!['www.t-cloud-public.com','t-cloud-public.com'].includes(parsed.hostname)||parsed.username||parsed.password||parsed.port)throw Error('Unapproved TCP public URL');return parsed.href;}
 export function discoverTCPDocument(html,page=TCP_PRICE_PAGE){
@@ -28,6 +28,14 @@ async function getOfficial(url,fetcher){
  }
  throw Error('Too many redirects');
 }
+export function publishedTCPStatus(packaged,now=Date.now()){
+ const time=Date.parse(packaged.lastVerifiedAt);
+ let effectiveState=packaged.effectiveState==='STALE'?'STALE':packaged.status==='NEVER_CHECKED'?'UNINITIALIZED':'PENDING';
+ if(packaged.effectiveState==='ACTIVE'&&packaged.currentVersion&&['UPDATED','UNCHANGED'].includes(packaged.status)&&Number.isFinite(time)){
+  effectiveState=time<=now&&now-time<=48*3600000?'ACTIVE':'STALE';
+ }
+ return {...packaged,lastVerifiedAt:packaged.lastVerifiedAt??null,effectiveState};
+}
 export async function inspectTCPSource(packaged,{fetcher=fetch,now=()=>new Date().toISOString()}={}){
  try{
   const page=await getOfficial(TCP_PRICE_PAGE,fetcher);
@@ -35,7 +43,12 @@ export async function inspectTCPSource(packaged,{fetcher=fetch,now=()=>new Date(
   const pdf=await getOfficial(url,fetcher),bytes=await limited(pdf.response,16*1024*1024);
   if(new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')throw Error('Official response is not a PDF');
   const sha256=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');
-  const unchanged=packaged.source?.sha256===sha256;
-  return {...packaged,lastCheckedAt:now(),status:unchanged?(packaged.currentVersion?'UNCHANGED':'PENDING_REVIEW'):'DOCUMENT_CHANGED_REVIEW_REQUIRED',candidateVersion:unchanged?packaged.candidateVersion:null,documentRevision:unchanged?packaged.documentRevision:null,source:{...(unchanged?packaged.source:{}),url:pdf.url,sha256,fetchedAt:now()},reasons:unchanged?(packaged.reasons||[]):['LOCAL_PARSE_AND_REVIEW_REQUIRED'],checkScope:'DETECTION_ONLY_NO_PROMOTION'};
- }catch{return {...packaged,lastCheckedAt:now(),status:'CHECK_FAILED',reasons:['OFFICIAL_DETECTION_FAILED'],checkScope:'DETECTION_ONLY_NO_PROMOTION'};}
+  const unchanged=packaged.source?.sha256===sha256, checked=now();
+  const state=publishedTCPStatus(packaged,Date.parse(checked));
+  // Detection has no authority to change successful verification time or publish a catalog.
+  return {...state,lastCheckedAt:checked,status:unchanged?state.status:'DOCUMENT_CHANGED',
+   effectiveState:unchanged?state.effectiveState:'PENDING',candidateVersion:unchanged?state.candidateVersion:null,
+   documentRevision:unchanged?state.documentRevision:null,source:{...(unchanged?state.source:{}),url:pdf.url,sha256,fetchedAt:checked},
+   reasons:unchanged?(state.reasons||[]):['AUTOMATED_PDF_VALIDATION_REQUIRED'],checkScope:'DETECTION_ONLY_NO_PROMOTION'};
+ }catch{return {...publishedTCPStatus(packaged),lastCheckedAt:now(),effectiveState:'PENDING',status:'CHECK_FAILED',reasons:['OFFICIAL_DETECTION_FAILED'],checkScope:'DETECTION_ONLY_NO_PROMOTION'};}
 }

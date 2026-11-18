@@ -68,7 +68,7 @@ The private deployed V0.1.1 source originated at Sites source commit `9e85f66f8d
 
 ## TCP catalog ingestion and updates
 
-See [V0.3 plan, coverage, safety model and commands](docs/PRICING_V03_TCP.md). The offline processing scripts discover the current PDF from the official calculator page, preserve exact public prices/provenance, compare versions and queue uncertain data. Local SQLite stores immutable source/catalog versions and approved pointers; it is not a Python quotation engine. Daily local schedule generators run independently of Codex once installed by the user. The browser's new catalog card shows status and checks for document changes; hosted checks do not parse/promote prices. Full TCP automatic quoting is a later phase. Public candidate data are under `pricing-studio/catalogs/tcp/`; original PDF/database/runtime logs stay ignored.
+The TCP updater discovers the current official PDF, validates supported prices and publishes passing catalogs automatically, including the initial baseline. SQLite stores the PDF, immutable versions and check history. The Python CLI exports a consistent catalog and state for a future cloud scheduler. The hosted Worker currently displays bundled status and can check for document changes. TCP quote mapping and calculation remain future work. [TCP design, operator commands and hosting plan](docs/PRICING_V03_TCP.md)
 
 ## Existing Python mapping CLI
 

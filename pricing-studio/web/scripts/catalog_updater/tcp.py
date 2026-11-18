@@ -11,6 +11,16 @@ from .models import SCHEMA_VERSION, amount, canonical, clean, digest, row_id, va
 PRICING_PAGE = "https://www.t-cloud-public.com/en/prices/price-calculator"
 OFFICIAL_HOSTS = {"www.t-cloud-public.com", "t-cloud-public.com"}
 SERVICES = {"ECS", "EVS", "EIP", "ELB", "OBS", "RDS"}
+OPEN_UNITS = {
+    "ECS": {"hour"}, "RDS": {"hour"}, "EIP": {"hour"},
+    "EVS": {"GiB-month", "piece"}, "OBS": {"GiB-month", "GiB"},
+}
+UNSUPPORTED_BILLING = re.compile(
+    r"\b(?:min(?:imum)?\.?\s+(?:billing|charging)|minimum\s+(?:charge|duration)|"
+    r"(?:billing|charging)\s+(?:interval|increment|granularity)|"
+    r"(?:billed|charged)\s+(?:per|in increments of)|rounded?\s+up|prorat(?:a|ed|ion))\b",
+    re.I,
+)
 
 
 def official_url(url):
@@ -62,7 +72,7 @@ def discover_pdf(html, page_url=PRICING_PAGE):
     parser = PriceLinks(page_url)
     parser.feed(html)
     if len(parser.links) != 1:
-        raise ValueError("Service Description discovery is missing or ambiguous; manual review required")
+        raise ValueError("Service Description discovery is missing or ambiguous")
     return next(iter(parser.links))
 
 
@@ -76,9 +86,12 @@ def heading_service(title):
 
 def column_plan(header, raw_unit):
     header = re.sub(r"EU-\s*(DE|NL)", r"EU-\1", clean(header), flags=re.I)
-    region = re.search(r"EU-(DE|NL)", header, re.I)
-    if not region or not re.search("euro", header, re.I):
+    if not re.fullmatch(
+            r"(?:price EU-(?:DE|NL) in euro|EU-(?:DE|NL) (?:open elastic in euro\s*/\s*hour|"
+            r"reserved (?:12|24|36) months? in euro\s*/\s*month|"
+            r"reserved upfront (?:12|24|36) months? in euro))", header, re.I):
         return None
+    region = re.search(r"EU-(DE|NL)", header, re.I)
     term = re.search(r"(12|24|36)\s*months?", header, re.I)
     mode = "RESERVED_UPFRONT" if "upfront" in header.lower() else "RESERVED" if "reserved" in header.lower() else "OPEN_ELASTIC"
     if mode == "RESERVED_UPFRONT":
@@ -172,7 +185,9 @@ def parse_table(table, source, previous=None):
         # Inheritance within this page is distinct from a cross-page continuation.
         if not inherited:
             carry_page = None
-    error = {"reasons": ["ROW_WIDTH_REVIEW"], "page": table["page"], "rows": malformed} if malformed else None
+    unknown = [i for i, h in enumerate(headings) if i not in price_cols and re.search(r"euro|eur\b|€|EU-\s*(?:DE|NL)", h, re.I)]
+    flags = (["ROW_WIDTH_REVIEW"] if malformed else []) + (["UNRECOGNIZED_PRICE_HEADER"] if unknown else [])
+    error = {"reasons": flags, "page": table["page"], "rows": malformed, "columns": unknown} if flags else None
     return items, error, {"signature": signature, "page": table["page"], "values": carry}
 
 
@@ -196,9 +211,66 @@ def reconcile_duplicates(items):
     return list(unique.values()), diagnostics
 
 
+def simple_price_contract(row):
+    service, mode, unit = row["service"], row["billingMode"], row["unit"]
+    if mode == "OPEN_ELASTIC":
+        return row["termMonths"] is None and unit in OPEN_UNITS.get(service, set())
+    reserved_unit = {"RESERVED": "month", "RESERVED_UPFRONT": "term"}.get(mode)
+    return service in {"ECS", "RDS"} and row["termMonths"] in {12, 24} and unit == reserved_unit
+
+
+def validate_publication(catalog, source, now):
+    """Verify that a parsed candidate is backed by official discovery and exact row evidence."""
+    validate_catalog(catalog)
+    observed = catalog["source"]
+    for entry in (source, observed):
+        official_url(entry["url"])
+        discovery = urlsplit(official_url(entry["discoveryPage"]))
+        if discovery.path.rstrip("/") != urlsplit(PRICING_PAGE).path:
+            raise ValueError("Official calculator discovery evidence required")
+    if observed["sha256"] != source["sha256"]:
+        raise ValueError("Catalog does not match the current official PDF")
+    fetched = datetime.fromisoformat(source["fetchedAt"])
+    prior_fetch = datetime.fromisoformat(observed["fetchedAt"])
+    if not prior_fetch <= fetched <= datetime.fromisoformat(now) or observed["revisionDate"] > fetched.date().isoformat():
+        raise ValueError("Invalid official document timestamps")
+    if catalog.get("currency") != "EUR" or not re.fullmatch(r"[a-f0-9]{64}", catalog.get("billingRulesHash", "")):
+        raise ValueError("Catalog currency or billing rule evidence is missing")
+    for row in catalog["items"]:
+        if row["verification"]["status"] != "AUTO_VALIDATED":
+            continue
+        evidence = row["evidence"]
+        for field in ("url", "sha256", "documentVersion", "revisionDate", "fetchedAt"):
+            if evidence.get(field) != observed[field]:
+                raise ValueError("Row source evidence differs from catalog source")
+        if not all(type(page) is int and 0 < page <= catalog["coverage"]["documentPages"] for page in evidence["pages"]):
+            raise ValueError("Invalid PDF page evidence")
+        if (row["currency"] != "EUR" or row["availability"] != "AVAILABLE" or not row["productLabel"]
+                or row.get("tier") or not simple_price_contract(row)):
+            raise ValueError("Invalid auto-validated price contract")
+        plan = column_plan(evidence["rawHeader"], row["rules"]["rawUnit"])
+        rate, failure = amount(evidence["rawPrice"])
+        if failure or rate != row["amount"] or not plan or any(row[key] != value for key, value in plan.items()):
+            raise ValueError("Price or billing plan differs from PDF evidence")
+        if row["service"] in {"ECS", "RDS"} and not re.fullmatch(r"[a-z][a-z0-9-]*(?:\.[a-z0-9]+){2,}", row.get("sku") or "", re.I):
+            raise ValueError("Explicit flavor SKU required")
+
+
+def price_section_text(lines, table_boxes):
+    """Keep billing prose (including after service headings) independently of numeric price cells."""
+    for words in lines.values():
+        outside = [word for word in words if not any(
+            x0 <= (word["x0"] + word["x1"]) / 2 <= x1 and top <= (word["top"] + word["bottom"]) / 2 <= bottom
+            for x0, top, x1, bottom in table_boxes)]
+        line = " ".join(word["text"] for word in sorted(outside, key=lambda w: w["x0"]))
+        if line and not re.match(r"^(?:Last revised:|Page\s+\d+\s*/\s*\d+\b)", line, re.I):
+            yield line
+
+
 class TCPProvider:
     provider_id = "tcp"
-    parser_version = "tcp-pdf-0.3.0-1"
+    parser_version = "tcp-pdf-0.3.0-2"
+    validate_for_publication = staticmethod(validate_publication)
 
     def __init__(self, fetch=fetch_public):
         self.fetch = fetch
@@ -207,7 +279,7 @@ class TCPProvider:
         page = self.fetch(PRICING_PAGE)
         pdf_url = discover_pdf(page.body.decode("utf-8"), page.url)
         pdf = self.fetch(pdf_url)
-        if not pdf.body.startswith(b"%PDF-"):
+        if pdf.content_type != "application/pdf" or not pdf.body.startswith(b"%PDF-"):
             raise ValueError("Discovered response is not a PDF")
         return pdf, {"url": official_url(pdf.url), "discoveryPage": page.url, "sha256": digest(pdf.body), "fetchedAt": pdf.fetched_at}
 
@@ -216,7 +288,7 @@ class TCPProvider:
         if digest(content) != source["sha256"]:
             raise ValueError("PDF digest differs from provenance")
         tables, billing_text, rule_pages = [], [], []
-        context, root_section, in_prices, in_rules = None, None, False, False
+        context, root_section, in_prices = None, None, False
         with pdfplumber.open(BytesIO(content)) as pdf:
             revision = re.search(r"Last\s+revised\s*:\s*(\d{2}\.\d{2}\.\d{4})", pdf.pages[0].extract_text() or "", re.I)
             if not revision:
@@ -227,15 +299,9 @@ class TCPProvider:
             for page_no, page in enumerate(pdf.pages, start=1):
                 text = page.extract_text() or ""
                 if re.search(r"(?m)^6\s+Prices\s*$", text):
-                    in_prices, in_rules = True, True
+                    in_prices = True
                 if not in_prices:
                     continue
-                if in_rules:
-                    part = re.split(r"(?m)^6\.2\s", text, maxsplit=1)[0]
-                    part = re.sub(r"Last revised:[^\n]*|Page\s+\d+\s*/\s*\d+", "", part)
-                    billing_text.append(clean(part)); rule_pages.append(page_no)
-                    if re.search(r"(?m)^6\.2\s", text):
-                        in_rules = False
                 words_by_line = {}
                 for word in page.extract_words():
                     words_by_line.setdefault(round(word["top"] / 3) * 3, []).append(word)
@@ -245,7 +311,7 @@ class TCPProvider:
                     match = re.match(r"^(6\.\d+\.\d+)(?:\.\d+)*\s+(.+)", line)
                     if match:
                         headings.append((top, match[1], heading_service(match[2])))
-                cursor = 0
+                cursor, price_boxes = 0, []
                 for index, table in enumerate(page.find_tables()):
                     while cursor < len(headings) and headings[cursor][0] < table.bbox[1]:
                         _, section, service = headings[cursor]
@@ -261,12 +327,17 @@ class TCPProvider:
                         continue
                     below = page.crop((0, table.bbox[3], page.width, page.height)).extract_text() if table.bbox[3] < page.height else ""
                     flags = ["FOOTNOTE_REVIEW"] if re.search(r"(?im)^\s*(?:\*|note:|\d+\))", below or "") else []
+                    price_boxes.append(table.bbox)
                     tables.append({"page": page_no, "index": index, "service": context, "rows": rows, "reviewReasons": flags})
                 for _, section, service in headings[cursor:]:
                     if section != root_section:
                         context, root_section = service, section
                     elif service:
                         context = service
+                prose = list(price_section_text(dict(sorted(words_by_line.items())), price_boxes))
+                if prose:
+                    billing_text.extend(prose)
+                    rule_pages.append(page_no)
         items, diagnostics, previous = [], [], None
         for table in tables:
             rows, error, previous = parse_table(table, source, previous)
@@ -274,8 +345,16 @@ class TCPProvider:
             if error:
                 error["severity"] = "error"
                 diagnostics.append(error)
+        if not billing_text:
+            raise ValueError("Pricing section evidence is missing")
+        if UNSUPPORTED_BILLING.search(clean(" ".join(billing_text))):
+            # The current parser cannot interpret these document-level terms reliably.
+            diagnostics.append({"code": "UNSUPPORTED_DOCUMENT_BILLING_RULE", "severity": "error", "pages": rule_pages})
+        for row in items:
+            if row["verification"]["status"] == "AUTO_VALIDATED" and not simple_price_contract(row):
+                row["verification"] = {"status": "PENDING_REVIEW", "reasons": ["UNIT_OR_BILLING_CONTRACT_UNSUPPORTED"]}
         captured = len(items)
         items, duplicate_diagnostics = reconcile_duplicates(items)
         diagnostics.extend(duplicate_diagnostics)
-        catalog = {"schemaVersion": SCHEMA_VERSION, "provider": "tcp", "parserVersion": self.parser_version, "versionId": f"tcp-{revised}-{source['sha256'][:16]}-{self.parser_version}", "source": source, "currency": "EUR", "regions": ["EU-DE", "EU-NL"], "billingRulesHash": digest(billing_text), "billingRulesPages": rule_pages, "items": items, "diagnostics": diagnostics, "coverage": {"documentPages": pages, "tables": len(tables), "expandedPriceCells": captured, "uniqueRecords": len(items), "duplicateRecords": captured-len(items), "billingPlans": {f"{mode}:{term or 0}": sum(r['billingMode']==mode and r['termMonths']==term for r in items) for mode, term in sorted({(r['billingMode'],r['termMonths']) for r in items}, key=lambda x:(x[0],x[1] or 0))}, "services": {name: {"total": sum(r['service'] == name for r in items), **{s: sum(r['service'] == name and r['verification']['status'] == s for r in items) for s in ['AUTO_VALIDATED', 'PENDING_REVIEW', 'UNAVAILABLE']}} for name in sorted(SERVICES)}}}
+        catalog = {"schemaVersion": SCHEMA_VERSION, "provider": "tcp", "parserVersion": self.parser_version, "versionId": f"tcp-{revised}-{source['sha256'][:16]}-{self.parser_version}", "source": source, "currency": "EUR", "regions": ["EU-DE", "EU-NL"], "billingRulesHash": digest(clean(" ".join(billing_text))), "billingRulesPages": rule_pages, "items": items, "diagnostics": diagnostics, "coverage": {"documentPages": pages, "tables": len(tables), "expandedPriceCells": captured, "uniqueRecords": len(items), "duplicateRecords": captured-len(items), "billingPlans": {f"{mode}:{term or 0}": sum(r['billingMode']==mode and r['termMonths']==term for r in items) for mode, term in sorted({(r['billingMode'],r['termMonths']) for r in items}, key=lambda x:(x[0],x[1] or 0))}, "services": {name: {"total": sum(r['service'] == name for r in items), **{s: sum(r['service'] == name and r['verification']['status'] == s for r in items) for s in ['AUTO_VALIDATED', 'PENDING_REVIEW', 'UNAVAILABLE']}} for name in sorted(SERVICES)}}}
         return validate_catalog(catalog)

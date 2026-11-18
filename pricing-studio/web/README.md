@@ -88,8 +88,8 @@ Third-party browser libraries: SheetJS CE 0.20.3 (Apache-2.0), Mozilla PDF.js 3.
 Shared project state: [../../docs/DEVELOPMENT_STATUS.md](../../docs/DEVELOPMENT_STATUS.md).
 
 
-## TCP V0.3 data phase
+## TCP catalog publication
 
-See [the V0.3 design and operator guide](../../docs/PRICING_V03_TCP.md). Install `requirements-catalog.txt` only for local PDF processing. `python3.12 scripts/catalog_update.py check` discovers the Service Description from the official calculator page and saves a candidate/history in ignored local SQLite. No real initial baseline has been approved. The candidate artifact under `pricing-studio/catalogs/tcp/` is review data, not a usable complete quotation.
+Install `requirements-catalog.txt` for Python PDF parsing. `python3.12 scripts/catalog_update.py check` discovers the official TCP Service Description, retries validation failures and publishes eligible versions to SQLite. Initial publication uses the same checks. Row-level Pending and Unavailable prices retain their source evidence.
 
-Local `npm run dev` connects the catalog-status card to the persistent CLI updater. Hosted Worker checks discover/download/hash only, and cannot parse/promote prices or install daily jobs. `schedule --scheduler cron|systemd|windows --output <directory>` generates local daily configuration without installing it; run this on the actual scheduler computer. Offline HTML includes the packaged status and disables live checking. TCP source validation requires an approved/current version and successful check within 48 hours; old quote snapshots do not mutate. Alibaba/Tencent adapters are not implemented.
+Local `npm run dev` connects the catalog card to the Python updater. Last check, last successful verification, version and effective state are separate. Use `publication --output outputs/tcp-publication.json` to export an atomic state/catalog pair. Historical versions remain available by explicit version ID. The hosted Worker currently detects changes and reads packaged status. The managed scheduler and cloud delivery are planned. [TCP operator guide and hosting plan](../../docs/PRICING_V03_TCP.md)

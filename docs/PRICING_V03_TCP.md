@@ -1,20 +1,6 @@
 # Pricing Studio V0.3 — TCP catalog and auto-update
 
-This is the **catalog/data phase**, on GitHub baseline `f8ea276` / V0.2.0-dev. The Huawei price engine stays unchanged. TCP automatic quote mapping/calculation is **not enabled**; a source-validated price is not an approved complete quotation. Alibaba/Tencent adapters are planned only.
-
-## Implemented and next stages
-
-- [x] Generic provider contracts, Huawei compatibility wrapper, TCP validation and frozen quote catalog snapshots.
-- [x] Official PDF → structured catalog: ECS, EVS, EIP, ELB, OBS and RDS; EUR; EU-DE/EU-NL; exact decimal prices, units and tiers.
-- [x] Separate Open Elastic, Reserved 12/24 and Reserved Upfront 12/24 records. Observed 36-month entries are retained with review flags, not silently converted or quoted.
-- [x] Official page discovery, document SHA-256/revision/retrieval/version metadata, append-only versions and source PDFs in local SQLite.
-- [x] Compare consecutive parsed versions and also validate against the approved baseline. Added/removed SKUs, amount changes, units/terms/tiers and document billing-rule changes are distinct.
-- [x] Initial/abnormal/complex/failed cases enter review; no unapproved replacement of formal prices. Ordinary validated changes can promote after an approved baseline exists.
-- [x] Synthetic regressions, then local daily cron/systemd/Windows Task Scheduler generators; no Codex process required.
-- [x] Small bilingual catalog status card and check button. Hosted check detects official PDF changes only; local Web bridge performs full persistent ingestion.
-- [ ] Human baseline review and resolution of merged/cross-page/duplicate/tier/ELB rules.
-- [ ] TCP source-to-target SKU confirmation and quote-engine integration, including calendar-based storage usage, full upfront/term semantics and ancillary resources.
-- [ ] End-to-end browser acceptance. Unit/HTTP/packaging checks are not browser acceptance.
+The Python updater publishes qualifying TCP catalogs automatically. Web + Worker provides the status interface and existing Huawei quotations. TCP quote mapping and calculation remain future work.
 
 ## Official source and observed coverage
 
@@ -32,21 +18,21 @@ Observed revision: **2026-10-09**, 115 pages, 1,609,264 bytes; SHA-256 `c88c0aff
 | RDS | 1818 | 1475 | 228 | 115 |
 | Total | 20348 | 3397 | 11686 | 5265 |
 
-Coverage is **6/6 target service families and 59 matching price tables**, not 100% of the entire provider offering. 20,420 expanded price cells reconcile to 20,348 unique records; 72 repeated price identities are preserved as review diagnostics with occurrence provenance. Structural pass rate is 16.7% of unique records. **Zero TCP versions have been approved in the real store.** All remain a catalog candidate, including structurally validated rows, until baseline review.
+The earlier parser found **6 target service families and 59 price tables**. Its archived candidate accounts for 20,420 expanded cells and 20,348 unique records, with 72 repeated identities recorded with occurrence provenance. The counts above describe the archived parser version. The current automatic publication policy has been tested with fictional PDFs and prices.
 
 The reviewable compressed catalog and manifest live under `pricing-studio/catalogs/tcp/<version>/`. They contain public price facts/provenance, not a PDF copy, customer input or a quotation. Raw downloaded documents/database/check logs stay in ignored `web/outputs/`.
 
-## Data contract and review
+## Data contract and automatic publication
 
 Each row has a stable internal ID, source label, actual flavor SKU when present, specification/OS fields, provider/region, billing mode/term, unit, decimal-string amount, raw tier, availability and verification reasons. Evidence includes official URL, SHA-256, revision/document version, retrieval time, physical PDF page(s), table/row/column and raw price/header. Label-derived IDs are not invented vendor SKU codes.
 
 `n.a.` is null/UNAVAILABLE, never zero; a printed numeric zero remains zero. Merged/cross-page cells, unmatched columns, footnotes, duplicate identities, tiers, capacity bundles and complex ELB/IOPS/license/backup rules stay Pending. Duplicate conflicts have no usable amount. Unknown layouts cannot silently remove rows or replace a catalog. Monthly usage-based GiB-month is not a Reserved monthly contract. No hourly multiplier creates an official subscription rate.
 
-`PricingProviderAdapter` and `CatalogUpdater` are generic. `public/providers.mjs` delegates Huawei validation/calculation to the existing engine. TCP price validation additionally requires an approved version, row/source evidence and a successful/current check within 48 hours. A pending/failed update blocks new TCP price validation; pinned historical quotes remain unchanged. TCP calculation intentionally throws until mapping/cost integration is implemented. Future adapters must use their own currencies, regions and billing contracts; unknown providers have no fallback.
+The Python publisher independently checks official discovery, PDF digest and revision, table structure, row identity, region, currency, unit, plan and price-cell evidence. ECS and RDS require an explicit flavor SKU. Other supported services use the official label plus plan dimensions as their internal identity. An initial catalog can publish when at least one eligible row survives validation and the document-level checks pass. Row-level Pending and Unavailable entries retain evidence.
 
-Local SQLite retains immutable source bytes and catalog JSON, check history, manual approval events and a transactional approved-version pointer. Quote snapshot helpers copy the exact version/rates; subsequent updates do not mutate those snapshots or exported Excel. This is catalog persistence, not a second Python quotation engine.
+Changes in supported rates can publish against the last published baseline. A move greater than 20%, a transition from zero or a newly usable rate in an existing row requires a newer document revision and a matching second official download and parse. Fetch failures and anomalies are retried up to three total attempts. Unresolved billing rule changes, malformed tables, SKU removal, more than 10% added identities, and document rollbacks keep the catalog Pending. The parser fingerprints the narrative in the price section, including prose in service sections outside price tables. Recognized terms such as minimum billing duration require deterministic support before that document can publish.
 
-Automatic policy: initial baseline requires review; new diagnostics, removal, billing-rule changes, complex changed rows, revision rollback, >20% price movement or >10% added records require review. Comparisons include the preceding candidate and approved baseline. A failed fetch/parse or concurrent-head conflict never overwrites the approved pointer. Approving a version does not clear row-level Pending flags. Parser changes require a new parser version.
+SQLite stores immutable PDFs and catalog JSON. One transaction records the check result and advances the version pointer on success. A stale concurrent result cannot overwrite a newer decision. The state exposes the latest check time, latest successful verification time, published and candidate versions and whether the published catalog can price a new quote. A failure, unresolved candidate or verification older than 48 hours leaves new quotes Pending. Old versions remain retrievable by explicit version ID. Historical approval records are retained as audit data and grant no current eligibility. Rechecking current official bytes can refresh successful verification while keeping the original evidence inside the catalog. When the parser version changes, the updater uses the same parser to compare the previous PDF if needed.
 
 ## Local commands
 
@@ -59,27 +45,24 @@ python3.12 scripts/catalog_update.py status
 python3.12 scripts/catalog_update.py export --version <candidate-version> --output outputs/tcp-candidate.json
 ```
 
-First inspect the source PDF/candidate. Only a human reviewer should then run:
+After a check, export the state and matching effective catalog atomically.
 
 ```bash
-python3.12 scripts/catalog_update.py approve --version <candidate-version> --reviewer <reviewer-label> --reason "Source and proposed baseline checked; row Pending retained"
+python3.12 scripts/catalog_update.py publication --output outputs/tcp-publication.json
 ```
 
-`parse --pdf <public-pdf> --source-url <official-url> --output outputs/parsed.json` is an offline inspection tool: operator-supplied files are explicitly marked for source review, not treated as authenticated downloads.
+The publication contains `state` and `catalog`. For Pending or stale state, `catalog` is null. `export` without a version returns the effective catalog. `export --version <id>` retrieves immutable historical data explicitly. `parse --pdf <public-pdf> --source-url <official-url> --output outputs/parsed.json` remains a diagnostic tool for operator-supplied files with unverified provenance.
 
-Generate the schedule **on the computer where it will run**, so interpreter/project paths match that computer:
+## Managed scheduling and delivery plan
 
-```bash
-python3.12 scripts/catalog_update.py schedule --scheduler cron --output outputs/schedule
-# Or: --scheduler systemd / --scheduler windows
-```
+Use a managed Linux VM with a persistent volume and a daily systemd timer. Run the Python updater under a dedicated account with outbound access to the official TCP site and scoped publication storage. Use a single scheduled writer, volume backups and run/failure alerts. Existing `schedule --scheduler systemd --output outputs/schedule` generates the starting timer and service. Adapt the production job to export publication state after every attempt, including a failed check.
 
-Linux cron: use `crontab -e` and merge the reviewed generated lines into the existing crontab; preserve unrelated jobs. Daily 07:00 Europe/Berlin; cron implementation must support CRON_TZ. systemd: copy the generated service/timer to the user's systemd directory, then `systemctl --user daemon-reload` and `systemctl --user enable --now pricing-studio-tcp.timer`. Windows: import generated XML in Task Scheduler under the intended local user; runs daily at 07:00 in that computer's time zone. No passwords are stored in the files. A network-connected, running local machine is required. **Generators do not install/start tasks; no daily job was installed on the user's computer by this task.**
+Store immutable catalog objects by version and SHA-256 in R2 or equivalent object storage. Publish the catalog first, then replace one small current-state object with a conditional write so an older job cannot displace a newer decision. Publish Pending on failures. The Worker should read state and matching catalog together by version and hash, enforce the 48-hour limit at request time, and reject stale or mismatched state. Browser and Excel snapshots should pin the exact catalog version, source hash, verification time, assumptions and amounts. A managed job with ephemeral disks would need durable database storage and compatible locking or a replacement state store.
 
-Local Web (`npm run dev`) uses `/api/catalog/tcp/status` and `/check` to invoke fixed local CLI commands and persist state. On Windows, `PRICING_CATALOG_PYTHON` can specify the Python executable. Hosted Worker performs URL discovery/hash comparison only; results live in the current browser session, and new documents need local parsing/review before publication. Offline HTML displays the packaged status and disables network checks. No client inventory is sent to these endpoints.
+Managed scheduling, cloud publication and Worker storage integration are planned. The local Web bridge currently uses fixed CLI commands for `/api/catalog/tcp/status` and `/check`. The hosted Worker only detects PDF changes and reports packaged status. Detection cannot renew successful verification.
 
 ## Validation and known limits
 
 Core PDF/update tests ran before schedule integration. Tests use fictional prices/rows and a generated real miniature PDF, independently test money/unit/term distinctions, malformed/merged/cross-page rows, zero vs n.a., duplicate conflicts, source discovery, update gates, immutable/pinned versions, rollback, failed fetch/parse, and provider compatibility. Public-PDF extraction is a separate real-data smoke check. Regression counts and browser/deployment results belong in DEVELOPMENT_STATUS.
 
-The live initial baseline was not approved by the agent. Complex tier charge boundaries/free tiers, physical/GPU/licensing, RDS ancillary storage and ELB LCU composition need human work. EIP coverage currently covers IP charges, not a complete outbound-traffic/network design. No Alibaba/Tencent implementation, user cron installation, authenticated TCP API, or full TCP automatic quote flow is claimed.
+Tier charge boundaries, free tiers, physical/GPU licensing, RDS ancillary storage and ELB LCU composition still need deterministic rules. For TCP automatic quotes, start with exact mapping for a small set of simple SKUs in one region, then reconcile units, calendar usage, ancillary resources and Excel evidence before expanding.

@@ -2,14 +2,12 @@
   "provider": "tcp",
   "lastCheckedAt": "2026-11-17T16:45:00.615497+00:00",
   "currentVersion": null,
-  "status": "PENDING_REVIEW",
+  "lastVerifiedAt": null,
+  "effectiveState": "PENDING",
+  "status": "PENDING_VALIDATION",
   "candidateVersion": "tcp-2026-10-09-c88c0aff01e08ade-tcp-pdf-0.3.0-1",
   "documentRevision": "2026-10-09",
-  "reasons": [
-    "COMPLEX_PRICE_REVIEW",
-    "INITIAL_BASELINE_REVIEW",
-    "PARSE_DIAGNOSTICS_REVIEW"
-  ],
+  "reasons": ["AWAITING_AUTOMATED_PDF_VALIDATION"],
   "coverage": {
     "billingPlans": {
       "OPEN_ELASTIC:0": 4840,

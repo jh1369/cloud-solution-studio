@@ -14,7 +14,7 @@ test('TCP update button API detects official document changes without price prom
  globalThis.fetch=async url=>String(url).includes('/en/prices/price-calculator')?new Response('<a href="/new-service-description.pdf">PDF</a>'):new Response(pdf);
  try{
   const response=await worker.fetch(new Request(origin+'/api/catalog/tcp/check',{method:'POST',body:'{}'}));const result=await response.json();
-  assert.equal(response.status,200);assert.equal(result.status,'DOCUMENT_CHANGED_REVIEW_REQUIRED');assert.equal(result.currentVersion,status.currentVersion);assert.equal(result.checkScope,'DETECTION_ONLY_NO_PROMOTION');
+  assert.equal(response.status,200);assert.equal(result.status,'DOCUMENT_CHANGED');assert.equal(result.currentVersion,status.currentVersion);assert.equal(result.checkScope,'DETECTION_ONLY_NO_PROMOTION');
  }finally{globalThis.fetch=previous;}
 });
 test('Offline package is a byte-exact ZIP attachment with a working web entry',async()=>{

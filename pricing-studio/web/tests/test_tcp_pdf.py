@@ -83,3 +83,10 @@ class TCPPDFTest(unittest.TestCase):
     def test_missing_columns_are_reported_instead_of_silently_discarded(self):
         table=self.table([["Name","charging unit","price EU-DE in Euro"],["FICTIONAL volume","h"]])
         rows,error,_=parse_table(table,source());self.assertEqual(rows,[]);self.assertEqual(error['reasons'],['ROW_WIDTH_REVIEW'])
+
+    def test_unknown_currency_column_is_not_silently_dropped(self):
+        table = self.table([["Name", "charging unit", "price EU-DE in Euro", "EU-NL Special rate in Euro"],
+                            ["FICTIONAL volume", "GiB/month", "0.10", "0.20"]])
+        rows, error, _ = parse_table(table, source())
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(error["reasons"], ["UNRECOGNIZED_PRICE_HEADER"])
