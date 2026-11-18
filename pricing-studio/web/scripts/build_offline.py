@@ -12,7 +12,7 @@ if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?(?:\+[A-Za-z0-9.-]+)?", V
     raise ValueError("A safe semantic package version is required")
 HTML_NAME = f"Pricing-Studio-{VERSION}-Offline.html"
 ZIP_NAME = f"Pricing-Studio-{VERSION}-Offline.zip"
-MODULES = ["engine", "i18n", "ui", "excel", "providers"]
+MODULES = ["engine", "i18n", "ui", "providers", "excel"]
 CSP = "default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; worker-src blob:; connect-src 'none'; base-uri 'none'; object-src 'none'"
 
 

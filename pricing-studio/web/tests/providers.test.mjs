@@ -23,7 +23,7 @@ test('TCP metadata validation requires effective catalog, source evidence and ro
  }
  assert.equal(adapter.validatePrice(null,catalog,options).valid,false);
  for(const state of [{...options.updateState,effectiveState:'PENDING'},{...options.updateState,status:'APPROVED'},{...options.updateState,status:'CHECK_FAILED'},{...options.updateState,lastVerifiedAt:'2000-01-01T00:00:00Z',lastCheckedAt:new Date().toISOString()},{...options.updateState,source:{sha256:'b'.repeat(64)}}])assert.equal(adapter.validatePrice(row,catalog,{...options,updateState:state}).valid,false);
- assert.throws(()=>adapter.calculateQuote(),/not enabled/);
+ assert.equal(adapter.calculateQuote({product:'S3',specification:''},catalog,options).reasonCode,'TCP_SERVICE');
 });
 test('TCP reserved, upfront and usage-based monthly units remain independent',()=>{
  const adapter=getPricingProvider('tcp'),catalog=tcp(),options=publication(catalog);

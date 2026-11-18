@@ -1,6 +1,6 @@
 # Cloud Solution Studio
 
-Local-first tools for cloud solution architects. Pricing Studio V0.3 supports AWS-to-Huawei Cloud Public mapping, verified public pricing and Excel export. The TCP data phase now includes an object-store publisher and Worker reader, verified locally. The private Site runs the previously accepted Huawei build. The TCP storage binding, managed schedule and quotation mapping are pending. [Verified status](docs/DEVELOPMENT_STATUS.md)
+Local-first tools for cloud solution architects. Pricing Studio V0.3 supports AWS-to-Huawei Cloud Public quotations and TCP pay-per-use estimates for selected ECS, EVS and RDS configurations in EU-DE. Both workflows use the AWS inventory import and five-sheet Excel export. The TCP publisher and Worker reader support private object storage. The private Site uses an expiring verified snapshot for its initial TCP release. [Verified status](docs/DEVELOPMENT_STATUS.md)
 
 ## Security boundary
 
@@ -27,7 +27,7 @@ pricing-studio/
   src/pricing_studio/         # CSV → JSON product-family mapping starter
   sample_data/               # Fictional AWS inventory
   tests/                     # Python starter test
-  web/                       # Pricing Studio 0.3.2-dev, Web + Worker
+  web/                       # Pricing Studio 0.3.3-dev, Web + Worker
     public/                  # Browser code, vendored libraries, public price evidence
     worker.mjs               # Huawei price refresh and TCP catalog routes
     scripts/                 # Catalogue verification and Worker build helpers
@@ -68,7 +68,7 @@ The private deployed V0.1.1 source originated at Sites source commit `9e85f66f8d
 
 ## TCP catalog ingestion and updates
 
-The TCP updater discovers the current official PDF, validates supported prices and updates SQLite automatically. The `publish` command uses the same SQLite state to deliver immutable validated rows and a conditional current-state pointer to private R2. The Worker provides read-only status and catalog endpoints and enforces a 48-hour verification window. Managed scheduling, the production binding and TCP quote integration are pending. [TCP design, operator commands and hosting plan](docs/PRICING_V03_TCP.md)
+The TCP updater discovers the current official PDF, validates supported prices and updates SQLite automatically. The `publish` command uses the same SQLite state to deliver immutable validated rows and a conditional current-state pointer to private R2. The Worker provides read-only status and catalog endpoints and enforces a 48-hour verification window. Online TCP quotation uses eligible EU-DE rates. Managed scheduling and the production storage binding remain pending. [TCP design, operator commands and hosting plan](docs/PRICING_V03_TCP.md)
 
 ## Existing Python mapping CLI
 

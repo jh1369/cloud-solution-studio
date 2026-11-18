@@ -11,7 +11,7 @@ The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, t
 - [x] Publish verified TCP rows and evidence through the conditional object-store adapter. Verify that the Worker rejects expired, incomplete and conflicting publications in local integration.
 - [ ] Run the publisher daily on managed Linux with a persistent SQLite disk, an approved private R2 bucket and the Worker binding. Use the current official PDF to verify two runs and a failure in the hosted environment.
 - [ ] Extend deterministic checks for merged and cross-page rows, service-specific charging rules, tiers and composite fees.
-- [ ] Start TCP automatic quotations with one region and explicit simple SKUs. Confirm AWS mappings, reconcile units and compare line costs and Excel evidence against the official PDF.
+- [x] Quote simple ECS, EVS and RDS pay-per-use lines in EU-DE from an imported AWS inventory. Verify browser totals, Pending rows and Excel evidence against an active official catalog.
 - [ ] Extend quotation coverage for reserved and upfront plans, storage, ancillary charges and missing resources. Preserve unknown amounts as Pending.
 
 [Catalog contracts, status and hosting plan](PRICING_V03_TCP.md)

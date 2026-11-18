@@ -3,6 +3,7 @@ const catalogue=/*CATALOG*/{};
 const offlineDownload=/*OFFLINE_DOWNLOAD*/{};
 /*TCP_INSPECTOR*/
 /*TCP_PUBLICATION*/
+const tcpRelease=tcpReleaseStore(/*TCP_RELEASE*/{});
 const endpoint='https://portal.eu.huaweicloud.com/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource';
 const security={'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'SAMEORIGIN','Permissions-Policy':'camera=(), microphone=(), geolocation=()','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; frame-ancestors 'self' https://chatgpt.com https://*.chatgpt.com; base-uri 'none'; object-src 'none'"};
 function requestForPlan(plan,index){
@@ -26,15 +27,16 @@ export default {async fetch(request,env){
  const url=new URL(request.url);
  if(url.pathname==='/api/catalog/tcp/status'||url.pathname==='/api/catalog/tcp/catalog'){
   if(request.method!=='GET')return json({error:'GET required'},405);
-  const {state,catalog}=await readTCPPublication(env?.TCP_CATALOG_BUCKET);
-  const onlineState={...state,checkScope:'PUBLISHED_OBJECT_STORAGE'};
+  const bucket=env?.TCP_CATALOG_BUCKET;
+  const {state,catalog}=await readTCPPublication(bucket??tcpRelease);
+  const onlineState={...state,checkScope:!bucket&&tcpRelease?'VERIFIED_RELEASE_SNAPSHOT':'PUBLISHED_OBJECT_STORAGE'};
   return json(url.pathname.endsWith('/status')?onlineState:{state:onlineState,catalog});
  }
  if(url.pathname==='/api/catalog/tcp/check'){
   if(request.method!=='POST')return json({error:'POST required'},405);
   if(request.headers.get('Origin')&&request.headers.get('Origin')!==url.origin)return json({error:'Origin mismatch'},403);
   if(Number(request.headers.get('Content-Length'))>4096||(await request.text()).length>4096)return json({error:'Request too large'},413);
-  const state=await inspectTCPSource(undefined,{loadStatus:async()=>(await readTCPPublication(env?.TCP_CATALOG_BUCKET)).state});
+  const state=await inspectTCPSource(undefined,{loadStatus:async()=>(await readTCPPublication(env?.TCP_CATALOG_BUCKET??tcpRelease)).state});
   return json({...state,catalog:state.effectiveState==='ACTIVE'?state.catalog:null},state.status==='CHECK_FAILED'?502:200);
  }
  if(url.pathname==='/api/rates'){

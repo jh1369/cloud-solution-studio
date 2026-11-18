@@ -1,7 +1,42 @@
 import {calculate,REGION,billingOf,priceValidation,mappingReview,sumMoney} from './engine.mjs';
-import {billingLabel,translateMessage,reasonLabel,mappingLabel} from './i18n.mjs';
+import {billingLabel,translateMessage,reasonLabel,mappingLabel,t} from './i18n.mjs';
+import {TCP_QUOTE_REGION,tcpQuoteRows,tcpQuoteTotals} from './providers.mjs';
+
+function tcpWorkbook(add,rows,catalog,opts,projectName,language){
+ const output=opts.output??tcpQuoteRows(rows,catalog,opts),state=opts.updateState;
+ const status=result=>t(result.status==='Pending'?'tcp.quote.pending':'tcp.quote.priced',language);
+ const reason=result=>reasonLabel(result,language)||null;
+ const totals=tcpQuoteTotals(output);
+ add('Input',[
+  ['Row','Product','Specification','AWS Region','Resource Count','Usage','Unit','Usage Scope','Usage Period','AWS Billing Method','Source Page','Target Quantity','tcp_target_sku','tcp_target_region','tcp_target_billing'],
+  ...rows.map((row,i)=>[i+1,row.product,row.specification,row.region,row.quantity,row.usage,row.unitExplicit?row.unit:null,row.scope,row.period,row.billing,row.sourcePage??null,row.targetQuantity??null,row.tcpTarget||null,row.tcpTargetRegion||null,row.tcpTargetBilling||'ONDEMAND'])
+ ]);
+ add('Service Mapping',[
+  ['Row','AWS Product','Target Service','Target SKU / Product','Region','Status','Mapping Basis','Review Reason'],
+  ...output.map((result,i)=>[i+1,rows[i].product,result.mapping.service??null,result.mapping.sku??null,TCP_QUOTE_REGION,status(result),result.mapping.basis??null,reason(result)])
+ ]);
+ add('Public Pricing',[
+  ['Row','Price Status','Target SKU / Product','Unit Price','Currency','Unit','Verified At','Official Source','PDF Pages','Source SHA-256','Catalog Version','Catalog SHA-256','Official Evidence','Review Reason'],
+  ...output.map((result,i)=>{const item=result.item;return [
+   i+1,status(result),result.mapping.sku??null,item?.amount??null,'EUR',item?.unit??null,item?state.lastVerifiedAt:null,item?.evidence.url??null,item?.evidence.pages.join(', ')??null,item?.evidence.sha256??null,item?catalog.versionId:null,item?state.catalog?.sha256??null:null,item?JSON.stringify(item.evidence):null,reason(result)
+  ];})
+ ]);
+ add('Quotation',[
+  ['Row','Target Service','Status','Billing Mode','Usage Period','Target Quantity','Billable Usage','Unit','Currency','Monthly Amount EUR','Source Period Amount EUR','Review Reason'],
+  ...output.map((result,i)=>[i+1,result.mapping.service??null,status(result),'OPEN_ELASTIC',rows[i].period,result.quantity??null,result.effectiveUsage??null,result.item?.unit??null,'EUR',result.status==='Valid'?result.termPublic:null,result.status==='Period'?result.termPublic:null,reason(result)])
+ ]);
+ add('Assumptions',[
+  ['Item','Value'],['Project',projectName],['Exported At',new Date(opts.now??Date.now()).toISOString()],['Region',TCP_QUOTE_REGION],['Currency','EUR'],
+  ['Catalog version',state?.currentVersion??null],['Catalog SHA-256',state?.catalog?.sha256??null],['Last successful verification',state?.lastVerifiedAt??null],
+  ['Priced rows',totals.ready],['Needs review',totals.pendingCount],['Priced monthly subtotal EUR',totals.monthly],['Priced source-period subtotal EUR',totals.period],
+  ['Pricing','Official TCP EU-DE Open Elastic rate multiplied by confirmed usage and quantity. Aggregate usage is charged once. Subtotals sum line cents.'],
+  ['Usage periods','Monthly and source-period subtotals are separate. Review amounts are blank.'],
+  ['Exclusions','Tax, FX, support, licensing, RDS storage and backup, and other unlisted charges.']
+ ]);
+}
+
 export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
- const output=rows.map(row=>calculate(row,catalog,opts)),book=XLSX.utils.book_new(),language=opts.language||'zh';
+ const book=XLSX.utils.book_new(),language=opts.language||'zh';
  const add=(name,data)=>{
   const sheet=XLSX.utils.aoa_to_sheet(data);
   sheet['!cols']=data[0].map((_,i)=>({wch:Math.min(70,Math.max(14,...data.map(row=>String(row[i]??'').length+2)))}));
@@ -9,6 +44,11 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
   for(const key of Object.keys(sheet)){if(key.startsWith('!'))continue;const cell=sheet[key];if(typeof cell.v==='string'){cell.t='s';delete cell.f;}}
   XLSX.utils.book_append_sheet(book,sheet,name);
  };
+ if(opts.provider==='tcp'){
+  tcpWorkbook(add,rows,catalog,opts,projectName,language);
+  return book;
+ }
+ const output=rows.map(row=>calculate(row,catalog,opts));
  add('Input',[
   ['Row','Product','Specification','AWS Region','Resource Count','Usage','Unit','Usage Scope','Usage Period','AWS Billing Method','Source Page','Target Quantity','Huawei Billing Mode','Capacity GB'],
   ...rows.map((row,i)=>[i+1,row.product,row.specification,row.region,row.quantity,row.usage,row.unit,row.scope,row.period,row.billing,row.sourcePage??null,row.targetQuantity??null,billingOf(row),row.capacity??null])

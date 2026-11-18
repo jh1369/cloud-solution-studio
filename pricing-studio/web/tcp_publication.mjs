@@ -49,6 +49,24 @@ function tcpUsableCatalog(catalog, state) {
       && typeof row.amount === 'string' && /^\d+(?:\.\d+)?$/.test(row.amount) && Number(row.amount) <= 1e12);
 }
 
+export function tcpReleaseStore(snapshot) {
+  if (!snapshot.sha256) return undefined;
+  const state = Uint8Array.from(atob(snapshot.state), char => char.charCodeAt(0));
+  const identity = {etag: snapshot.sha256, version: 'release'};
+  return {
+    async get(key) {
+      if (key === tcpCurrentKey) return {...identity, size: state.length, arrayBuffer: async () => state.buffer};
+      if (key !== `tcp/catalogs/${snapshot.sha256}.json`) return null;
+      return {...identity, size: snapshot.size, async arrayBuffer() {
+        const bytes = Uint8Array.from(atob(snapshot.catalog), char => char.charCodeAt(0));
+        const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+        return new Response(stream).arrayBuffer();
+      }};
+    },
+    async head(key) { return key === tcpCurrentKey ? identity : null; },
+  };
+}
+
 export async function readTCPPublication(bucket, now = Date.now) {
   if (!bucket) return tcpPending('STORAGE_NOT_CONFIGURED');
   let state;

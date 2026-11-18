@@ -7,16 +7,16 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-18，Europe/Berlin |
-| 当前优先目标 / 模式 | TCP 在线目录发布及 Worker 读取，离线版暂停，单主 Agent |
-| 本轮检查基线 | `main` / `6c41807260908096e96228bb610315ed82effc01`，已验收私有站版 0.3.2-dev |
+| 当前优先目标 / 模式 | TCP EU-DE 按需报价和 Excel，离线版暂停，单主 Agent |
+| 本轮检查基线 | `main` / `d8147a07e372c7af64f6bbf1cdcfccc6c1a4377e`，起始私有站版 0.3.2-dev |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 私有站第 6 版已部署 `0.3.2-dev`，对应 GitHub `c60138e`。生产功能已验证，用户确认当前会话可直接进入工作台。按本轮验收范围跳过首次登录与回跳 |
+| 当前网页版本 | 私有站第 7 版已部署 `0.3.3-dev`。通过 Sites 服务访问验收 TCP 和 Huawei 实际下载。原所有者访问范围复查通过 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| 当前 Sites 部署源码 | `0cdb286b139b359e25d2b90692428a1092cbc12b`，第 6 版私有部署 succeeded（2026-11-18，Europe/Berlin）；上一部署为 `fff0d1f` |
-| 整体进度 | TCP 官方 PDF 已在隔离库核验 3,389 条。在线发布和 Worker 读取通过模拟存储集成，生产绑定、调度和 TCP 报价待接入 |
-| 本轮同步范围 | TCP 发布适配、Worker 读取接口及回归，离线工作暂停 |
+| 当前 Sites 部署源码 | `438049263a00cc8ccae6bfaaa72408070bb9a544`，第 7 版私有部署 succeeded（2026-11-18，Europe/Berlin）。上一版为 `0cdb286b` |
+| 整体进度 | TCP EU-DE 按需报价已上线。生产初始目录使用有时效的官方快照，生产对象存储绑定和托管调度待接入 |
+| 本轮同步范围 | TCP 按需映射、价格证据、Excel 导出和生产浏览器回归，离线工作暂停 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -45,7 +45,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 - Python Updater 从官方计算器发现 PDF 并校验来源、结构、SKU、地区、币种、单位和计费证据。通过的首版及更新自动发布。异常最多检查三次。无法确定的价格保留 Pending。
 - SQLite 保存原 PDF、不可变目录及检查历史。最近检查、最近成功核验、最近发布版本及时效状态分别记录。候选受阻或失败后新报价暂停，历史报价继续使用原快照。
 - Python `publish` 将有效目录与当前状态写入私有对象存储。Worker 校验版本、哈希及 48 小时有效期后返回目录。模拟存储与本地 workerd 已验证，生产绑定待接入。
-- 生产站的 Huawei 报价功能及现有登录会话验收已通过，TCP 自动报价待开发。[在线验收](PRICING_BROWSER_ACCEPTANCE.md) · [TCP 运维计划](PRICING_V03_TCP.md)
+- 生产站已验收 TCP EU-DE 的简单 ECS、EVS 和 RDS 按需报价及 Excel，Huawei 三种模式回归已通过。[在线验收](PRICING_BROWSER_ACCEPTANCE.md) · [TCP 运维计划](PRICING_V03_TCP.md)
 
 ### 先前 V0.2 集成记录（历史）
 
@@ -395,3 +395,10 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **修改** Worker 状态由实际对象存储提供，官方文档检查仍只检测变更。发布开始标记 Pending，目录写入并回读后才切换生效指针。Worker 在返回前复核当前对象和有效期。**删除** Worker 的构建时状态回退。Huawei 报价和 Excel 使用原有实现。
 - **回归** 在 `pricing-studio/web/` 使用 Node 24.22.1、Python 3.12.14、pdfplumber 0.11.9 和 boto3 1.40.67。运行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，92 项通过。Python 的 `test_catalog`、`test_catalog_updates`、`test_tcp_pdf`、`test_schedule` 和 `test_catalog_publication` 共 42 项通过。均为 0 失败。额外通过本地 workerd 与模拟 R2 验证虚构 PDF 到接口、Pending 及过期 ETag 条件写入。构建 Worker 时复用既有 ZIP，离线开发及专用测试暂停。
 - **同步与部署** 本条记录随 GitHub main 的在线发布源码交付。已记录的私有站仍是 0.3.2-dev，本轮未部署或创建云资源。下一阶段在获准的托管环境接入持久 SQLite、定时器和私有对象存储，完成真实官方目录的云端验收。[发布契约和运维计划](PRICING_V03_TCP.md#online-publication-contract)
+
+### 2026-11-18 — TCP EU-DE 按需报价
+
+- **新增** 在线目标平台选择、ECS 和 RDS 的少量精确配置映射、EVS 确认产品名后的简单容量核价，以及 TCP 的五表 Excel。页面和工作簿共用计算结果，月度与来源账期分列，待复核金额留空。GP SSD v2、IOPS 和吞吐量保持待复核。
+- **修改** 用有效官方目录验证地区、SKU、配置和计费单位。私有站首次发布使用现有核验快照，原核验时间为 `2026-11-18T14:58:38.490856+00:00`，有效至柏林时间 11 月 20 日 15:58:38。可用的 Worker 存储绑定优先。**删除** 无。
+- **验收** Chromium 156.0.8078.79 和 openpyxl 3.1.5 重开生产真实下载件。9 行虚构资源中 4 行计价、5 行待复核，月度 €43.71，来源账期 €1.14。两个 Excel 入口和过期场景均通过。Huawei 按需、包月、包年各实际下载并重开。96 项 JavaScript 和 42 项 Python 回归全部通过。[浏览器证明](PRICING_BROWSER_ACCEPTANCE.md#2026-11-18--tcp-eu-de-按需报价)
+- **同步与部署** GitHub main 接收本轮源码与虚构夹具。私有站第 7 版 `0.3.3-dev` 已成功部署。沿用原站点访问范围和离线 ZIP。正式对象存储绑定、连续核验、并发发布及检测时间戳留待后续。未同步下载件、原始 PDF 或 SQLite。
