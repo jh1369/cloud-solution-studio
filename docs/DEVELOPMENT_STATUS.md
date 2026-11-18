@@ -7,16 +7,17 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-18，Europe/Berlin |
-| 当前优先目标 / 模式 | Huawei EVS 每盘容量编辑与报价一致性，单主 Agent |
-| 本轮检查基线 | `main` / `e8ff1ec697eafb7466c336156c9d752610e749fc`，起始私有站版 0.3.5-dev |
+| 当前优先目标 / 模式 | Huawei EVS 用量与 DCS 容量编辑，TCP 定时发布另行交付，单主 Agent |
+| 本轮检查基线 | `main` / `8f8ff839309f79e7223d9edaa5af770dd3c5f4da`，起始私有站版 0.3.6-dev |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 私有站第 10 版已部署 `0.3.6-dev`。生产浏览器 EVS 容量编辑、三种计费模式及五表下载核查通过 |
+| 当前网页版本 | 私有站第 11 版已部署 `0.3.7-dev`。EVS、DCS 和多 Sheet 手动预览通过生产浏览器验收 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| 当前 Sites 部署源码 | `ed6a912814e8089c4c7c1d015be73b4e74809e7a`，第 10 版私有部署 succeeded（2026-11-18，Europe/Berlin）。上一版为 `02c2aea` |
+| 当前 Sites 部署源码 | `4741d6a2b4044f7afee16e3a4ef208c370c804c9`，第 11 版私有部署 succeeded。上一版为 `ed6a912` |
+| 当前离线包 | GitHub 归档 `0.3.1-dev`，私有站下载附件 `0.3.0-dev`，沿用各自原包 |
 | 整体进度 | Huawei 精确规格匹配及本机模型标准化已通过验收。TCP EU-DE 生产目录有独立有效期 |
-| 本轮同步范围 | Huawei EVS 在线容量更新和相关回归，TCP 和离线工作暂停 |
+| 本轮同步范围 | Huawei EVS/DCS 在线修复和多工作表验收 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -424,3 +425,11 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **自动测试** 在 `pricing-studio/web` 运行 `node --test tests/huawei-import.test.mjs`，11 通过、0 失败。Node 24.22.1 运行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，107 通过、0 失败，含 DCS、ECS、EVS、RDS、Excel 和 Worker。Python 3.12.14 运行 `python3.12 -m unittest discover -s tests -p <suite>.py`，`test_catalog`、`test_catalog_updates`、`test_tcp_pdf`、`test_schedule`、`test_catalog_publication` 共 42 通过、0 失败。离线构建和专用测试暂停。
 - **浏览器验收** Codex 用 Chromium 156.0.8078.79 和虚构输入在本地与生产站分别实际编辑、下载，每处 5 份工作簿均以 openpyxl 3.1.5 重开核对五张表。单盘 100→200 GiB，按需月参考金额 USD 10.44→20.88。混合清单中两块各 200 GiB 的报价为按需 USD 41.76/月、包月 USD 40.00、包年 USD 416.00，包年月均 USD 34.67。另一行按需计费使用独立导入的 80 GB-month。三模式的页面与 Excel 月均小计分别为 USD 50.11、60.00、52.00，包年首期合计 USD 624.00。显式容量冲突在三个模式均留空，填写为 200 GiB 后恢复。两处工作簿逐字节一致，混合包年工作簿 SHA-256 为 `01e619b550dc31c9009f1c73ad42f8e954813bb9b615a73439142a0d8d335b68`。验收使用固定公开目录和固定时间，未调用实时核价。
 - **同步与实际部署** 源码、回归及本文通过 `fix/huawei-evs-capacity` 交付。私有站第 10 版 `0.3.6-dev` 已实际生效，生产 Chromium 使用 Sites 服务访问验收，所有者访问范围复查通过。TCP 和离线版本继续暂停。
+
+### 2026-11-18 — Huawei EVS 独立计费用量与 DCS 容量编辑
+
+- **新增与修改** EVS 规格文本分别提取每盘容量、带计费单位的用量和盘数。独立导入或填写的用量保留，缺用量仍可按整月估算。包月与包年继续按每盘容量计价。DCS 重新提取编辑后的规格容量，独立导入或填写的容量与规格冲突时金额留空。手动 SKU 保留确认流程，并核对已知容量；缺数量仅推荐 SKU，单机估算假设继续显示。**删除** 无。
+- **自动测试** 在 `pricing-studio/web` 用 Node 24.22.1 运行 `node --test tests/huawei-import.test.mjs`，13 通过、0 失败。运行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，109 通过、0 失败。Python 3.12.14 以 `python3.12 -m unittest discover -s tests -p <suite>.py` 跑 `test_catalog`、`test_catalog_updates`、`test_tcp_pdf`、`test_schedule`、`test_catalog_publication`，42 通过、0 失败。
+- **本地浏览器** Chromium 156.0.8078.79 实际下载 7 份 XLSX，openpyxl 3.1.5 重开核对五表。EVS 每盘 100 GB、1 块、80 GB-month 按需 USD 8.35，包月 USD 10.00、包年 USD 104.00。CSV 和 XLSX 编辑规格至 200 GB 后仍保留独立用量 80 GB-month。Redis 2G 改 4G 与直接输入一致，匹配 `redis.single.xu1.large.4` 和 USD 49.64/月。含 ECS、EVS、DCS、RDS 的清单为 4 行计价、1 行 Pending，月均小计 USD 269.25。实际本机 Qwen 分析虚构多 Sheet XLSX，预览修正后确认，Excel 核对源表、行号、原始字段、SKU、用量、金额与 Pending 空值。
+- **生产浏览器与部署** 私有站第 11 版 `0.3.7-dev`，Site 源码见顶部状态。Codex 通过 Sites 服务访问使用相同 Chromium 执行文本、CSV、XLSX 及私有站手动预览路径，确认无模型请求。7 份真实下载逐一重开五张表，与本地逐字节一致。多 Sheet 下载 SHA-256 为 `3ad9d9f1f6190b9f83aa2e9ba37555942941dd811c66e784bfabb6c8a53092d6`。价格使用固定的已验证公开快照，登录交接与实时核价未重测。所有者访问配置复查通过。
+- **源码与离线包** 开发分支 `fix/huawei-storage-cache-input`，交付 `0.3.7-dev` 在线源码、测试与状态记录。离线继续暂缓，GitHub 归档仍是 `0.3.1-dev`，私有站下载附件保留 `0.3.0-dev`。TCP 另行验证生产调度与存储接入。

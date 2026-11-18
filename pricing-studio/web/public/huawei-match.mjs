@@ -8,18 +8,28 @@ function attributes(item){
 }
 const capacityToken=/(?:^|[^\w.])(\d+(?:\.\d+)?)\s*(?:GiB|GB|G)(?![a-z])/gi;
 const capacity=(text)=>Number(text.matchAll(capacityToken).next().value?.[1])||null;
-function updateEvsCapacity(row){
- const spec=row.specification;
- const sizes=new Set([...spec.matchAll(capacityToken)].filter(match=>
-  !/^\s*(?:[-/·]\s*)?(?:(?:months?|hours?|mo|h)\b|月|小时)/i.test(spec.slice(match.index+match[0].length))
- ).map(match=>Number(match[1])));
+function updateCapacity(row,sizes){
  const detected=sizes.size===1?sizes.values().next().value:null;
- // A copy made by the text parser is not independent billable usage.
- if(row.evsUsageFromCapacity){row.usage=null;row.evsUsageFromCapacity=false;}
- const explicit=row.evsCapacitySource==='explicit';
- row.evsCapacityConflict=sizes.size>1||(explicit&&detected!==null&&detected!==row.capacity);
- if(!explicit){
-  row.capacity=detected;row.evsCapacitySource='specification';
+ row.huaweiCapacityConflict=sizes.size>1||(row.huaweiCapacityExplicit&&detected!==null&&detected!==row.capacity);
+ if(!row.huaweiCapacityExplicit)row.capacity=detected;
+}
+function updateEvsSpec(row){
+ const sizes=new Set(),usage=new Map();
+ for(const match of row.specification.matchAll(capacityToken)){
+  const suffix=row.specification.slice(match.index+match[0].length)
+   .match(/^\s*(?:[-/·]\s*)?(?:(months?|mo)\b|(hours?|h)\b|(月)|(小时))/i);
+  const amount=Number(match[1]);
+  if(!suffix){sizes.add(amount);continue;}
+  const sizeUnit=/GiB$/i.test(match[0])?'GiB':'GB';
+  const unit=sizeUnit+(suffix[1]||suffix[3]?'-month':'-hour');
+  usage.set(unit+amount,{amount,unit});
+ }
+ updateCapacity(row,sizes);
+ if(row.huaweiUsageFromSpec){
+  const value=usage.size===1?usage.values().next().value:null;
+  row.evsUsageConflict=usage.size>1;
+  row.usage=value?.amount??null;
+  row.unit=value?.unit??'';
  }
 }
 const policy=(test,assumptions=[])=>({test,assumptions});
@@ -53,6 +63,7 @@ const rules={
    item.arch.toLowerCase()===(arm?'arm':'x86')&&fields.type===type,assumptions);
  },
  EVS(row,spec){
+  if(row.huaweiCapacityConflict)return missing('HW_DISK_CAPACITY_CONFLICT');
   if(/snapshot|快照|iops|throughput|吞吐|mbps|premium|\b(?:io[12]|gp4)\b/i.test(spec))return missing('HW_DISK_PERFORMANCE');
   const types=[[/\bESSD\b|Extreme SSD|极速型/i,'ESSD'],[/\bSAS\b|^high i\/o$|高IO型/i,'SAS'],[/\b(?:GPSSD|gp[23])\b|General Purpose SSD|通用型SSD/i,'GPSSD'],[/Ultra[- ]high I\/O|超高IO/i,'SSD']];
   const explicit=types.filter(([pattern])=>pattern.test(spec));
@@ -65,14 +76,12 @@ const rules={
  DCS(row,spec){
   const source=row.product+' '+spec;
   if(!/redis|\bdcs\b/i.test(source)||/memcached|valkey|keydb|\bredis\s+v?\d+\.\d+|版本|\bversion\b/i.test(spec))return missing('HW_CACHE_ENGINE');
-  const specSize=capacity(spec),size=row.capacity??specSize,mode=topology(spec);
-  if(row.capacity&&specSize&&row.capacity!==specSize)return missing('HW_CACHE_CAPACITY');
+  const size=row.capacity,mode=topology(spec);
+  if(row.huaweiCapacityConflict||/\d\s*[-–~至/]\s*\d+(?:\.\d+)?\s*(?:GiB|GB|G)(?![a-z])/i.test(source))return missing('HW_CACHE_CAPACITY');
   if(!(size>0))return missing('HW_CACHE_CAPACITY');
   const units=Number(spec.match(/(\d+)\s*(?:节点|nodes?|副本|replicas?)/i)?.[1])||null;
   if(mode==='read_replica')return missing('HW_CACHE_MODE');
   if(!mode){
-   const capacities=Array.from(source.matchAll(capacityToken),match=>Number(match[1]));
-   if(capacities.some(capacity=>capacity!==size)||/\d\s*[-–~至/]\s*\d+(?:\.\d+)?\s*(?:GiB|GB|G)\b/i.test(source))return missing('HW_CACHE_CAPACITY');
    if(/\bredis\s+v\d/i.test(source)||/memcached|valkey|keydb|\bredis\s+\d+\.\d+|版本|\bversion\b/i.test(row.product))return missing('HW_CACHE_ENGINE');
    // Unknown or conflicting topology hints must not take the missing-topology default.
    const nodeConstraints=Array.from(source.matchAll(/(\d+)\s*(?:节点|nodes?|副本|replicas?)/gi),match=>Number(match[1]));
@@ -106,15 +115,15 @@ export function identifyHuaweiRow(row){
   const mapped=family(row.product);
   if(mapped!=='Unmapped')row.service=mapped;
   else if(/云主机|虚拟机|\b(?:VM|EC2|ECS)\b/i.test(text))row.service='ECS';
-  else if(/云盘|硬盘|\b(?:EBS|EVS)\b/i.test(text))row.service='EVS';
+  else if(/云盘|硬盘|磁盘|\d\s*块\s*盘|\b(?:EBS|EVS)\b/i.test(text))row.service='EVS';
   else if(/redis|\bdcs\b/i.test(text))row.service='DCS';
  }
  if(row.service==='DCS'){
-  row.capacity??=capacity(row.specification);
+  updateCapacity(row,new Set(Array.from(text.matchAll(capacityToken),match=>Number(match[1]))));
   if(!row.unit)row.unit='hour';
  }
  if(row.service==='EVS'){
-  updateEvsCapacity(row);
+  updateEvsSpec(row);
   if(inferred&&!row.unitExplicit&&row.usage==null)row.unit='';
  }
  if(row.scope==='resource'&&row.quantity==null)row.huaweiQuantity=Number(text.match(/(\d+)\s*(?:套|台|块|instances?\b)/i)?.[1])||null;

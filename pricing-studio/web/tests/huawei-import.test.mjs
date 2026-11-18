@@ -83,6 +83,51 @@ test('EVS sizing leaves imported usage independent of per-disk capacity',()=>{
  assert.equal(calculate(match(row),catalog,{now}).reasonCode,'HW_DISK_CAPACITY');
 });
 
+test('Huawei EVS text distinguishes metered usage, per-disk size and disk count',()=>{
+ const row=resource('EVS 100 GB SSD，1 块盘，80 GB-month');
+ assert.deepEqual([row.capacity,row.usage,row.unit,row.huaweiQuantity],[100,80,'GB-month',1]);
+ assert.equal(calculate(row,catalog,{now}).monthly,8.35);
+ row.specification='200 GB SSD，1 块盘，80 GB-month';
+ assert.equal(calculate(match(row),catalog,{now}).monthly,8.35);
+ for(const [mode,term] of [['MONTHLY',20],['YEARLY',208]]){
+  row.targetBilling=mode;
+  assert.equal(calculate(match(row),catalog,{now}).termPublic,term);
+ }
+ row.targetBilling='ONDEMAND';
+ row.specification='200 GB SSD，1 块盘，58400 GB-hour';
+ assert.equal(calculate(match(row),catalog,{now}).monthly,8.35);
+ row.specification='200 GB SSD，1 块盘，0 GB-month';
+ assert.equal(calculate(match(row),catalog,{now}).monthly,0);
+ row.specification='200 GB SSD，1 块盘，80 GB-month 或 60 GB-month';
+ assert.equal(calculate(match(row),catalog,{now}).reasonCode,'HW_DISK_USAGE_CONFLICT');
+ row.specification='200 GB SSD，1 块盘';
+ assert.deepEqual([match(row).usage,calculate(row,catalog,{now}).monthly],[null,20.88]);
+});
+
+test('Huawei DCS matches the edited size, protects explicit fields and checks manual SKUs',()=>{
+ const row=resource('1 套 Redis 2G');
+ assert.equal(selection(row),'redis.single.xu1.large.2');
+ const originalSku=row.targetId;
+ row.specification='1 套 Redis 4G';
+ const direct=resource('1 套 Redis 4G');
+ assert.ok(direct.targetId&&direct.targetId!==originalSku);
+ assert.equal(match(row).targetId,direct.targetId);
+ assert.equal(calculate(row,catalog,{now}).monthly,49.64);
+ assert.deepEqual(row.huaweiAssumptions,['HW_DEFAULT_REDIS_SINGLE']);
+ const [imported]=normalizeRows([{product:'DCS',specification:'Redis 2G',capacity_gb:2,quantity:1}]);
+ match(imported);
+ imported.huaweiSelection='manual';
+ imported.specification='Redis 4G';
+ assert.deepEqual([match(imported).capacity,calculate(imported,catalog,{now}).reasonCode],[2,'HW_CACHE_CAPACITY']);
+ imported.capacity=4;
+ assert.equal(calculate(match(imported),catalog,{now}).reasonCode,'HW_CACHE_SKU_CAPACITY');
+ imported.targetId=direct.targetId;
+ assert.equal(calculate(imported,catalog,{now}).monthly,49.64);
+ const missingCount=resource('Redis 4G');
+ assert.equal(missingCount.targetId,direct.targetId);
+ assert.equal(calculate(missingCount,catalog,{now}).monthly,null);
+});
+
 test('DCS defaults to a unique single node and leaves unspecified quantities unpriced',()=>{
  const bare=resource('2G Redis');
  assert.equal(bare.service,'DCS');
