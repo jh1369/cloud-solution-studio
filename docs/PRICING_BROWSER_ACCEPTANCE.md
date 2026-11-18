@@ -1,5 +1,11 @@
 # Pricing Studio 浏览器验收记录
 
+## 2026-11-18 私有站发布在线修复
+
+- **生产部署** Sites 第 6 版呈现 `succeeded`，部署源码 `0cdb286b139b359e25d2b90692428a1092cbc12b`。发布包使用 GitHub `c60138e` 的在线版本 `0.3.2-dev`。原站访问范围经核对仍限所有者。[原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
+- **部署前验证** 发布用 Worker 的在线首页标记 `0.3.2-dev`，已有离线下载文件与归档逐字节相符。两组 Chromium 156.0.8078.79 分批场景通过，10 份实际下载的 XLSX 用 openpyxl 重开核对五张表。82 项 JavaScript、4 项 Python 检查通过。
+- **待验** 第 6 版登录后工作台与生产报价、导出仍待实测。以下首批 503、延迟、真实核价和下载证据均来自本地环境。生产下载件 0 份。
+
 ## 2026-11-18 在线分批核价与 Excel
 
 执行人 Codex。审核基线 `main/a69bb13106b83d5bee1cfcff4810a1bdc7087b14`。修复源码 `45770a63bb43c654ae861944cea9ce87c1fa395f`，本地页面和 package.json 显示 `0.3.2-dev`。以下本地检查使用 Debian Chromium 156.0.8078.79、Playwright 和 openpyxl 3.1.5。
