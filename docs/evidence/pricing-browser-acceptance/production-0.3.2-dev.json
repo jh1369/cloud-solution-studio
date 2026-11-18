@@ -1,0 +1,297 @@
+{
+  "date": "2026-11-18",
+  "version": "0.3.2-dev",
+  "sitesVersion": 6,
+  "sitesSource": "0cdb286b139b359e25d2b90692428a1092cbc12b",
+  "access": "Official Sites service authorization. Playwright forwarded application requests to the deployed Worker. ChatGPT account sign-in and return navigation remain pending.",
+  "environment": {
+    "browser": "Chromium 156.0.8078.79",
+    "reader": "openpyxl 3.1.5"
+  },
+  "sheetNames": [
+    "Input",
+    "Service Mapping",
+    "Public Pricing",
+    "Quotation",
+    "Assumptions"
+  ],
+  "amountOrder": [
+    "Public monthly or period",
+    "Discounted monthly or period",
+    "Annual",
+    "Upfront"
+  ],
+  "downloads": [
+    {
+      "scenario": "csv-unconfirmed",
+      "bytes": 40585,
+      "sha256": "8778de0dd29769f9fcd1af63470c88ada43e777110010b048725792d440d9c3e",
+      "status": [
+        "Pending",
+        "Pending",
+        "Pending",
+        "Pending"
+      ],
+      "amounts": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "verifiedAt": [
+        "2026-11-17T10:08:26.868560+00:00",
+        "2026-11-17T10:08:26.936047+00:00",
+        "2026-11-17T10:08:27.315179+00:00",
+        null
+      ]
+    },
+    {
+      "scenario": "csv-ONDEMAND",
+      "bytes": 40902,
+      "sha256": "d4c21eb528a62b1309b5e8d71c82f12745afcd750e7970eb965ffa0094966a97",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "597.22",
+        "507.64",
+        "6091.57",
+        null
+      ],
+      "verifiedAt": [
+        "2026-11-18T14:16:14.495Z",
+        "2026-11-18T14:16:14.495Z",
+        "2026-11-18T14:16:14.495Z",
+        null
+      ]
+    },
+    {
+      "scenario": "csv-MONTHLY",
+      "bytes": 40851,
+      "sha256": "a78071b07b3c74ea7f361c1c3c2a91d34b9beeb63df448f45d9036a494bbfee2",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "451.43",
+        "383.72",
+        "4604.59",
+        "383.72"
+      ],
+      "verifiedAt": [
+        "2026-11-18T14:16:16.475Z",
+        "2026-11-18T14:16:16.475Z",
+        "2026-11-18T14:16:16.475Z",
+        null
+      ]
+    },
+    {
+      "scenario": "csv-YEARLY",
+      "bytes": 40898,
+      "sha256": "d649c5ed95eb23aa9332310e72d9c0584ee49e5aa3f74ef5baaea056d3c5d51d",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "377.86",
+        "321.18",
+        "3854.20",
+        "3854.20"
+      ],
+      "verifiedAt": [
+        "2026-11-18T14:16:17.298Z",
+        "2026-11-18T14:16:17.298Z",
+        "2026-11-18T14:16:17.298Z",
+        null
+      ]
+    },
+    {
+      "scenario": "csv-refresh-failed",
+      "bytes": 40898,
+      "sha256": "946e1c6305200350866d935ae7d1567f0572d9d983645ee263c6324973fd6f5a",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "377.86",
+        "321.18",
+        "3854.20",
+        "3854.20"
+      ],
+      "verifiedAt": [
+        "2026-11-18T14:16:17.298Z",
+        "2026-11-18T14:16:17.298Z",
+        "2026-11-18T14:16:17.298Z",
+        null
+      ]
+    },
+    {
+      "scenario": "xlsx-ONDEMAND",
+      "bytes": 41238,
+      "sha256": "d472cb8dddd6aec62b15cf982a85e8db4f1425a0f7b75fffd742ea8405e6f822",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "597.22",
+        "507.64",
+        "6091.57",
+        null
+      ],
+      "verifiedAt": [
+        "2026-11-17T10:08:26.868560+00:00",
+        "2026-11-17T10:08:26.936047+00:00",
+        "2026-11-17T10:08:27.315179+00:00",
+        null
+      ]
+    },
+    {
+      "scenario": "xlsx-MONTHLY",
+      "bytes": 41187,
+      "sha256": "df85259abf49b5e06f8ffe1107504523059d57a9469e5696ec560031ad439350",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "451.43",
+        "383.72",
+        "4604.59",
+        "383.72"
+      ],
+      "verifiedAt": [
+        "2026-11-17T10:08:28.963034+00:00",
+        "2026-11-17T10:08:29.175725+00:00",
+        "2026-11-17T10:08:29.599785+00:00",
+        null
+      ]
+    },
+    {
+      "scenario": "xlsx-YEARLY",
+      "bytes": 41234,
+      "sha256": "304414ac13928f9d6af2c43b8b25c701122d0d62fc2c947ebcc9e1978f4e0d91",
+      "status": [
+        "Valid",
+        "Valid",
+        "Valid",
+        "Pending"
+      ],
+      "amounts": [
+        "377.86",
+        "321.18",
+        "3854.20",
+        "3854.20"
+      ],
+      "verifiedAt": [
+        "2026-11-17T10:08:31.058957+00:00",
+        "2026-11-17T10:08:31.274220+00:00",
+        "2026-11-17T10:08:31.686330+00:00",
+        null
+      ]
+    },
+    {
+      "scenario": "pdf-ONDEMAND",
+      "bytes": 36934,
+      "sha256": "53524cbaf88152bb8b145aee07816710046e54b3cf3f7f09ac38fbcb21711b51",
+      "status": [
+        "Period",
+        "Period"
+      ],
+      "amounts": [
+        "545.02",
+        "463.27",
+        null,
+        null
+      ],
+      "verifiedAt": [
+        "2026-11-17T10:08:26.868560+00:00",
+        "2026-11-17T10:08:27.315179+00:00"
+      ]
+    }
+  ],
+  "productionResponses": [
+    {
+      "path": "/",
+      "status": 200,
+      "count": 5
+    },
+    {
+      "path": "/api/rates",
+      "status": 200,
+      "count": 3
+    },
+    {
+      "path": "/app.mjs",
+      "status": 200,
+      "count": 5
+    },
+    {
+      "path": "/catalog.json",
+      "status": 200,
+      "count": 5
+    },
+    {
+      "path": "/engine.mjs",
+      "status": 200,
+      "count": 5
+    },
+    {
+      "path": "/excel.mjs",
+      "status": 200,
+      "count": 5
+    },
+    {
+      "path": "/i18n.mjs",
+      "status": 200,
+      "count": 5
+    },
+    {
+      "path": "/style.css",
+      "status": 200,
+      "count": 5
+    },
+    {
+      "path": "/ui.mjs",
+      "status": 200,
+      "count": 5
+    },
+    {
+      "path": "/vendor/pdf.min.js",
+      "status": 200,
+      "count": 5
+    },
+    {
+      "path": "/vendor/pdf.worker.min.js",
+      "status": 200,
+      "count": 1
+    },
+    {
+      "path": "/vendor/xlsx.full.min.js",
+      "status": 200,
+      "count": 5
+    }
+  ],
+  "officialRatesVerified": {
+    "ONDEMAND": 3,
+    "MONTHLY": 3,
+    "YEARLY": 3
+  },
+  "failureCase": "Chromium aborted one request locally. Before and after Pricing and Quotation rows were identical."
+}
