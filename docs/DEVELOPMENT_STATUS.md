@@ -7,16 +7,16 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-18，Europe/Berlin |
-| 当前优先目标 / 模式 | TCP 价格目录自动核验与发布；离线版暂停，单主 Agent |
-| 本轮检查基线 | `main` / `bb08650590fd028d83447cfd62a1cb0d1b885c17`，部署版 0.3.2-dev |
+| 当前优先目标 / 模式 | TCP 官方价格目录初始化与回归；离线版暂停，单主 Agent |
+| 本轮检查基线 | `main` / `76334b7715ec0a767cf8edf9c6b6309a1caa3a87`，部署版 0.3.2-dev |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
 | 当前网页版本 | 私有站第 6 版已部署 `0.3.2-dev`，对应 GitHub `c60138e`。生产功能已验证，用户确认当前会话可直接进入工作台。按本轮验收范围跳过首次登录与回跳 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
 | 当前 Sites 部署源码 | `0cdb286b139b359e25d2b90692428a1092cbc12b`，第 6 版私有部署 succeeded（2026-11-18，Europe/Berlin）；上一部署为 `fff0d1f` |
-| 整体进度 | TCP 核心自动发布已实现，虚构首版和更新通过。云端持续任务与 TCP 自动报价待接入 |
-| 本轮同步范围 | TCP 核心状态、自动发布、Provider Adapter、Worker 检测和回归；离线工作暂停 |
+| 整体进度 | TCP 真实官方 PDF 已在隔离库自动发布首版，3,389 条通过核验。云端持续任务与 TCP 自动报价待接入 |
+| 本轮同步范围 | TCP 规则范围修复、官方目录验收及回归；离线工作暂停 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -44,7 +44,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 
 - Python Updater 从官方计算器发现 PDF 并校验来源、结构、SKU、地区、币种、单位和计费证据。通过的首版及更新自动发布。异常最多检查三次。无法确定的价格保留 Pending。
 - SQLite 保存原 PDF、不可变目录及检查历史。最近检查、最近成功核验、最近发布版本及时效状态分别记录。候选受阻或失败后新报价暂停，历史报价继续使用原快照。
-- Worker 检测文档变化并显示打包的状态。Python 可以输出一致的目录和状态，供下一阶段托管任务上传。此前真实官方文档的提取统计属于旧解析器；新策略尚未在真实源上启用。
+- Worker 检测文档变化并显示打包的状态。Python 可以输出一致的目录和状态，供下一阶段托管任务上传。当前官方文档已在隔离库通过新策略。正式托管链路待接入。
 - 生产站的 Huawei 报价功能及现有登录会话验收已通过，TCP 自动报价待开发。[在线验收](PRICING_BROWSER_ACCEPTANCE.md) · [TCP 运维计划](PRICING_V03_TCP.md)
 
 ### 先前 V0.2 集成记录（历史）
@@ -381,3 +381,10 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **删除** CLI 人工审批命令和报价校验中的审批依赖。已有历史审批数据保留供追溯。
 - **测试** 在 `pricing-studio/web/` 使用 Node 24.22.1、Python 3.12.14 和 pdfplumber 0.11.9。运行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，83 项通过。用 `python -m unittest discover -s tests -p <文件名>` 分别运行 `test_catalog.py`、`test_catalog_updates.py`、`test_tcp_pdf.py`、`test_schedule.py`，共 30 项通过，另通过 CLI 空库状态导出实测。均为 0 失败。
 - **验证边界与同步** 使用虚构价格及 PDF。构建测试 Worker 时复用既有归档，离线构建及验收暂停。本次交付经核验的 GitHub 开发源码，私有站部署为 0.3.2-dev。云端调度、对象存储发布、真实 PDF 新规则验证和 TCP 自动报价属于下一阶段。
+
+### 2026-11-18 — TCP 真实官方目录初始化
+
+- **新增** 官方源的首版及重复发布证据、9 个独立原文对照样本、KMS/EVS/OBS 范围回归。**修改** KMS 的明确专属条款只保留在对应诊断中，EVS GP SSD v2 条件只隔离命中的价格行，OBS 提前删除费按条件费用处理。解析器版本为 `tcp-pdf-0.3.0-3`。**删除** 无。
+- **实测** 官方 2026-10-09 修订的 PDF 在隔离 SQLite 中自动发布，`currentVersion=tcp-2026-10-09-c88c0aff01e08ade-tcp-pdf-0.3.0-3`、`effectiveState=ACTIVE`。重复检查为 `UNCHANGED`，核验时间更新至 `2026-11-18T14:58:38.490856+00:00`，价格及来源证据逐项相同。模拟超过 48 小时的时钟，目录转为 `STALE`，已固定快照仍可追溯。[覆盖与抽样核对](PRICING_V03_TCP.md)
+- **回归** 在 `pricing-studio/web/` 使用 Node 24.22.1、Python 3.12.14、pdfplumber 0.11.9。83 项 JavaScript 与 34 项 Python 通过，0 失败。JavaScript 使用 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`。Python 运行 `test_catalog`、`test_catalog_updates`、`test_tcp_pdf`、`test_schedule`。官方文件变化、价格异常和解析失败使用可控虚构夹具。Huawei 计费与 Excel 回归通过。
+- **交付边界与后续** 本轮同步经检查的源码、测试和公开证据摘要。原始 PDF、SQLite 与运行输出留在隔离工作区。本轮验证的是目录资格和有效期。推荐在带持久磁盘的托管 Linux 上运行上游更新任务，经对象存储交付 Worker，再接入少量 ECS、EVS 和 RDS 的报价映射。[托管计划](PRICING_V03_TCP.md#managed-scheduling-and-delivery-plan)

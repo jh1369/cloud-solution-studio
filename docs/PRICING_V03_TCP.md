@@ -2,25 +2,43 @@
 
 The Python updater publishes qualifying TCP catalogs automatically. Web + Worker provides the status interface and existing Huawei quotations. TCP quote mapping and calculation remain future work.
 
-## Official source and observed coverage
+## Official source and verified baseline
 
-Discovery entry: https://www.t-cloud-public.com/en/prices/price-calculator ; the general price page also pointed to the same PDF when checked. The supplied October PDF was independently downloaded and matched the discovered file. No persistent hashed PDF URL is embedded in discovery code.
+On 2026-11-18, the updater discovered the current Service Description through the official calculator. The PDF revision was **2026-10-09**, with 115 pages and 1,609,264 bytes. Its SHA-256 was `c88c0aff01e08adeab9dda95f40414f9f8e41f7112e6ccc68895a5637c92603f`. [Official calculator](https://www.t-cloud-public.com/en/prices/price-calculator) · [Verified public PDF](https://www.t-cloud-public.com/_Resources/Persistent/5/b/4/9/5b49ccec9ceef6d52f461deff50098200b81665f/t-cloud-public-servicedescription.pdf)
 
-Observed revision: **2026-10-09**, 115 pages, 1,609,264 bytes; SHA-256 `c88c0aff01e08adeab9dda95f40414f9f8e41f7112e6ccc68895a5637c92603f`. Parsed price version: `tcp-2026-10-09-c88c0aff01e08ade-tcp-pdf-0.3.0-1`.
+The first automated `check → publication` in isolated SQLite returned `UPDATED` and `ACTIVE` on its first attempt. The published `currentVersion` was `tcp-2026-10-09-c88c0aff01e08ade-tcp-pdf-0.3.0-3`. First `lastVerifiedAt` was `2026-11-18T14:57:49.092132+00:00`. A second official download returned `UNCHANGED` and advanced `lastVerifiedAt` to `2026-11-18T14:58:38.490856+00:00`. The entire published catalog, including its initial retrieval time and row evidence, matched the first publication. The published catalog became `STALE` in a test clock simulation 48 hours and one second after verification, and the saved quote snapshot retained its original catalog.
 
-| Service | Unique region/plan/tier records | Structurally validated | Pending review | Not available |
-| --- | ---: | ---: | ---: | ---: |
-| ECS | 18338 | 1893 | 11322 | 5123 |
-| EVS | 16 | 13 | 2 | 1 |
-| EIP | 4 | 4 | 0 | 0 |
-| ELB | 64 | 0 | 54 | 10 |
-| OBS | 108 | 12 | 80 | 16 |
-| RDS | 1818 | 1475 | 228 | 115 |
-| Total | 20348 | 3397 | 11686 | 5265 |
+| Service | Validated prices | Pending | Unavailable | Main Pending reasons |
+| --- | ---: | ---: | ---: | --- |
+| ECS | 1,893 | 11,322 | 5,123 | Merged and cross-page cells, unsupported terms, special fees and footnotes |
+| EVS | 9 | 6 | 1 | GP SSD v2 minimum capacity and included IOPS/throughput |
+| RDS | 1,475 | 228 | 115 | Incomplete explicit flavor evidence, footnotes and ancillary rates |
+| EIP | 4 | 0 | 0 | — |
+| ELB | 0 | 54 | 10 | LCU and composite charging rules |
+| OBS | 8 | 84 | 16 | Tiers, capacity bundles and early deletion |
+| **Total** | **3,389** | **11,694** | **5,265** | |
 
-The earlier parser found **6 target service families and 59 price tables**. Its archived candidate accounts for 20,420 expanded cells and 20,348 unique records, with 72 repeated identities recorded with occurrence provenance. The counts above describe the archived parser version. The current automatic publication policy has been tested with fictional PDFs and prices.
+Counts are unique region/plan/tier price records across 59 tables. The JavaScript Provider Adapter independently accepted the same per-service counts. Repeated price identities account for 72 of the 20,420 expanded cells. Unit-price eligibility is the input to the future TCP quote flow.
 
-The reviewable compressed catalog and manifest live under `pricing-studio/catalogs/tcp/<version>/`. They contain public price facts/provenance, not a PDF copy, customer input or a quotation. Raw downloaded documents/database/check logs stay in ignored `web/outputs/`.
+The previous parser held the entire catalog because it treated the page 104 KMS active-key-version rule as document-wide. The parser now requires the numbered KMS heading and the explicit KMS clause before excluding that clause from global checks. Page 93 notes are attached to the exact EVS products they name, and OBS early deletion rates are held for conditional fee handling. Notes with an unresolved scope still block document publication. The storage and security pricing guides independently corroborate the scope of these rules. [EVS GP SSD v2 announcement](https://www.t-cloud-public.com/en/support/release-notes/general-purpose-ssd-v2) · [Storage pricing](https://www.t-cloud-public.com/en/prices/pricing-models/storage) · [Security pricing](https://www.t-cloud-public.com/en/prices/pricing-models/security)
+
+### Independent PDF samples
+
+Expected cells were read from the PDF with Poppler and checked against published amounts, units, billing mode, region and page evidence. ECS samples use open Linux. Reserved means EUR per month and upfront means EUR for the stated term.
+
+| Service | SKU or exact official label | Region | Plan | EUR rate | PDF page |
+| --- | --- | --- | --- | --- | ---: |
+| ECS | `s2.large.1` | EU-DE | Open Elastic | 0.095230/hour | 49 |
+| ECS | `s2.large.1` | EU-DE | Reserved 12 months | 43.53/month | 49 |
+| ECS | `s2.large.1` | EU-DE | Reserved Upfront 12 months | 485.00/term | 49 |
+| RDS | `db.n1.medium.2.mys` | EU-NL | Open Elastic | 0.030524/hour | 81 |
+| RDS | `db.n1.medium.2.mys` | EU-DE | Reserved 12 months | 18.82/month | 81 |
+| RDS | `db.n1.medium.2.mys` | EU-NL | Reserved Upfront 12 months | 173.80/term | 81 |
+| EVS | EVS High I/O | EU-DE | Open Elastic | 0.066000/GiB-month | 93 |
+| EVS | EVS High I/O | EU-NL | Open Elastic | 0.059400/GiB-month | 93 |
+| EIP | Elastic IP | EU-NL | Open Elastic | 0.004400/hour | 95 |
+
+The older candidate remains archived under `pricing-studio/catalogs/tcp/`. The raw PDF, SQLite and publication JSON from verification were kept in the test workspace.
 
 ## Data contract and automatic publication
 

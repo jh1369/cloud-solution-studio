@@ -135,6 +135,31 @@ class CatalogUpdateTest(unittest.TestCase):
         self.assertEqual(self.store.last_published("tcp")["billingRulesHash"], old["billingRulesHash"])
         self.assertEqual(state["diffCounts"]["priceChanged"], 1)
 
+    def test_unrelated_kms_scope_does_not_block_an_independent_pdf_price(self):
+        data = pdf_bytes(notes=("6.10.2 Key Management Service", "KMS CMKs are billed per active key version."))
+        state = self.check_pdf(data)
+        self.assertEqual((state["status"], state["effectiveState"]), ("UPDATED", "ACTIVE"))
+        candidate = self.store.publication("tcp", self.now)["catalog"]
+        self.assertIn({"code": "OUT_OF_SCOPE_KMS_BILLING", "severity": "info",
+                       "pages": [1], "evidence": "KMS CMKs are billed per active key version."}, candidate["diagnostics"])
+
+    def test_explicit_evs_note_blocks_only_the_named_product(self):
+        initial = self.check_pdf(pdf_bytes(volume=True))
+        self.assertEqual(initial["coverage"]["services"]["EVS"]["AUTO_VALIDATED"], 3)
+        data = pdf_bytes(revision="02.10.2026", volume=True, notes=("FICTIONAL VOLUME A: Min. 10 GiB",))
+        state = self.check_pdf(data)
+        self.assertEqual((state["status"], state["effectiveState"]), ("UPDATED", "ACTIVE"))
+        rows = self.store.publication("tcp", self.now)["catalog"]["items"]
+        for row in rows[:2]:
+            self.assertEqual(row["verification"]["status"], "PENDING_REVIEW")
+            self.assertEqual(row["evidence"]["billingNotes"][0]["page"], 1)
+        self.assertEqual(rows[3]["verification"]["status"], "AUTO_VALIDATED")
+
+    def test_unmatched_sku_note_is_not_suppressed(self):
+        state = self.check_pdf(pdf_bytes(volume=True, notes=("OTHER PRODUCT: Min. 10 GiB",)))
+        self.assertEqual(state["effectiveState"], "PENDING")
+        self.assertIn("PARSE_DIAGNOSTICS", state["reasons"])
+
     def test_service_section_billing_rules_detected_even_when_prices_match(self):
         self.check_pdf(pdf_bytes())
         new = pdf_bytes("Minimum billing duration is 600 seconds.", "02.10.2026")
