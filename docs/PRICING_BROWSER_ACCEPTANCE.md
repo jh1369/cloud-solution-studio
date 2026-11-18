@@ -51,4 +51,4 @@
 
 恢复生产复验时，在共享浏览器访问原站并选择 Continue with ChatGPT，使用获准账号登录后交还控制。[私有生产站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
 
-候选版本在 `pricing-studio/web/` 执行 `npm run release:offline`，83 项 JS 和 34 项 Python 测试通过，0 失败。环境为 Node 24.22.1、Python 3.12.14、openpyxl 3.1.5。相同源码重建得到相同 ZIP。私有生产站当前为 `0.3.0-dev`。剩余验收和 GitHub 同步结果见[开发状态](DEVELOPMENT_STATUS.md)。
+候选版本在 `pricing-studio/web/` 执行 `npm run release:offline`，83 项 JS 和 34 项 Python 测试通过，0 失败。环境为 Node 24.22.1、Python 3.12.14、openpyxl 3.1.5。相同源码重建得到相同 ZIP。候选源码及离线包已合入 `main`，提交为 `836b740`。GitHub 下载的 ZIP 与实测归档逐字节相同。私有生产站当前为 `0.3.0-dev`。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) · [开发状态](DEVELOPMENT_STATUS.md)

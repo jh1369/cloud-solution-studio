@@ -27,7 +27,7 @@ pricing-studio/
   src/pricing_studio/         # CSV → JSON product-family mapping starter
   sample_data/               # Fictional AWS inventory
   tests/                     # Python starter test
-  web/                       # Pricing Studio 0.3.0-dev, Web + Worker
+  web/                       # Pricing Studio 0.3.1-dev candidate, Web + Worker
     public/                  # Browser code, vendored libraries, public price evidence
     worker.mjs               # Server source; official pricing refresh endpoint
     scripts/                 # Catalogue verification and Worker build helpers
@@ -58,7 +58,9 @@ npm test
 
 No dependency installation or cloud credentials are needed. `npm test` builds the ignored `dist/server/index.js` and runs the relevant JavaScript and Python catalog/packaging regressions. Positive financial tests use fictional rates/resources; Worker tests mock the upstream API. This command does not refresh prices or deploy. See the [MVP acceptance record](docs/PRICING_MVP_ACCEPTANCE.md) for the separate official-API check and outstanding browser acceptance.
 
-Each completed version includes a shareable offline HTML and ZIP in the [version archive](releases/pricing-studio/README.md). Current data-phase candidate: [V0.3 offline ZIP](releases/pricing-studio/v0.3.0-dev/Pricing-Studio-0.3.0-dev-Offline.zip?raw=true). This includes Huawei quotations and TCP catalog status; TCP quotation calculation is not enabled. Earlier archives remain unchanged. Unzip and double-click the HTML without installing software or signing in. For a new version, update `pricing-studio/web/package.json` then run `npm run release:offline` from that directory; it tests, builds and archives the delivery, without Git writes or deployment. Older deliveries cannot be silently overwritten. Original official price expiry is preserved; actual `file://` browser acceptance remains outstanding.
+Download the `0.3.1-dev` candidate ZIP, extract it and open the HTML in your browser. The ZIP includes a fictional inventory CSV. The candidate supports Huawei quotations and shows TCP catalog status. Two checks are open, covering native offline file use and the authenticated production site. The private site currently runs `0.3.0-dev`. [Download the offline ZIP](https://raw.githubusercontent.com/jh1369/cloud-solution-studio/main/releases/pricing-studio/v0.3.1-dev/Pricing-Studio-0.3.1-dev-Offline.zip) · [Browser checklist and sample files](docs/PRICING_BROWSER_ACCEPTANCE.md) · [Version archive](releases/pricing-studio/README.md)
+
+Each delivery keeps the original per-price verification times. To archive a new version, update `pricing-studio/web/package.json` and run `npm run release:offline` in that directory. The command tests, builds and creates an immutable HTML and ZIP archive.
 
 See [the web README](pricing-studio/web/README.md) for build-only commands, approved official catalogue refresh, pricing limits and deployment instructions. Hosting configuration is intentionally omitted; building or pushing to GitHub does not deploy the existing Site.
 

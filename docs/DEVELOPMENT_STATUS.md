@@ -17,7 +17,7 @@
 | 当前 Sites 部署源码 | `fff0d1fe414b09464089a4f6734b6a03f56738ff`；V0.3 数据阶段原生私有部署 succeeded（2026-11-17 18:16 Europe/Berlin）；原 V0.2 为 `64eaa80` |
 | 整体进度 | TCP 官方 PDF → 结构化候选目录、通用 Adapter/Updater、差异/审批/历史、本地调度配置及小型状态卡已实现；首次 TCP 基线未批准，完整 TCP 自动报价未完成 |
 | 本轮同步范围 | 用户指示两项实测完成前先将候选版合入 GitHub，包括代码、版本化离线包、虚构样例和验收证据。站点部署在实测后执行 |
-| 同步结果 | V0.3 代码/目录/离线交付提交 `8777743e497a8014dfb9e61574690238981fa1bd` 已 Push；GitHub API 核对 main 与文件树成功，ZIP 下载 HTTP 200 / application/zip / 866,490 bytes / SHA-256 一致。本发布确认另随文档提交同步；V0.2 为历史版本 |
+| 同步结果 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
 
@@ -349,4 +349,4 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **修改** 修复连接中断的双语核价失败提示、短视口报价卡无法直接滚到导出、两页 PDF 的完整行来源页码。AGENTS 记录完成且充分验证后可直接合入 GitHub 的授权。**删除** 无功能删除。
 - **验证** Chromium 156 在本地 4173 实际选择 CSV/XLSX/PDF、切换并确认三模式、按模式核价成功、模拟上游失败和实际连接断开、导出与重载。独立重开 12 个下载文件逐项核对，候选 ZIP 下载与归档一致。`npm run release:offline` 为 83 JS + 34 Python 全通过、0 失败。
 - **限制** Sites 中继 readiness 仍超时。原私有生产站的安全登录未完成，等待获准账号登录。离线单页先用 loopback HTTP 加载，停服务后导入导出预检成功。浏览器从本地文件打开未通过，等待用户本机反馈。详细状态见 [验收记录](PRICING_BROWSER_ACCEPTANCE.md)。
-- **下一步与同步** 按用户本次指示先交接候选版到 GitHub。上游文档提交 `b40a6ca` 已保留。下次对话从上面的两项验收继续，复用现有本地浏览器证据。原私有站仍为 `0.3.0-dev`。
+- **交接** 候选提交 `836b740` 已合入 GitHub `main`，保留上游文档提交 `b40a6ca`。同步前已审查 26 条文件路径，核对版本清单、归档内容、虚构样例和截图。从 GitHub 下载的 ZIP 的 SHA-256 为 `95dee41f900893de3e7774e454e589fba8b918ebb48bab6d0d142da0b7953376`。另下载核对了虚构 XLSX 和两个 PDF。私有生产站为 `0.3.0-dev`。新对话从上面的两项验收继续。[验收清单](PRICING_BROWSER_ACCEPTANCE.md)
