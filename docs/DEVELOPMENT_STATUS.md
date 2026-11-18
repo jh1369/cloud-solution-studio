@@ -12,9 +12,9 @@
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 在线修复候选 `0.3.2-dev`，修复源码 `45770a6`。私有站最近部署对应 `0.3.0-dev`，登录后显示版本待核对 |
+| 当前网页版本 | 私有站第 6 版已部署 `0.3.2-dev`，对应 GitHub `c60138e`。登录后页面版本、核价与导出待验收 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| 当前 Sites 部署源码 | `fff0d1fe414b09464089a4f6734b6a03f56738ff`；V0.3 数据阶段原生私有部署 succeeded（2026-11-17 18:16 Europe/Berlin）；原 V0.2 为 `64eaa80` |
+| 当前 Sites 部署源码 | `0cdb286b139b359e25d2b90692428a1092cbc12b`，第 6 版私有部署 succeeded（2026-11-18，Europe/Berlin）；上一部署为 `fff0d1f` |
 | 整体进度 | TCP 官方 PDF → 结构化候选目录、通用 Adapter/Updater、差异/审批/历史、本地调度配置及小型状态卡已实现；首次 TCP 基线未批准，完整 TCP 自动报价未完成 |
 | 本轮同步范围 | 在线分批核价、导出一致性修复、浏览器回归及验收记录；离线工作暂停 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
@@ -365,3 +365,10 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **复现及复验** 审核基线首批 503 后遗漏第 11 项；第二批等待中页面 90 USD、XLSX 250 USD。修复后两个场景通过，失败项保留原证据，过期和缺价行金额为空。10 份分批下载和 9 份在线主流程下载均已重开五表。真实华为云公开核价按三种模式各成功 3 项。[浏览器验收及复跑命令](PRICING_BROWSER_ACCEPTANCE.md)
 - **回归** 在 `pricing-studio/web/` 运行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，82 项通过、0 失败。运行 `python -m unittest discover -s tests -p test_catalog.py`，4 项通过、0 失败。Node 24.22.1、Python 3.12.14。按本轮范围跳过离线打包和验收。
 - **同步与阻塞** 本次提交同步经过本地回归的在线修复源码 `45770a63bb43c654ae861944cea9ce87c1fa395f` 及证据。生产站仍需获准账号完成登录，工作台版本及生产下载件待实测。在线候选尚未部署。两项 TCP 问题继续单独处理。
+
+
+### 2026-11-18 — 私有站发布在线修复
+
+- **发布** Sites 第 6 版私有部署成功。14 个网页资源及 Worker 源码逐字节核对 GitHub `c60138e`，所有者访问范围复查通过。沿用第 5 版的 `0.3.0-dev` 离线 ZIP，下载路径及归档 SHA-256 已通过构建产物测试。
+- **部署前回归** 在 Sites 发布目录构建 Worker，82 项 JavaScript 和 4 项 Python 检查通过。两组 Chromium 分批场景通过，实际下载 10 份 XLSX 并重开核对五张表。
+- **验收进度** 私有站登录后的工作台验收留待后续会话。本次验收任务的已完成部分为发布和本地回归。[当前验收记录](PRICING_BROWSER_ACCEPTANCE.md)
