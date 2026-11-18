@@ -6,7 +6,8 @@ function attributes(item){
   return [part.slice(0,split).trim().toLowerCase(),part.slice(split+1).trim()];
  }));
 }
-const capacity=(text)=>Number(text.match(/(?:^|[^\w.])(\d+(?:\.\d+)?)\s*(?:GiB|GB|G)(?![a-z])/i)?.[1])||null;
+const capacityToken=/(?:^|[^\w.])(\d+(?:\.\d+)?)\s*(?:GiB|GB|G)(?![a-z])/gi;
+const capacity=(text)=>Number(text.matchAll(capacityToken).next().value?.[1])||null;
 const policy=(test,assumptions=[])=>({test,assumptions});
 const missing=(code)=>({code});
 const computeShape=text=>{
@@ -17,9 +18,9 @@ const computeShape=text=>{
  return explicitCPU&&memory?{cpu:explicitCPU,memory}:known;
 };
 const sameShape=(item,shape)=>item.cpu===shape.cpu&&item.memory===shape.memory;
+const topologyOptions=[[/single(?:[- ]az|[- ]node)?|单机|单实例/i,'single_node'],[/master[ /_-]*standby|primary[ /_-]*standby|multi[- ]az|主备/i,'master_standby'],[/cluster|集群/i,'cluster'],[/read replica|只读副本/i,'read_replica']];
 const topology=text=>{
- const options=[[/single(?:[- ]az|[- ]node)?|单机|单实例/i,'single_node'],[/master[ /_-]*standby|primary[ /_-]*standby|multi[- ]az|主备/i,'master_standby'],[/cluster|集群/i,'cluster'],[/read replica|只读副本/i,'read_replica']];
- const matched=options.filter(([pattern])=>pattern.test(text));
+ const matched=topologyOptions.filter(([pattern])=>pattern.test(text));
  return matched.length===1?matched[0][1]:null;
 };
 const rules={
@@ -48,15 +49,28 @@ const rules={
   return policy(item=>item.sku===sku,generic?['HW_DEFAULT_SSD']:[]);
  },
  DCS(row,spec){
-  if(!/redis|\bdcs\b/i.test(row.product+' '+spec)||/memcached|valkey|keydb|\bredis\s+v?\d+\.\d+|版本|\bversion\b/i.test(spec))return missing('HW_CACHE_ENGINE');
+  const source=row.product+' '+spec;
+  if(!/redis|\bdcs\b/i.test(source)||/memcached|valkey|keydb|\bredis\s+v?\d+\.\d+|版本|\bversion\b/i.test(spec))return missing('HW_CACHE_ENGINE');
   const specSize=capacity(spec),size=row.capacity??specSize,mode=topology(spec);
   if(row.capacity&&specSize&&row.capacity!==specSize)return missing('HW_CACHE_CAPACITY');
   if(!(size>0))return missing('HW_CACHE_CAPACITY');
-  if(!mode||mode==='read_replica')return missing('HW_CACHE_MODE');
   const units=Number(spec.match(/(\d+)\s*(?:节点|nodes?|副本|replicas?)/i)?.[1])||null;
-  return policy((item,fields)=>item.sku.startsWith('redis.')&&fields.cache_mode===mode&&fields.capacity===`${size*1024}MB`&&
-   (!units||fields.replica_number===`${units}PCS`)&&(!/arm|鲲鹏/i.test(spec)||fields.cpu_type==='arm')&&
-   (!/x86/i.test(spec)||fields.cpu_type==='x86')&&(!/DRAM/i.test(spec)||fields.storage_type==='DRAM'));
+  if(mode==='read_replica')return missing('HW_CACHE_MODE');
+  if(!mode){
+   const capacities=Array.from(source.matchAll(capacityToken),match=>Number(match[1]));
+   if(capacities.some(capacity=>capacity!==size)||/\d\s*[-–~至/]\s*\d+(?:\.\d+)?\s*(?:GiB|GB|G)\b/i.test(source))return missing('HW_CACHE_CAPACITY');
+   if(/\bredis\s+v\d/i.test(source)||/memcached|valkey|keydb|\bredis\s+\d+\.\d+|版本|\bversion\b/i.test(row.product))return missing('HW_CACHE_ENGINE');
+   // Unknown or conflicting topology hints must not take the missing-topology default.
+   const nodeConstraints=Array.from(source.matchAll(/(\d+)\s*(?:节点|nodes?|副本|replicas?)/gi),match=>Number(match[1]));
+   if(!/redis/i.test(source)||topologyOptions.some(([pattern])=>pattern.test(source))||
+      /主\s*备|高可用|多\s*(?:AZ|可用区)|哨兵|分片|\b(?:HA|standby|standalone|replication|replicated|shards?|sentinel)\b/i.test(source)||
+      nodeConstraints.some(count=>count!==1))return missing('HW_CACHE_MODE');
+  }
+  const nodeCount=mode?units:1;
+  const constraints=mode?spec:source;
+  return policy((item,fields)=>typeof item.sku==='string'&&item.sku.startsWith('redis.')&&fields.cache_mode===(mode??'single_node')&&fields.capacity===`${size*1024}MB`&&
+   (!nodeCount||fields.replica_number===`${nodeCount}PCS`)&&(!/arm|鲲鹏/i.test(constraints)||fields.cpu_type==='arm')&&
+   (!/x86/i.test(constraints)||fields.cpu_type==='x86')&&(!/DRAM/i.test(constraints)||fields.storage_type==='DRAM'),mode?[]:['HW_DEFAULT_REDIS_SINGLE']);
  },
  RDS(row,spec){
   const shape=computeShape(spec),mode=topology(spec);
@@ -100,6 +114,7 @@ export function matchHuawei(row,catalog,{now=Date.now()}={}){
  const spec=row.specification.trim();
  const contract=rule(row,spec);
  if(contract.code)return contract;
+ if(contract.assumptions.includes('HW_DEFAULT_REDIS_SINGLE')&&plans.some(item=>typeof item.description!=='string'||!item.description.trim()))return missing('HW_NO_MATCH');
  const exact=plans.filter(item=>contract.test(item,attributes(item)));
  if(!exact.length)return missing('HW_NO_MATCH');
  if(exact.length!==1)return {code:'HW_MULTIPLE',candidates:exact.map(item=>item.sku)};

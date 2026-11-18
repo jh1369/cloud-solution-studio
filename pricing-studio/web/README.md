@@ -1,6 +1,6 @@
 # Cloud Solution Studio · Pricing Studio Web
 
-Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.4-dev` adds deterministic Huawei SKU matching and a local model-assisted review workflow. [Browser acceptance](../../docs/PRICING_BROWSER_ACCEPTANCE.md)
+Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.5-dev` includes deterministic Huawei SKU matching and a local model-assisted review workflow. [Browser acceptance](../../docs/PRICING_BROWSER_ACCEPTANCE.md)
 
 ## Features
 
@@ -21,7 +21,7 @@ The bundled public catalog has 441 pay-per-use and 400 plans each for one month 
 | --- | --- |
 | ECS | Match vCPU and memory exactly. Check architecture, OS and compute class. For generic requests, x86, Linux and General Computing are visible estimate assumptions. Specialized hosts, licenses and accelerators require review. |
 | EVS | Match cloud-disk class. Generic SSD uses a disclosed GPSSD scenario. Confirm disk capacity and usage. Performance, snapshot and unsupported tiers stay under review. |
-| DCS | Match Redis cache capacity and an explicit deployment. `2G Redis` needs a deployment decision. A shared topology with several matching node counts needs an explicit node count or manual selection. |
+| DCS | Match Redis cache capacity and verified topology. When topology is unspecified and the catalog gives one compatible single-node SKU, use a disclosed single-node estimate. A quantity is required to price the estimate. An explicit shared topology with multiple matching node counts needs a more specific request or manual selection. |
 | RDS | Match engine, version, shape, topology and explicit Cloud SSD for instance-only estimates. Check storage and backup fees separately. |
 | ELB, NAT Gateway, CCE and other services | Manual candidate selection where a catalog plan exists. Unknown dimensions or missing plans stay Pending. OBS has no usable price rows. |
 
