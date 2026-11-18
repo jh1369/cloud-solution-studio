@@ -2,6 +2,8 @@
 
 > Codex 与 ChatGPT 的共享项目状态依据。以实际代码、可复现测试和 Git 提交为准；需求、规划和其他工作区的会话记录不自动等于仓库已完成。
 
+> Codex 开发参考（2026-11-18）：[Pricing Studio 同类工具调研与开发参考](PRICING_STUDIO_RESEARCH.md)。优先完成在线与离线的真实浏览器验收，随后修复 TCP 价格更新的两项已知问题。
+
 ## 1. 当前版本、基线与整体进度
 
 | 项目 | 当前状态 |
@@ -331,3 +333,9 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **网站：** [原私有站点](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/) 已从 Sites 源码 `fff0d1fe414b09464089a4f6734b6a03f56738ff` 构建，原生发布 succeeded；11-18 状态复查仍 succeeded。访问范围不变，无新增分享或公开访问。发布包只含既有 hosting manifest 与同一源码构建的 Worker；凭证未写入源码/文档/包。
 - **测试/安全：** 规范仓库 release:offline 与独立发布目录 npm test 均为 82 JS + 34 Python 全通过、0 失败（执行日期 11-17）；本次文档确认仅做 diff/变更范围核查，不重复业务测试。实际浏览器 11-18 打开生产地址停在 ChatGPT 登录页，不算导入/切换/刷新/下载端到端通过；未绕过认证。
 - **未解决/下一步：** TCP 初始目录仍未人工批准，完整 TCP 自动报价/映射/Excel 属下一阶段；复杂规则继续 Pending。调度配置生成并经过测试，但须在用户实际机器安装，托管检查只发现文件变化且无持久目录提升。继续真实浏览器验收与价格审核后再接入 TCP 计价；不把目录交付写成全功能完成。
+
+### 2026-11-18 — Pricing Studio 调研与 Codex 交接
+
+- **新增：** [同类工具调研与开发参考](PRICING_STUDIO_RESEARCH.md)，包含功能优先级、验收矩阵、Skill 建议及 Codex 单项任务。**修改：** 本文增加开发参考入口和交接记录。**删除：** 无。
+- **验证：** 基于 `main` / `eed9a72` 和公开资料核对。检查 Markdown、文件链接和提交范围。本次为 `0.3.0-dev` 文档交接，未运行应用测试或重新验收浏览器。
+- **下一步：** 完成在线与离线浏览器验收，再处理两项 TCP 目录更新问题。**同步：** 本条随调研文档提交至 `main`。
