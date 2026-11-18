@@ -71,13 +71,36 @@ python3.12 scripts/catalog_update.py publication --output outputs/tcp-publicatio
 
 The publication contains `state` and `catalog`. For Pending or stale state, `catalog` is null. `export` without a version returns the effective catalog. `export --version <id>` retrieves immutable historical data explicitly. `parse --pdf <public-pdf> --source-url <official-url> --output outputs/parsed.json` remains a diagnostic tool for operator-supplied files with unverified provenance.
 
+## Online publication contract
+
+The Python command below runs the existing updater and publishes its decision. Use the original SQLite database on persistent storage for every run. The SDK uses the host's configured credential chain. Give the scheduled writer get and put access to the dedicated private publication bucket.
+
+```bash
+python3.12 -m pip install -r requirements-publication.txt
+python3.12 scripts/catalog_update.py publish \
+  --database /path/to/persistent/catalogs.sqlite3 \
+  --bucket '<approved-bucket>' \
+  --endpoint-url 'https://<account>.r2.cloudflarestorage.com'
+```
+
+| Object | Schema v1 |
+| --- | --- |
+| `tcp/catalogs/<sha256>.json` | Immutable UTF-8 JSON using the SQLite catalog schema. Only `AUTO_VALIDATED` rows are published, with decimal strings and original PDF evidence. Coverage still describes all parsed rows. The key is derived from the exact bytes. The payload limit is 8 MiB. |
+| `tcp/current.json` | Provider, monotonically ordered SQLite check sequence, phase, current and candidate versions, latest check and verification times, effective state, source and coverage. An active decision includes a `catalog` reference with `versionId`, `sha256`, `sourceSHA256` and `size`. The state limit is 64 KiB. |
+
+The publisher conditionally writes a `CHECKING` guard before checking the PDF. The guard exposes Pending with no catalog. For an active decision, the publisher creates the immutable object with `If-None-Match: *` and verifies the stored bytes before committing the new pointer. A failed check commits a Pending decision. The pointer uses `If-Match` against the observed ETag, or a create-only write for an empty bucket. Sequence and phase prevent a delayed writer from replacing a newer state. A crash after the guard leaves prices Pending until a new run. A crash after uploading the catalog can leave an unreferenced immutable object that a later run can reuse. A guard that cannot be written aborts the run before the official check. Restoring SQLite behind the remote sequence requires reconciling the deployment before resuming publication. [R2 conditional operations](https://developers.cloudflare.com/r2/api/s3/conditional-operations/)
+
+Bind the private bucket to the Worker as `TCP_CATALOG_BUCKET`. The Worker uses strong-consistency reads and derives the object key locally from the SHA-256. It verifies the state and catalog version, source hash, length, actual byte hash and catalog contract. It rechecks the current object version and the 48-hour window before returning prices.
+
+- `GET /api/catalog/tcp/status` returns the verified state.
+- `GET /api/catalog/tcp/catalog` returns `{state, catalog}`. Missing bindings or objects, inconsistent or corrupt bytes, and pointer changes during reads return no catalog and a Pending reason. Expired verification reports `STALE` and returns no catalog.
+- `POST /api/catalog/tcp/check` detects changes to the official PDF. It reads publication status after detection and leaves the verification timestamp and publication unchanged.
+
+Both GET responses use `Cache-Control: no-store`. The Worker accepts no bucket URL or object key from callers. Keep the bucket private and use the existing Site access gate. SHA-256 detects inconsistencies and corruption, while access control establishes which writer the Worker trusts. The local development bridge can still use SQLite over its fixed status and check commands.
+
 ## Managed scheduling and delivery plan
 
-Use a managed Linux VM with a persistent volume and a daily systemd timer. Run the Python updater under a dedicated account with outbound access to the official TCP site and scoped publication storage. Use a single scheduled writer, volume backups and run/failure alerts. Existing `schedule --scheduler systemd --output outputs/schedule` generates the starting timer and service. Adapt the production job to export publication state after every attempt, including a failed check.
-
-Store immutable catalog objects by version and SHA-256 in R2 or equivalent object storage. Publish the catalog first, then replace one small current-state object with a conditional write so an older job cannot displace a newer decision. Publish Pending on failures. The Worker should read state and matching catalog together by version and hash, enforce the 48-hour limit at request time, and reject stale or mismatched state. Browser and Excel snapshots should pin the exact catalog version, source hash, verification time, assumptions and amounts. A managed job with ephemeral disks would need durable database storage and compatible locking or a replacement state store.
-
-Managed scheduling, cloud publication and Worker storage integration are planned. The local Web bridge currently uses fixed CLI commands for `/api/catalog/tcp/status` and `/check`. The hosted Worker only detects PDF changes and reports packaged status. Detection cannot renew successful verification.
+Use a single managed Linux job with a persistent SQLite volume and scoped credentials. Adapt the existing systemd timer to run `publish` daily and alert on errors, Pending or missed verification. Confirm that the approved Worker environment supports the private bucket binding, then run an initial check, an unchanged check and an interruption or expiry smoke test. Production storage and scheduling are pending. When TCP quotations are introduced, snapshots should pin the exact catalog hash and version, source hash, verification time, assumptions and amounts.
 
 ## Validation and known limits
 

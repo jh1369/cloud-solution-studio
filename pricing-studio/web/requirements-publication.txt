@@ -1,0 +1,3 @@
+# Optional for the managed TCP publisher.
+-r requirements-catalog.txt
+boto3==1.40.67

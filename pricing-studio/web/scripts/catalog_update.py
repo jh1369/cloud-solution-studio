@@ -1,9 +1,11 @@
-"""Local public catalog CLI. No quotation calculations or cloud credentials."""
+"""Fetch, validate and publish official public price catalogs."""
 import argparse
+from contextlib import closing
 import json
 from pathlib import Path
 import sys
 from tempfile import NamedTemporaryFile
+from urllib.parse import urlsplit
 from catalog_updater.models import digest
 from catalog_updater.service import CatalogUpdater, utc_now
 from catalog_updater.store import CatalogStore
@@ -12,9 +14,34 @@ from catalog_updater.tcp import TCPProvider, official_url
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def publish(args, store, updater):
+    from catalog_updater.publication import S3PublicationStorage, publish_to_storage
+
+    endpoint = urlsplit(args.endpoint_url)
+    if (endpoint.scheme != "https" or not endpoint.hostname or endpoint.username is not None
+            or endpoint.password is not None or endpoint.query or endpoint.fragment or endpoint.path not in {"", "/"}):
+        raise ValueError("Publication requires an HTTPS object-storage endpoint")
+    try:
+        import boto3
+        from botocore.config import Config
+        from botocore.exceptions import BotoCoreError, ClientError
+    except ImportError:
+        raise ValueError("Install requirements-publication.txt to use publish") from None
+
+    config = Config(connect_timeout=5, read_timeout=20, retries={"mode": "standard", "total_max_attempts": 3},
+                    request_checksum_calculation="when_required", response_checksum_validation="when_required",
+                    s3={"addressing_style": "path"})
+    try:
+        with closing(boto3.client("s3", endpoint_url=args.endpoint_url, region_name=args.region, config=config)) as client:
+            storage = S3PublicationStorage(client, args.bucket)
+            return publish_to_storage(store, updater, TCPProvider(), storage)
+    except (BotoCoreError, ClientError):
+        raise OSError("TCP object-storage request failed") from None
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["check", "status", "parse", "export", "publication", "schedule"])
+    parser.add_argument("command", choices=["check", "status", "parse", "export", "publication", "publish", "schedule"])
     parser.add_argument("--scheduler", choices=["cron", "systemd", "windows"])
     parser.add_argument("--provider", choices=["tcp"], default="tcp")
     parser.add_argument("--database", type=Path, default=ROOT / "outputs/catalogs/catalogs.sqlite3")
@@ -22,9 +49,14 @@ def main(argv=None):
     parser.add_argument("--source-url")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--version")
+    parser.add_argument("--bucket")
+    parser.add_argument("--endpoint-url")
+    parser.add_argument("--region", default="auto", help="Object-storage region (auto for R2)")
     args = parser.parse_args(argv)
     if args.command == "publication" and not args.output:
         parser.error("publication requires --output <path>")
+    if args.command == "publish" and not (args.bucket and args.endpoint_url):
+        parser.error("publish requires --bucket and --endpoint-url")
     if args.command == "schedule":
         from catalog_updater.schedule import render_schedule
         if not args.scheduler or not args.output:
@@ -53,6 +85,8 @@ def main(argv=None):
             updater = CatalogUpdater(store)
             if args.command == "check":
                 result = updater.check(TCPProvider())
+            elif args.command == "publish":
+                result = publish(args, store, updater)
             elif args.command == "publication":
                 result = store.publication(args.provider)
             elif args.command == "export":

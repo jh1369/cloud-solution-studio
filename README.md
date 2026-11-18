@@ -1,6 +1,6 @@
 # Cloud Solution Studio
 
-Local-first tools for cloud solution architects. The current implementation focus is **Pricing Studio V0.3 (TCP catalog/data phase)**, with AWS-to-Huawei Cloud Public mapping, independently verified public pricing and Excel export. V0.2.0-dev (`f8ea276`) is the inspected GitHub baseline. V0.3 adds TCP PDF catalog ingestion and safe updates while retaining Huawei quotations. TCP quote mapping/calculation is not enabled yet. The user authorized this task's GitHub sync and automatic deployment of checked versions to the existing private Site. V0.3 data-phase source is synchronized (`8777743`) and deployed (Sites source `fff0d1f`); see the [verified status](docs/DEVELOPMENT_STATUS.md).
+Local-first tools for cloud solution architects. Pricing Studio V0.3 supports AWS-to-Huawei Cloud Public mapping, verified public pricing and Excel export. The TCP data phase now includes an object-store publisher and Worker reader, verified locally. The private Site runs the previously accepted Huawei build. The TCP storage binding, managed schedule and quotation mapping are pending. [Verified status](docs/DEVELOPMENT_STATUS.md)
 
 ## Security boundary
 
@@ -27,15 +27,15 @@ pricing-studio/
   src/pricing_studio/         # CSV → JSON product-family mapping starter
   sample_data/               # Fictional AWS inventory
   tests/                     # Python starter test
-  web/                       # Pricing Studio 0.3.1-dev candidate, Web + Worker
+  web/                       # Pricing Studio 0.3.2-dev, Web + Worker
     public/                  # Browser code, vendored libraries, public price evidence
-    worker.mjs               # Server source; official pricing refresh endpoint
+    worker.mjs               # Huawei price refresh and TCP catalog routes
     scripts/                 # Catalogue verification and Worker build helpers
     tests/                   # Synthetic web/Worker/export and catalogue-adapter tests
     SOURCE_PROVENANCE.json   # Historical V0.1.1 migration hashes
 ```
 
-The web app uses browser JavaScript and a Cloudflare Worker. Python 3.12 runs its build/catalogue scripts. The existing Python CLI currently declares `Python >=3.10` and uses the standard library. The separately developed Python/openpyxl/SQLite prototype has **not** been integrated here; neither Python nor SQLite runs inside the Worker.
+The web app uses browser JavaScript and a Cloudflare Worker. Python 3.12 runs the catalog updater with SQLite and can publish the validated TCP catalog through an S3-compatible client. The Worker reads the private bucket binding directly. The original Python CLI declares `Python >=3.10` and uses the standard library.
 
 ## Pricing Studio Web V0.2 — private candidate
 
@@ -68,7 +68,7 @@ The private deployed V0.1.1 source originated at Sites source commit `9e85f66f8d
 
 ## TCP catalog ingestion and updates
 
-The TCP updater discovers the current official PDF, validates supported prices and publishes passing catalogs automatically, including the initial baseline. SQLite stores the PDF, immutable versions and check history. The Python CLI exports a consistent catalog and state for a future cloud scheduler. The hosted Worker currently displays bundled status and can check for document changes. TCP quote mapping and calculation remain future work. [TCP design, operator commands and hosting plan](docs/PRICING_V03_TCP.md)
+The TCP updater discovers the current official PDF, validates supported prices and updates SQLite automatically. The `publish` command uses the same SQLite state to deliver immutable validated rows and a conditional current-state pointer to private R2. The Worker provides read-only status and catalog endpoints and enforces a 48-hour verification window. Managed scheduling, the production binding and TCP quote integration are pending. [TCP design, operator commands and hosting plan](docs/PRICING_V03_TCP.md)
 
 ## Existing Python mapping CLI
 
