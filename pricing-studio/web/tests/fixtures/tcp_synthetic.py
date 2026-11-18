@@ -6,31 +6,33 @@ AT = "2026-11-17T12:00:00+00:00"
 
 
 def source(content=b"fictional-v1", revision="2026-10-01"):
-    return {"url": URL, "sha256": digest(content), "fetchedAt": AT, "documentVersion": revision, "revisionDate": revision}
+    return {"url": URL, "discoveryPage": "https://www.t-cloud-public.com/en/prices/price-calculator", "sha256": digest(content), "fetchedAt": AT, "documentVersion": revision, "revisionDate": revision}
 
 
 def catalog(content=b"fictional-v1", price="1.00", revision="2026-10-01"):
     evidence = source(content, revision)
-    row = {"provider": "tcp", "service": "EIP", "productLabel": "FICTIONAL Elastic IP", "sku": None, "specification": {}, "region": "EU-DE", "billingMode": "OPEN_ELASTIC", "termMonths": None, "tierIndex": 0, "tier": None, "unit": "hour", "amount": price, "currency": "EUR", "availability": "AVAILABLE", "rules": {"upfront": False}, "verification": {"status": "AUTO_VALIDATED", "reasons": []}, "evidence": {**evidence, "pages": [1]}}
+    row = {"provider": "tcp", "service": "EIP", "productLabel": "FICTIONAL Elastic IP", "sku": None, "specification": {}, "region": "EU-DE", "billingMode": "OPEN_ELASTIC", "termMonths": None, "tierIndex": 0, "tier": None, "unit": "hour", "amount": price, "currency": "EUR", "availability": "AVAILABLE", "rules": {"upfront": False, "rawUnit": "h"}, "verification": {"status": "AUTO_VALIDATED", "reasons": []}, "evidence": {**evidence, "pages": [1], "rawPrice": price, "rawHeader": "price EU-DE in Euro"}}
     row["id"] = row_id(row)
-    return {"schemaVersion": 1, "provider": "tcp", "parserVersion": "synthetic-1", "versionId": "synthetic-" + digest(content), "source": evidence, "billingRulesHash": "synthetic-stable-billing-rules", "items": [row], "diagnostics": [], "coverage": {"synthetic": True}}
+    return {"schemaVersion": 1, "provider": "tcp", "parserVersion": "synthetic-1", "versionId": "synthetic-" + digest(content), "source": evidence, "currency": "EUR", "billingRulesHash": digest("synthetic-stable-billing-rules"), "items": [row], "diagnostics": [], "coverage": {"documentPages": 1, "synthetic": True}}
 
 
-def pdf_bytes():
+def pdf_bytes(billing_note=None, revision="01.10.2026", rate="0.111000"):
     commands = []
     def text(x, y, value, size=8):
         value = value.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
         commands.append(f"BT /F1 {size} Tf {x} {y} Td ({value}) Tj ET")
     text(20, 240, "FICTIONAL TEST DOCUMENT")
-    text(20, 225, "Last revised: 01.10.2026")
+    text(20, 225, "Last revised: " + revision)
     text(20, 210, "6 Prices", 10)
     text(20, 190, "6.5.2 Elastic IP", 10)
+    if billing_note:
+        text(20, 180, billing_note)
     xs, ys = [20, 240, 320, 425, 530], [170, 145, 120, 95]
     for x in xs:
         commands.append(f"{x} 95 m {x} 170 l S")
     for y in ys:
         commands.append(f"20 {y} m 530 {y} l S")
-    for y, values in [(154, ["Name", "charging unit", "price EU-DE in Euro", "price EU-NL in Euro"]), (129, ["FICTIONAL IP A", "h", "0.111000", "0.222000"]), (104, ["FICTIONAL IP B", "h", "n.a.", "0.000000"])]:
+    for y, values in [(154, ["Name", "charging unit", "price EU-DE in Euro", "price EU-NL in Euro"]), (129, ["FICTIONAL IP A", "h", rate, "0.222000"]), (104, ["FICTIONAL IP B", "h", "n.a.", "0.000000"])]:
         for x, value in zip(xs, values):
             text(x + 3, y, value, 7)
     stream = "\n".join(commands).encode()

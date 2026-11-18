@@ -8,7 +8,7 @@ Standing deployment authorization (2026-11-17): deploy each checked release to t
 
 Standing GitHub authorization (2026-11-18): after completing and sufficiently verifying a Cloud Solution Studio task, merge its reviewed changes into `jh1369/cloud-solution-studio` without asking again. Complete the security review below before every sync. When the user explicitly requests an earlier GitHub handoff, mark the version as a candidate and record the outstanding acceptance checks. The standing deployment authorization applies to checked releases. Follow the repository's branch rules and the user's instructions for the current task.
 
-Ordinary catalog data validation is not manual price approval. Keep anomalous/initial/complex TCP prices Pending until reviewed.
+TCP catalog publication is automatic after official-source and pricing-rule validation, including the first baseline. Retry anomalies within the configured limits. Keep unresolved or unsupported prices Pending and preserve historical snapshots.
 
 If a feature needs access to local confidential files, create an abstract interface and document how a separately executed local component would supply approved input. Do not implement any behavior that exfiltrates files.
 

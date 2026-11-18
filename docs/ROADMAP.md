@@ -2,20 +2,18 @@
 
 The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, test evidence and synchronization state. Checkboxes below distinguish the integrated web implementation from the existing Python starter; they do not assert customer-ready completeness.
 
-## Pricing Studio V0.3 — TCP catalog and auto-update phase
+## Pricing Studio V0.3 — TCP catalog automation
 
-Current work follows the [TCP V0.3 plan](PRICING_V03_TCP.md), on baseline `f8ea276`. User explicitly authorized this task's GitHub sync and standing automatic deployment of checked project versions to the existing private Site. No audience changes or unrelated publication are authorized. The data phase is synchronized to GitHub (`8777743`) and deployed from Sites source `fff0d1f`; 116 automated checks passed. Initial price approval, TCP quotation integration and real-browser acceptance remain outstanding.
+- [x] Discover the latest official TCP Service Description and preserve PDF, hash, revision and cell evidence.
+- [x] Automatically publish a validated initial baseline and later safe versions. Retry anomalies and keep unresolved rows Pending.
+- [x] Track last check, last verified time, catalog version and effective state. Freeze the version used by each quote.
+- [x] Export a consistent state/catalog pair and expose the four state fields in the Web status card.
+- [ ] Run Python daily on managed Linux with a persistent disk for SQLite. Publish an immutable catalog and a conditional state update to object storage. Wire the Worker to consume them with expiry and integrity checks.
+- [ ] Validate the managed workflow with the current official PDF. Extend deterministic checks for merged/cross-page rows, service-specific charging rules, tiers and composite fees.
+- [ ] Start TCP automatic quotations with one region and explicit simple SKUs. Confirm AWS mappings, reconcile units and compare line costs and Excel evidence against the official PDF.
+- [ ] Extend quotation coverage for reserved and upfront plans, storage, ancillary charges and missing resources. Preserve unknown amounts as Pending.
 
-- [x] Generic Provider Adapter and Catalog Updater; retain Huawei arithmetic/validation.
-- [x] Official current-PDF discovery, SHA/revision/version metadata and structured ECS/EVS/EIP/ELB/OBS/RDS catalog.
-- [x] Zero vs n.a., independent usage/reserved/upfront prices, tiers and review flags; no inferred official subscription prices.
-- [x] Consecutive-version and approved-baseline diffs; approval gates, immutable history and pinned quote snapshots.
-- [x] Core fictional/PDF/update tests first, then daily local cron/systemd/Windows configuration generators (not installed).
-- [x] Bilingual catalog status/check card; hosted detection-only and local persistent updater separated explicitly.
-- [ ] Manual TCP baseline/complex-rule review; actual real store still has no approved version.
-- [ ] TCP mapping/cost/Excel quote integration; this phase does not claim full TCP automatic quotations.
-- [ ] Complete true browser workflow acceptance; preview relay and file:// restrictions remain blockers.
-- [ ] Finish this version's offline archive, safety review, authorized GitHub synchronization and private deployment; record actual results.
+[Catalog contracts, status and hosting plan](PRICING_V03_TCP.md)
 
 ## Pricing Studio V0.2 — private candidate (single-Agent default)
 

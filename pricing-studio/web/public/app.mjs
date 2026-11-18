@@ -99,10 +99,13 @@ function renderCatalog(){
  renderTCPStatus();
 }
 function renderTCPStatus(){
- const known=['NEVER_CHECKED','PENDING_REVIEW','UNCHANGED','UPDATED','APPROVED','CHECK_FAILED','DOCUMENT_CHANGED_REVIEW_REQUIRED'];
- $('#tcp-current').textContent=tcpStatus.currentVersion||T('tcp.noApproved');
+ const known=['NEVER_CHECKED','PENDING_REVIEW','PENDING_VALIDATION','UNCHANGED','UPDATED','CHECK_FAILED','DOCUMENT_CHANGED'];
+ $('#tcp-current').textContent=tcpStatus.currentVersion||T('tcp.noEffective');
  $('#tcp-candidate').textContent=tcpStatus.candidateVersion||T('tcp.noCandidate');
  $('#tcp-checked').textContent=tcpStatus.lastCheckedAt?dateLabel(tcpStatus.lastCheckedAt,language):'—';
+ $('#tcp-verified').textContent=tcpStatus.lastVerifiedAt?dateLabel(tcpStatus.lastVerifiedAt,language):'—';
+ const effective=['UNINITIALIZED','ACTIVE','PENDING','STALE'].includes(tcpStatus.effectiveState)?tcpStatus.effectiveState:'PENDING';
+ $('#tcp-effective').textContent=T('tcp.effective.'+effective);
  $('#tcp-state').textContent=T('tcp.state.'+(known.includes(tcpStatus.status)?tcpStatus.status:'PENDING_REVIEW'));
  const services=Object.values(tcpStatus.coverage?.services||{});
  $('#tcp-coverage').textContent=T('tcp.coverage',{total:services.reduce((n,s)=>n+s.total,0),validated:services.reduce((n,s)=>n+s.AUTO_VALIDATED,0)});
@@ -115,15 +118,15 @@ async function loadTCPStatus(){
   if(offlineBundle)tcpStatus=offlineBundle.tcpStatus||tcpStatus;
   else{const response=await fetch('/api/catalog/tcp/status');if(!response.ok)throw Error();tcpStatus=await response.json();}
   tcpLoaded=true;
- }catch{tcpStatus={...tcpStatus,status:'CHECK_FAILED'};}
+ }catch{tcpStatus={...tcpStatus,status:'CHECK_FAILED',effectiveState:'PENDING'};}
  renderTCPStatus();
 }
 $('#tcp-check').addEventListener('click',async()=>{
  if(offlineBundle||tcpBusy)return;tcpBusy=true;renderTCPStatus();toast(T('tcp.checking'));
  try{
   const response=await fetch('/api/catalog/tcp/check',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-  const state=await response.json();tcpStatus=state?.provider==='tcp'?{...tcpStatus,...state}:{...tcpStatus,status:'CHECK_FAILED'};
- }catch{tcpStatus={...tcpStatus,status:'CHECK_FAILED'};}
+  const state=await response.json();tcpStatus=state?.provider==='tcp'?{...tcpStatus,...state}:{...tcpStatus,status:'CHECK_FAILED',effectiveState:'PENDING'};
+ }catch{tcpStatus={...tcpStatus,status:'CHECK_FAILED',effectiveState:'PENDING'};}
  finally{tcpBusy=false;renderTCPStatus();}
 });
 function localize(){

@@ -24,7 +24,7 @@ function resultIndex(quote,count){
 function json(value,status=200){return new Response(JSON.stringify(value),{status,headers:{...security,'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});}
 export default {async fetch(request){
  const url=new URL(request.url);
- if(url.pathname==='/api/catalog/tcp/status')return request.method==='GET'?json({...tcpStatus,checkScope:'PACKAGED_PUBLIC_STATUS'}):json({error:'GET required'},405);
+ if(url.pathname==='/api/catalog/tcp/status')return request.method==='GET'?json({...publishedTCPStatus(tcpStatus),checkScope:'PACKAGED_PUBLIC_STATUS'}):json({error:'GET required'},405);
  if(url.pathname==='/api/catalog/tcp/check'){
   if(request.method!=='POST')return json({error:'POST required'},405);
   if(request.headers.get('Origin')&&request.headers.get('Origin')!==url.origin)return json({error:'Origin mismatch'},403);
