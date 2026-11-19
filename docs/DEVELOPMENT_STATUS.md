@@ -9,6 +9,7 @@
 | 更新日期 | 2026-11-19，Europe/Berlin |
 | 当前优先目标 / 模式 | Huawei 自动规格匹配与智能导入的主线整合，单 Agent |
 | 本轮检查基线 | `main` / `8f8ff839309f79e7223d9edaa5af770dd3c5f4da` |
+| `main` 代码合并基线 | `0dbd72463b21e3f85d9ac879fd4de897d5241237`，与已验收代码树一致。[合并提交](https://github.com/jh1369/cloud-solution-studio/commit/0dbd72463b21e3f85d9ac879fd4de897d5241237) · [当前 `main` HEAD](https://github.com/jh1369/cloud-solution-studio/commits/main/) |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
@@ -449,4 +450,4 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **自动测试** 在 `pricing-studio/web` 用 Node 24.22.1 运行 `node --test tests/huawei-import.test.mjs` 通过 21 项。在线构建通过，`node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs` 通过 117 项。Python 3.12.14 运行 `python3.12 -m unittest discover -s tests -p '<suite>.py'` 的 `test_catalog`、`test_catalog_updates`、`test_tcp_pdf`、`test_schedule`、`test_catalog_publication`，40 通过、2 项因缺 `boto3` 跳过。父级 `pricing-studio` 运行 `PYTHONPATH=src python3.12 -m unittest discover -s tests` 通过 1 项。上述命令均无失败。
 - **浏览器** Chromium 156.0.8078.79 与 openpyxl 3.1.5 核对 15 份真实下载。Redis 2 GB→4 GB→4 GB 主备自动切换 SKU。EVS 两块盘、每盘 100→200 GB，保留 80 GB-month 按需用量，金额 USD 16.70。三种计费模式各有 3 个 SKU 实时询价通过。非标准 CSV 和多表 Excel 经本机模拟端点验证预览修正、确认、核价和导出。当前环境缺可用的真实本机推理运行时与权重，真实模型复验保留待办。[浏览器验收](PRICING_BROWSER_ACCEPTANCE.md#2026-11-19--huawei-主线整合验收)
 - **后续覆盖** 先用真实本机模型复验两类虚构文件。再按官方目录和独立计费证据补充 Redis 版本与拓扑、EVS 性能型用量和 RDS 存储及备份。ELB 和 CCE 仍需手动选型，OBS 缺目录费率，跨区、复杂带宽与流量等缺项保持 Pending。
-- **同步** PR #13 的修复作为提交历史进入 #14，Web 版本设为 `0.3.8-dev`，与上一轮独立构建区分。[PR #13](https://github.com/jh1369/cloud-solution-studio/pull/13) · [PR #14](https://github.com/jh1369/cloud-solution-studio/pull/14)
+- **同步** GitHub 确认 PR #13 和 #14 均为 Merged。#13 的修复随 #14 一次合入，`main` 的 Web 代码基线为 `0dbd72463b21e3f85d9ac879fd4de897d5241237`，版本 `0.3.8-dev`。之后追加了本文状态记录。生产站仍以最近记录的独立发布为准。[PR #13](https://github.com/jh1369/cloud-solution-studio/pull/13) · [PR #14](https://github.com/jh1369/cloud-solution-studio/pull/14)
