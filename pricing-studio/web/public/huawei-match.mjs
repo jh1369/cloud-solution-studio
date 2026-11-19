@@ -1,8 +1,10 @@
-import {REGION,awsShape,billingOf,family,parseText,priceValidation,calculate,pendingResult,relatedHuaweiCharges} from './engine.mjs';
+import {REGION,awsShape,billingOf,family,parseText,priceValidation,calculate,huaweiApprovalKey,pendingResult,relatedHuaweiCharges} from './engine.mjs';
 import {dcsRequirements,documentedDcsSpecs,matchesDcsSpec} from './huawei-dcs-specs.mjs';
 import {infrastructureRules} from './huawei-infrastructure-specs.mjs';
 import {eipName,eipSelection,eipAttachment,eipReference,attachedEipRow} from './huawei-eip.mjs';
 import {awsSourceService,hasAwsSourceType,lookupAwsSpec,awsOperatingSystem} from './aws-specs.mjs';
+import {awsMigrationKind,matchAwsMigration,migrationGroup,migrationRelated,migrationStoragePlan} from './huawei-migration.mjs';
+export {migrationGroup} from './huawei-migration.mjs';
 
 const productRules={...infrastructureRules,EIP:eipSelection};
 export const usesHuaweiProductSpecs=service=>service==='DCS'||Object.hasOwn(productRules,service);
@@ -270,37 +272,20 @@ function matchDocumentedProduct(row,catalog,plans,text,now){
  return price?{...match,...price,specs:undefined}:pending('HW_SPEC_PRICE_LINK');
 }
 
-const isAwsCompute=row=>row.service==='ECS'&&(row.awsProfile?.kind==='EC2'||row.awsTypedSource==='ECS');
-const isAwsDatabase=row=>row.service==='RDS'&&(row.awsProfile?.kind==='RDS'||row.awsTypedSource==='RDS');
-export const revalidateHuaweiSelection=row=>usesHuaweiProductSpecs(row.service)||isAwsCompute(row)||isAwsDatabase(row);
-
-function matchAwsCompute(row,catalog,plans,text,now){
- const profile=row.awsProfile,os=row.awsOS?.value;
- if(!os)return missing('HW_AWS_OS_REVIEW');
- if(!profile.architecture)return missing('HW_AWS_PROFILE_ARCH');
- if(verifiedComputeConflict(text,profile,{memoryCheck:true}))return missing('HW_AWS_SPEC_CONFLICT');
- const candidates=plans.filter(plan=>sameShape(plan,profile)&&String(plan.arch).toLowerCase()===profile.architecture&&plan.os===os);
- const skus=candidates.map(plan=>plan.sku);
- if(!candidates.length)return missing('HW_AWS_NO_PLAN');
- const preferredType=profile.category==='memory'?'Memory-optimized':'General Computing';
- const preferred=candidates.filter(plan=>attributes(plan).type===preferredType);
- const manual=row.huaweiSelection==='manual';
- const item=manual?candidates.find(plan=>plan.id===row.targetId):preferred.length===1?preferred[0]:candidates.length===1?candidates[0]:null;
- if(!item)return {code:manual?'HW_AWS_SPEC_CONFLICT':'HW_MULTIPLE',candidates:skus};
- const automatic=profile.category==='general'&&attributes(item).type==='General Computing'&&profile.architecture==='x86';
- const condition=automatic?null:profile.category==='burstable'?'HW_AWS_BURST_REVIEW':
-  profile.architecture==='arm'?'HW_AWS_ARCH_REVIEW':'HW_AWS_CAPACITY_REVIEW';
- return {item,condition,candidates:skus,code:priceValidation(item,catalog,{now}).valid?'HW_MATCHED':'HW_MATCHED_PRICE'};
-}
+export const revalidateHuaweiSelection=row=>usesHuaweiProductSpecs(row.service)||!!awsMigrationKind(row);
 
 export function matchHuawei(row,catalog,{now=Date.now()}={}){
  if(row.huaweiTargetRegion&&row.huaweiTargetRegion!==REGION)return missing('HW_TARGET_REGION');
  const rule=Object.hasOwn(rules,row.service)?rules[row.service]:null;
  const mode=billingOf(row);
- const plans=catalog.items.filter(item=>item?.region===REGION&&item.service===row.service&&item.billingMode===mode);
+ const kind=awsMigrationKind(row);
+ const plans=catalog.items.filter(item=>item?.region===REGION&&item.service===row.service&&item.billingMode===mode&&
+  (kind||!item.expandedEcs||/\bseries\b|系列/i.test(row.specification)));
  const spec=(row.product+' '+(eipAttachment(row)?.base??row.specification)).normalize('NFKC').trim();
- if((isAwsCompute(row)||isAwsDatabase(row))&&!row.awsProfile)return missing('HW_AWS_SPEC_UNVERIFIED');
- if(isAwsCompute(row))return matchAwsCompute(row,catalog,plans,spec,now);
+ if(kind){
+  if(['EC2','RDS'].includes(kind)&&row.awsProfile&&verifiedComputeConflict(spec,row.awsProfile,{memoryCheck:kind==='EC2'}))return missing('HW_AWS_SPEC_CONFLICT');
+  return matchAwsMigration(row,kind,plans,catalog,now,priceForSpec);
+ }
  if(row.service==='DCS')return matchDcs(row,catalog,plans,spec,now);
  if(Object.hasOwn(productRules,row.service))return matchDocumentedProduct(row,catalog,plans,spec,now);
  if(!plans.length)return missing('HW_NO_PLAN');
@@ -308,11 +293,6 @@ export function matchHuawei(row,catalog,{now=Date.now()}={}){
  const contract=rule(row,spec);
  if(contract.code)return contract;
  const exact=plans.filter(item=>contract.test(item,attributes(item)));
- if(isAwsDatabase(row)&&row.huaweiSelection==='manual'){
-  const chosen=exact.find(item=>item.id===row.targetId);
-  return chosen?{item:chosen,code:priceValidation(chosen,catalog,{now}).valid?'HW_MATCHED':'HW_MATCHED_PRICE',
-   condition:contract.condition,assumptions:contract.assumptions}:{code:'HW_AWS_SPEC_CONFLICT',candidates:exact.map(item=>item.sku)};
- }
  if(!exact.length)return missing('HW_NO_MATCH');
  if(exact.length!==1)return {code:'HW_MULTIPLE',candidates:exact.map(item=>item.sku)};
  const [item]=exact;
@@ -326,6 +306,9 @@ export function applyHuaweiMatch(row,catalog,options){
  const match=matchHuawei(row,catalog,options);
  row.huaweiMatch=match.code;
  row.huaweiCandidates=match.candidates;
+ row.huaweiRanked=match.ranked;
+ row.huaweiMigration=match.migration;
+ row.huaweiMeterUsage=match.usageOverride;
  row.huaweiAssumptions=match.assumptions??[];
  row.huaweiCharge=match.charge;
  row.huaweiPendingCharges=match.pendingCharges??[];
@@ -337,13 +320,16 @@ export function applyHuaweiMatch(row,catalog,options){
    ...(row.service==='EIP'?{usage:row.usage,unit:row.unit,unitExplicit:row.unitExplicit}:{})};
  }else delete row.huaweiProductMatch;
  if(!manual){row.targetId=match.item?.id??'';row.accepted=!!match.item;}
- row.awsMatchIssue=(isAwsCompute(row)||isAwsDatabase(row))&&!match.item?match.code:null;
+ row.awsMatchIssue=awsMigrationKind(row)&&!match.item?match.code:null;
+ const disk=migrationStoragePlan(row,catalog);
+ row.huaweiStorageRevision=disk?[disk.id,disk.rate,disk.verifiedAt]:null;
  setHuaweiUsageAssumption(row,match.item);
  const assumptions=row.semanticInventory?[...row.huaweiAssumptions.filter(code=>
   /^HW_(?:DEFAULT_|DCS_DOCUMENTED_)/.test(code)||['HW_ELB_ELASTIC_BASE','HW_CCE_STANDARD','HW_EIP_REFERENCE_HOURS'].includes(code)),
   row.huaweiUsageAssumption].filter(Boolean):[];
- row.huaweiConditions=[...new Set([match.condition,...assumptions].filter(Boolean))];
+ row.huaweiConditions=[...new Set([match.condition,...(match.conditions??[]),...assumptions].filter(Boolean))];
  updateConditionKey(row,match.item);
+ if(row.huaweiConditionApproval&&row.huaweiConditionApproval!==huaweiApprovalKey(row,match.item,options))row.huaweiConditionApproval=null;
  return row;
 }
 function updateConditionKey(row,item){
@@ -356,18 +342,39 @@ function updateConditionKey(row,item){
 export function confirmHuaweiConditionGroup(rows,source,catalog,options){
  const group=source.huaweiConditionKey;
  if(!group)return 0;
+ const migration=source.huaweiMigration?migrationGroup(source):null;
+ const design=JSON.stringify(source.huaweiDesign??{});
  let confirmed=0;
  for(const row of rows){
-  if(row.huaweiConditionKey!==group||row.huaweiImportIssues?.length)continue;
+  if(row.huaweiConditionKey!==group||row.huaweiImportIssues?.length||
+     migration&&(migrationGroup(row)!==migration||JSON.stringify(row.huaweiDesign??{})!==design))continue;
   applyHuaweiMatch(identifyHuaweiRow(row),catalog,options);
-  if(row.huaweiConditionKey!==group||calculate(row,catalog,options).status!=='Conditional')continue;
-  row.huaweiConditionApproval=group;row.accepted=true;confirmed++;
+  if(row.huaweiConditionKey!==group||row.huaweiMigration?.canApprove===false||calculate(row,catalog,options).status!=='Conditional')continue;
+  row.huaweiConditionApproval=huaweiApprovalKey(row,catalog.items.find(item=>item.id===row.targetId),options);
+  row.accepted=true;confirmed++;
  }
  return confirmed;
 }
 
+export function configureHuaweiMigrationGroup(rows,source,design,catalog,options){
+ const group=migrationGroup(source);
+ if(!group)return 0;
+ let configured=0;
+ for(const row of rows){
+  if(migrationGroup(row)!==group||row.huaweiImportIssues?.length)continue;
+  row.huaweiDesign={...design};
+  row.huaweiSelection=null;
+  row.huaweiPreferredSku=null;
+  row.huaweiConditionApproval=null;
+  applyHuaweiMatch(identifyHuaweiRow(row),catalog,options);
+  configured++;
+ }
+ return configured;
+}
+
 export function selectHuaweiBilling(row,mode,catalog,options){
  row.targetBilling=mode;
+ if(row.huaweiDesign?.candidateId)delete row.huaweiDesign.candidateId;
  if(row.huaweiSelection!=='manual')return applyHuaweiMatch(identifyHuaweiRow(row),catalog,options);
  row.huaweiPreferredSku??=catalog.items.find(item=>item.id===row.targetId)?.sku;
  const choices=catalog.items.filter(item=>item.region===REGION&&item.service===row.service&&item.billingMode===mode&&item.sku===row.huaweiPreferredSku);
@@ -429,7 +436,8 @@ export function quoteHuaweiRows(rows,catalog,options={}){
  const claims=[];
  const output=rows.map((row,index)=>{
   const result=calculate(row,catalog,options);
-  const attach=eipAttachment(row),related=relatedHuaweiCharges(row,result).filter(line=>!attach||line.charge!=='eip');
+  const attach=eipAttachment(row),related=[...relatedHuaweiCharges(row,result).filter(line=>!attach||line.charge!=='eip'),
+   ...migrationRelated(row,result,catalog,options)];
   const addClaim=(item,quote,reference,standalone=false)=>claims.push({row:item,result:quote,index,
    ref:reference,standalone,kind:item.huaweiCharge==='eipReservation'?'reservation':'connection'});
   const addCharge=(item,reference)=>{

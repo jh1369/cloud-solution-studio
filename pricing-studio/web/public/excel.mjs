@@ -52,42 +52,58 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
  const mapped=lines.filter(line=>line.row),includeSpec=mapped.some(({row})=>row.huaweiProductMatch);
  const includeCharge=lines.some(line=>line.charge),includeEip=mapped.some(({row})=>row.service==='EIP');
  const includeAnalysis=rows.some(row=>row.awsInventory||row.semanticInventory);
+ const includeMigration=rows.some(row=>row.huaweiMigration);
+ const detailedCharges=includeEip||includeMigration;
  const chargeLabel=charge=>charge?t('charge.'+charge,language):null;
  add('Input',[
-  ['Row','Product','Specification','AWS Region','Resource Count','Usage','Unit','Usage Scope','Usage Period','AWS Billing Method','Source Page','Target Quantity','Huawei Billing Mode','Capacity GB','Source Sheet','Source Row','Original Fields','Source Header Row','Original Headers','Requested Huawei Target Region',...(includeEip?['eip_ref']:[]),...(includeAnalysis?['Field Sources','Model Row Classification']:[])],
+  ['Row','Product','Specification','AWS Region','Resource Count','Usage','Unit','Usage Scope','Usage Period','AWS Billing Method','Source Page','Target Quantity','Huawei Billing Mode','Capacity GB','Source Sheet','Source Row','Original Fields','Source Header Row','Original Headers','Requested Huawei Target Region',...(includeEip?['eip_ref']:[]),...(includeAnalysis?['Field Sources','Model Row Classification']:[]),
+   ...(includeMigration?['AWS Meter','Source Node Hours','Source Average Nodes']:[])],
   ...rows.map((row,i)=>[i+1,row.product,row.specification,row.region,row.quantity,row.usage,row.unit,row.scope,row.period,row.billing,
    row.sourcePage??null,row.targetQuantity??null,billingOf(row),row.capacity??null,row.importSource?.sheet??null,
    row.importSource?.row??null,row.importSource?JSON.stringify(row.importSource.cells):null,row.importSource?.headerRow??null,
    row.importSource?.headers?JSON.stringify(row.importSource.headers):null,row.huaweiTargetRegion||null,...(includeEip?[row.huaweiEipRef||null]:[]),
-   ...(includeAnalysis?[row.importSource?.fieldSources?JSON.stringify(row.importSource.fieldSources):null,row.importSource?.classification??null]:[])])
+   ...(includeAnalysis?[row.importSource?.fieldSources?JSON.stringify(row.importSource.fieldSources):null,row.importSource?.classification??null]:[]),
+   ...(includeMigration?[row.huaweiMigration?.meter?.basis??null,row.huaweiMigration?.metering?.sourceNodeHours??null,
+    row.huaweiMigration?.metering?.sourceAverageNodes??null]:[])])
  ]);
  add('Service Mapping',[
-  ['Row','AWS Product','Target Service','Target SKU','Target Description','Region','Confirmed','Notes','Huawei Billing Mode','Target Quantity','Mapping Review','Match and Assumptions',...(includeSpec?['Product Spec Evidence']:[]),...(includeEip?['Charge']:[]),...(includeAnalysis?['Official AWS Source Type','Source vCPU','Source Memory GiB','Source Architecture','Source Specification Evidence','Huawei Candidate SKUs','Conditions']:[])],
+  ['Row','AWS Product','Target Service','Target SKU','Target Description','Region','Confirmed','Notes','Huawei Billing Mode','Target Quantity','Mapping Review','Match and Assumptions',...(includeSpec?['Product Spec Evidence']:[]),...(detailedCharges?['Charge']:[]),...(includeAnalysis?['Official AWS Source Type','Source vCPU','Source Memory GiB','Source Architecture','Source Specification Evidence','Huawei Candidate SKUs','Conditions']:[]),
+   ...(includeMigration?['Source Attributes and Evidence','Target Design and Origins','Candidate Evidence','Target DCS Instance Quantity','Target DCS Instance Hours','Single-Node Comparison']:[])],
   ...mapped.map(({row,index,charge,result})=>{
    const price=catalog.items.find(p=>p.id===row.targetId),match=row.huaweiProductMatch;
    const selected=match?.selected,candidates=match?.candidates?.slice(0,12);
    const productEvidence=selected||candidates?.length?JSON.stringify({selected,candidates}):null;
    const aws=row.awsProfile;
-   return [index+1,row.product,row.service,price?.sku??null,match?null:price?.description??null,REGION,row.accepted&&!['Linked','Conditional'].includes(result.status)?'Yes':'No',translateMessage(row.notes,language),
+   const migration=row.huaweiMigration,meter=migration?.metering;
+   const confirmed=migration?['Valid','Period'].includes(result.status):row.accepted&&!['Linked','Conditional'].includes(result.status);
+   return [index+1,row.product,row.service,price?.sku??null,match?null:price?.description??null,REGION,confirmed?'Yes':'No',translateMessage(row.notes,language),
     billingLabel(billingOf(row),language),row.targetQuantity??row.quantity??row.huaweiQuantity,mappingReview(row,price).map(issue=>mappingLabel(issue,language)).join(' '),
-    [...(row.huaweiAssumptions??[]),row.huaweiUsageAssumption].filter(Boolean).map(reasonCode=>reasonLabel({reasonCode},language)).join(' '),...(includeSpec?[productEvidence]:[]),...(includeEip?[chargeLabel(charge)]:[]),
+    [...(row.huaweiAssumptions??[]),row.huaweiUsageAssumption].filter(Boolean).map(reasonCode=>reasonLabel({reasonCode},language)).join(' '),...(includeSpec?[productEvidence]:[]),...(detailedCharges?[chargeLabel(charge)]:[]),
     ...(includeAnalysis?[aws?.type??null,aws?.cpu??null,aws?.memory??null,aws?.architecture??null,
      aws?JSON.stringify({...aws.evidence,operatingSystem:row.awsOS}):null,row.huaweiCandidates?.join(', ')??null,
-     row.huaweiConditions?.map(reasonCode=>reasonLabel({reasonCode},language)).join(' ')??null]:[])];
+     row.huaweiConditions?.map(reasonCode=>reasonLabel({reasonCode},language)).join(' ')??null]:[]),
+    ...(includeMigration?[migration?JSON.stringify(migration.source):null,migration?.settings?JSON.stringify(migration.settings):null,
+     row.huaweiRanked?.length?JSON.stringify(row.huaweiRanked.map(({item,cpu,memory,capacity,category})=>({
+      sku:item.sku,cpu:item.cpu,memory:item.memory,capacity,category,cpuRatio:cpu,memoryRatio:memory,rate:item.rate,unit:item.unit,
+      officialSource:item.sourceUrl,verifiedAt:item.verifiedAt} ))):null,
+     meter?.targetInstanceQuantity??null,meter?.targetInstanceHours??null,migration?.comparison?
+      JSON.stringify({sku:migration.comparison.sku,rate:migration.comparison.rate,unit:migration.comparison.unit}):null]:[])];
   })
  ]);
  add('Public Pricing',[
-  ['Row','Price Status','Product ID','SKU','Unit Price','Currency','Unit','Verified At','Official Source','Official Evidence','Huawei Billing Mode','Verified Period Type','Verified Period Count',...(includeEip?['Charge']:[])],
+  ['Row','Price Status','Product ID','SKU','Unit Price','Currency','Unit','Verified At','Official Source','Official Evidence','Huawei Billing Mode','Verified Period Type','Verified Period Count',...(detailedCharges?['Charge']:[]),...(includeMigration?['Target Specification Source']:[])],
   ...mapped.map(({row,index,charge,result})=>{
    const price=catalog.items.find(p=>p.id===row.targetId),specIssue=huaweiProductSpecIssue(row,price);
    const fresh=price&&!specIssue&&result.status!=='Linked'&&priceValidation(price,catalog,opts).valid&&(price.billingMode||'ONDEMAND')===billingOf(row);
    return [index+1,result.status==='Linked'?'Linked':fresh?'Valid':'Pending',price?.productId??null,price?.sku??null,fresh?price.rate:null,price?.currency??null,price?.unit??null,
     specIssue?null:price?.verifiedAt??null,specIssue?null:price?.sourceUrl??null,price&&!specIssue?JSON.stringify(price.evidence):null,
-    billingLabel(billingOf(row),language),price?.periodType??null,price?.periodNum??null,...(includeEip?[chargeLabel(charge)]:[])];
+    billingLabel(billingOf(row),language),price?.periodType??null,price?.periodNum??null,...(detailedCharges?[chargeLabel(charge)]:[]),
+    ...(includeMigration?[price?.specificationSource??null]:[])];
   })
  ]);
  add('Quotation',[
-  ['Row','Target Service','Status','Monthly Public or Amortized USD','Discount Fraction','Monthly Scenario or Amortized USD','Annual Scenario USD','Source Period Public USD','Source Period Scenario USD','Reason','Huawei Billing Mode','Contract Term','Term Public USD','Term Scenario USD','Prepaid First Term Scenario USD','Annual Basis',...(includeCharge?['Charge']:[]),...(includeEip?['Bandwidth Mbit/s','Billable Usage','Billed Quantity','Rate Unit','Linked Row']:[]),...(includeAnalysis?['Conditional Scenario USD','Conditional Basis']:[])],
+  ['Row','Target Service','Status','Monthly Public or Amortized USD','Discount Fraction','Monthly Scenario or Amortized USD','Annual Scenario USD','Source Period Public USD','Source Period Scenario USD','Reason','Huawei Billing Mode','Contract Term','Term Public USD','Term Scenario USD','Prepaid First Term Scenario USD','Annual Basis',...(includeCharge?['Charge']:[]),...(includeEip?['Bandwidth Mbit/s','Billable Usage','Billed Quantity','Rate Unit','Linked Row']:[]),...(includeAnalysis?['Conditional Scenario USD','Conditional Basis']:[]),
+   ...(includeMigration?['Target Billable Usage','Target Rate Unit','Reason Code']:[])],
   ...lines.map(({row,index,charge,result})=>{
    const mode=row?billingOf(row):null;
    const priced=['Valid','Period'].includes(result.status);
@@ -98,7 +114,9 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
     mode==='YEARLY'?'Independent official 1-year price; monthly figure is amortized':mode==='MONTHLY'?'12 repeated monthly contracts; not a yearly subscription price':mode?'12 repeated months of usage; not a yearly subscription price':null,
     ...(includeCharge?[chargeLabel(charge)]:[]),...(includeEip?[row?.huaweiEip?.mbps??null,priced?result.effectiveUsage??null:null,
      priced?result.quantity??null:null,priced?result.item?.unit??null:null,result.linkedRow??null]:[]),
-    ...(includeAnalysis?[result.conditionalScenario??null,result.conditionalPeriod??null]:[])];
+    ...(includeAnalysis?[result.conditionalScenario??null,result.conditionalPeriod??null]:[]),
+    ...(includeMigration?[row?.huaweiMigration?result.effectiveUsage??null:null,
+     row?.huaweiMigration?result.item?.unit??null:null,result.reasonCode??null]:[])];
   })
  ]);
  const results=lines.map(line=>line.result),monthly=results.filter(result=>result.status==='Valid'),period=results.filter(result=>result.status==='Period'),prepaid=results.filter(result=>result.upfrontScenario!==null);

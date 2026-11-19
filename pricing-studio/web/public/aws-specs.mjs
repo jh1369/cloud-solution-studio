@@ -11,10 +11,11 @@ const programs=[
  ['EC2',/^(?:amazon\s*)?(?:ec2|elastic compute cloud)$/i,instanceType('','[a-z][0-9][a-z0-9]*')]
 ];
 const source=key=>key?{url:AWS_SPEC_SOURCES[key][0],sha256:AWS_SPEC_SOURCES[key][1],retrievedAt:AWS_SPEC_DATE}:null;
-const profiles=new Map(AWS_SPEC_RECORDS.map(([kind,type,cpu,memory,architecture,category,dimensions,arch])=>{
+const profiles=new Map(AWS_SPEC_RECORDS.map(([kind,type,cpu,memory,architecture,category,dimensions,arch,typeSource,cacheBytes])=>{
  const record=Object.freeze({kind,type,service:serviceNames[kind],cpu,memory,architecture,category,
   family:type.split('.')[kind==='RDS'||kind==='ElastiCache'?1:0],
-  evidence:{specification:source(dimensions),architecture:source(arch)}});
+  ...(cacheBytes?{cacheBytes}:{}),evidence:{specification:source(dimensions),architecture:source(arch),
+   ...(typeSource?{nodeType:source(typeSource)}:{}),...(cacheBytes?{cacheLimit:source('cache_params'),cacheReserve:source('cache_reserve')}: {})}});
  return [kind+'|'+type,record];
 }));
 
@@ -22,15 +23,21 @@ export function awsSourceService(product){
  return programs.find(([,pattern])=>pattern.test(String(product).trim()))?.[0]??null;
 }
 
+function normalizeAwsTypeText(kind,description){
+ const text=String(description??'').normalize('NFKC');
+ if(kind!=='RDS')return text;
+ return text.replace(/\b((?:InstanceUsage|Multi-AZUsage):)(?=[a-z][a-z\d]*\.(?:\d*xlarge|large|medium|small|micro)\b)/gi,'$1db.');
+}
+
 export function hasAwsSourceType(product,description){
  const kind=awsSourceService(product);
  const pattern=programs.find(([service])=>service===kind)?.[2];
- return !!pattern&&new RegExp(pattern.source,'i').test(String(description??'').normalize('NFKC'));
+ return !!pattern&&new RegExp(pattern.source,'i').test(normalizeAwsTypeText(kind,description));
 }
 
 export function lookupAwsSpec(product,description){
- const text=String(description??'').normalize('NFKC');
  const known=awsSourceService(product);
+ const text=normalizeAwsTypeText(known,description);
  const explicit=programs.filter(([kind,,pattern])=>known?kind===known:kind!=='EC2'&&
    (kind!=='OpenSearch'||/\.search\b/i.test(text))&&new RegExp(pattern.source,'i').test(text));
  if(!explicit.length&&!known&&/\b(?:AWS|EC2)\b/i.test(String(product)+' '+text))explicit.push(programs[3]);
@@ -52,7 +59,9 @@ const hourly={
 };
 export function awsUsageSemantics(kind,text){
  if(!kind||!Object.hasOwn(hourly,kind)||!hourly[kind].test(text))return null;
- return {scope:'aggregate',period:'source-period',unit:'hour',billing:/\bSpotUsage:/i.test(text)?'spot':null};
+ const basis=kind==='ElastiCache'?'cache-node-hours':kind==='OpenSearch'?'search-node-hours':
+  kind==='RDS'&&/\bMulti-AZUsage:/i.test(text)?'database-multi-az-hours':'instance-hours';
+ return {scope:'aggregate',period:'source-period',unit:'hour',basis,billing:/\bSpotUsage:/i.test(text)?'spot':null};
 }
 
 export function awsOperatingSystem(description){

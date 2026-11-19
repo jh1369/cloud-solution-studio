@@ -1,0 +1,25 @@
+产品类型,规格类型,操作,使用量（小时数）,数量
+AmazonEC2,FIC-BoxUsage:m5.large,RunInstances,60.5,0.08
+AmazonEC2,FIC-BoxUsage:c3.large,RunInstances,81,0.12
+AmazonEC2,FIC-BoxUsage:c5.4xlarge,RunInstances,94,0.14
+AmazonEC2,FIC-BoxUsage:t2.small,RunInstances,34,0.05
+AmazonEC2,FIC-SpotUsage:t3.small,RunInstances,101,0.14
+AmazonEC2,FIC-BoxUsage:t3.nano,RunInstances,73,0.1
+AmazonEC2,FIC-BoxUsage:c6i.xlarge,RunInstances:unknown,74,0.1
+AmazonEC2,FIC-BoxUsage:m6a.xlarge,RunInstances:0002,87,0.12
+AmazonEC2,FIC-BoxUsage:m6g.xlarge,RunInstances,111,0.16
+AmazonEC2,FIC-BoxUsage:r6i.2xlarge,RunInstances,68,0.09
+AmazonRDS,FIC-InstanceUsage:db.m5.large,CreateDBInstance,51,0.07
+AmazonRDS,FIC-Multi-AZUsage:m6g.large,CreateDBInstance,112,0.15
+AmazonRDS,FIC-Multi-AZUsage:m6g.large,CreateDBInstance,115,0.16
+AmazonRDS,FIC-InstanceUsage:db.t3.micro,CreateDBInstance,38,0.05
+AmazonRDS,FIC-Aurora:ServerlessV2Usage,CreateDBCluster,27,1
+AmazonElastiCache,FIC-NodeUsage:cache.m6g.large,CreateCacheCluster,126,0.17
+AmazonElastiCache,FIC-NodeUsage:cache.m6g.large,CreateCacheCluster,140,0.19
+AmazonElastiCache,FIC-NodeUsage:cache.r6g.large Redis Cluster,CreateCacheCluster,184,0.25
+AmazonElastiCache,FIC-NodeUsage:cache.m6g.xlarge usable cache 7 GiB,CreateCacheCluster,104,0.14
+AmazonES,FIC-ESInstance:m7g.large,ESDomain,106,0.15
+AmazonES,FIC-ESInstance:m7g.large,ESDomain,145,0.2
+AmazonES,FIC-ESInstance:r6g.xlarge,ESDomain,75,0.1
+AmazonES,FIC-ESInstance:r6g.large dedicated master,ESDomain,49,0.07
+AmazonES,FIC-UltraWarmUsage:ultrawarm1.medium,ESDomain,43,0.06

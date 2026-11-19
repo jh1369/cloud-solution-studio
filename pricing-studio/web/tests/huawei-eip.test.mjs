@@ -123,8 +123,9 @@ test('the AWS usage worksheet above the review window imports locally without tu
  assert.equal(first.importSource.cells[5],0.42);
  assert.equal(bill(first).status,'Period');
  assert.equal(bill(first).annual,null);
- assert.equal(bill(rows.at(-2)).reasonCode,'HW_DB_PARAMETERS');
- assert.equal(bill(rows.at(-1)).reasonCode,'HW_NO_PLAN');
+ assert.equal(bill(rows.at(-2)).status,'Conditional');
+ assert.equal(bill(rows.at(-2)).effectiveUsage,100);
+ assert.equal(bill(rows.at(-1)).reasonCode,'HW_MIG_USAGE_REQUIRED');
 });
 
 test('Worker verifies the entire public EIP ladder using GB, and independently returns other verified plans',async()=>{

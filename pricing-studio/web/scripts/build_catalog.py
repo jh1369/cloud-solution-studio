@@ -1,5 +1,5 @@
 """Verify Huawei EU pay-per-use, 1-month and 1-year prices independently."""
-import json, urllib.request, urllib.error, re, hashlib, math
+import argparse, json, urllib.request, urllib.error, re, hashlib, math
 from collections import Counter
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -14,6 +14,11 @@ MODES={'ONDEMAND':('hour',None),'MONTHLY':('month',2),'YEARLY':('year',3)}
 PUBLIC_NAT_DAILY='https://support.huaweicloud.com/eu/price-natgateway/nat_billing_0005.html'
 EIP_BILLING='https://support.huaweicloud.com/eu/price-eip/eip_billing_0011.html'
 EIP_TIER_LIMITS=(10240,51200,153600,154624)
+ECS_SERIES={'C6','C6s','C7n','C9','S6','S7n','M6','M6s','M7n','M9'}
+ECS_CLASSES={'General Computing','General Computing-plus','Memory-optimized'}
+CSS_GUIDE='https://support.huaweicloud.com/eu/usermanual-css/css_01_0269.html'
+CSS_CONFIG=f'{BASE}/api/calculator/rest/cbc/portalcalculatornodeservice/v4/api/config?urlPath=search&language=en-us&station=en-EU'
+RDS_SPEC='https://support.huaweicloud.com/eu/productdesc-rds/rds_01_0034.html'
 def fetch(url,payload=None):
  req=urllib.request.Request(url,data=json.dumps(payload).encode() if payload else None,headers={'Content-Type':'application/json','Origin':'https://www.huaweicloud.com'})
  try:
@@ -29,14 +34,47 @@ def get(path):
   if not isinstance(values,list):continue
   for item in values:
    if not isinstance(item,dict) or 'resourceSpecCode' not in item:continue
-   spec=item['resourceSpecCode'];desc=item.get('productSpecSysDesc','');size=False
+   spec=item['resourceSpecCode'];desc=item.get('productSpecSysDesc') or '';size=False
+   cpu=re.search(r'(?:vCPUs?|cpu):\s*(\d+)',desc,re.I);mem=re.search(r'(?:Memory|mem):\s*(\d+)MB',desc,re.I)
+   dimensions=int(cpu[1]) if cpu else None,int(mem[1])/1024 if mem else None
+   metadata={}
    if path=='ecs':
-    if key!='ec2_vm' or not re.match(r'(c[679]|s[367]|m[367]|t6)\.',spec) or not spec.endswith(('.linux','.win')):continue
+    image={'linux':'Linux','win':'Windows'}.get(spec.rpartition('.')[2])
+    if (key!='ec2_vm' or item.get('resourceType')!='hws.resource.type.vm' or item.get('cloudServiceType')!='hws.service.type.ec2'
+        or item.get('series') not in ECS_SERIES or item['series'].lower()!=spec.split('.')[0] or not image or image!=item.get('image')
+        or item.get('instanceArch') not in ('x86','arm') or item.get('performType') not in ECS_CLASSES
+        or item.get('type')!='normal' or item.get('localDisk')!='No Local-Disk' or item.get('acceleratorCard')!='No Accelerator Card'
+        or not all(dimensions) or dimensions[0]>128):continue
     service='ECS'
+    metadata={'performanceClass':item['performType'],'image':image,
+              'expandedEcs':item['series'] not in {'C6','C7n','C9','S6','M6','M7n'} or dimensions[0]>32}
    elif path=='evs':service='EVS';size=True
    elif path=='rds':
-    if key!='rds_rds.vm':continue
     service='RDS'
+    if key=='rds_rds.volume' and re.fullmatch(r'rds\.mysql\.volume\.(?:cloudssd|essd)(?:\.ha)?',spec):
+     if item.get('resourceType')!='hws.resource.type.rds.volume' or item.get('cloudServiceType')!='hws.service.type.rds':continue
+     size=True
+     metadata={'migrationCharge':'rdsStorage'}
+    elif key=='rds_rds.vm':
+     if cpu and dimensions[0]>32 and not re.fullmatch(r'rds\.mysql\.(?:x1|n1)\.[\w.]+\.ha',spec):continue
+     if (re.fullmatch(r'rds\.mysql\.(?:x1|n1)\.[\w.]+',spec) and not spec.endswith('.rr')
+         and re.search(r'DB Instance Type:(?:Single|Primary/Standby);',desc)):
+      metadata={'migrationCharge':'rdsInstance','targetArch':'x86','specificationSource':RDS_SPEC}
+    else:continue
+   elif path=='search':
+    service='CSS'
+    if item.get('cloudServiceType')!='hws.service.type.ess':continue
+    if key=='ess_ess.vm' and item.get('resourceType')=='hws.resource.type.ess.vm':
+     if (not re.fullmatch(r'ess\.spec-\d+u\d+g\.v2',spec) or item.get('cpuType')!='calc_13_'
+         or item.get('coldObs')!='dataInfo_32_' or not all(dimensions)):continue
+     performance=re.search(r';spec:([^;]+);',desc)
+     if not performance or performance[1] not in {'Computing-plus','General-computing','Memory-optimized'}:continue
+     metadata={'migrationCharge':'cssNode','targetArch':'x86','performanceClass':performance[1],
+               'specificationSource':CSS_GUIDE,'specificationConfig':CSS_CONFIG}
+    elif key=='ess_ess.volume' and item.get('resourceType')=='hws.resource.type.ess.volume' and spec in {'ess.volume.high','ess.volume.ultrahigh'}:
+     size=True
+     metadata={'migrationCharge':'cssStorage','storageType':item['volumeType'],'specificationSource':CSS_GUIDE}
+    else:continue
    elif path=='elb':
     if key!='elb_elbv3' or spec!='elbv3.professional':continue
     service='ELB'
@@ -44,8 +82,7 @@ def get(path):
    elif path=='nat':service='NAT Gateway'
    elif path=='cce':service='CCE'
    else:continue
-   cpu=re.search(r'(?:vCPUs?|cpu):\s*(\d+)',desc,re.I);mem=re.search(r'(?:Memory|mem):\s*(\d+)MB',desc,re.I)
-   if cpu and int(cpu[1])>32:continue
+   if path not in {'ecs','rds','search'} and cpu and dimensions[0]>32:continue
    for plan in item.get('planList',[]):
     mode=plan.get('billingMode')
     if mode not in MODES or not plan.get('productId') or isinstance(plan.get('amount'),bool) or not isinstance(plan.get('amount'),(float,int)) or not math.isfinite(plan['amount']) or plan['amount']<0:continue
@@ -55,7 +92,8 @@ def get(path):
     if mode!='ONDEMAND' and plan.get('periodNum')!=1:continue
     unit,period_type=MODES[mode]
     if public_nat_day:unit='day'
-    rows.append(dict(id=plan['productId'] if mode=='ONDEMAND' else plan['productId']+':'+mode,service=service,sku=spec,description=desc,cpu=int(cpu[1]) if cpu else None,memory=int(mem[1])/1024 if mem else None,os='Windows' if spec.endswith('.win') else 'Linux',arch=item.get('instanceArch','Review Required'),engine=item.get('engineType',''),resourceType=item['resourceType'],cloudServiceType=item['cloudServiceType'],productId=plan['productId'],usageFactor=plan.get('usageFactor'),size=size,unit=('GB-' if size else '')+unit,billingMode=mode,periodType=period_type,periodNum=1 if period_type else None,catalogUrl=url,siteCode=plan.get('siteCode','HWC')))
+    if metadata and (plan.get('siteCode')!='HWC' or not plan['amount']):continue
+    rows.append(dict(id=plan['productId'] if mode=='ONDEMAND' else plan['productId']+':'+mode,service=service,sku=spec,description=desc,cpu=dimensions[0],memory=dimensions[1],os='Windows' if spec.endswith('.win') else 'Linux',arch=metadata.get('targetArch',item.get('instanceArch','Review Required')),engine=item.get('engineType',''),resourceType=item['resourceType'],cloudServiceType=item['cloudServiceType'],productId=plan['productId'],usageFactor=plan.get('usageFactor'),size=size,unit=('GB-' if size else '')+unit,billingMode=mode,periodType=period_type,periodNum=1 if period_type else None,catalogUrl=url,siteCode=plan.get('siteCode','HWC'),**metadata))
  return rows
 
 def eip_candidates():
@@ -164,22 +202,58 @@ def verify(chunk):
   if index is None or indices[index]!=1:continue
   row=chunk[index];rate=quote.get('officialWebsiteAmount')
   if isinstance(rate,bool) or not isinstance(rate,(float,int)) or not math.isfinite(rate) or rate<0 or rate>1e12 or quote.get('productId')!=row['productId']:continue
+  if (row['service']=='ECS' or row.get('migrationCharge')) and rate<=0:continue
   row.update(rate=rate,currency='USD',region=REGION,verifiedAt=datetime.now(timezone.utc).isoformat(),sourceUrl=BASE+INQUIRY,evidence={'request':payload['productInfos'][index],'inquiry':{k:v for k,v in payload.items() if k!='productInfos'},'response':quote,'currency':result['currency'],'responseSha256':hashlib.sha256(json.dumps(result,sort_keys=True).encode()).hexdigest()})
   if row.get('unit')=='day':row['evidence']['billingSource']=PUBLIC_NAT_DAILY
   verified.append(row)
  return verified
+
+def verify_storage(plan):
+ evidence=plan['evidence']
+ request=dict(evidence['request'],id='storage-100',resourceSize=100)
+ try:
+  result=fetch(BASE+INQUIRY,{**evidence['inquiry'],'productInfos':[request]})
+ except ValueError:return None
+ replies=result.get('productRatingResult')
+ if result.get('currency')!='USD' or not isinstance(replies,list) or len(replies)!=1:return None
+ reply=replies[0]
+ amount=reply.get('officialWebsiteAmount')
+ if (reply.get('id')!=request['id'] or reply.get('productId')!=plan['productId'] or type(amount) not in (int,float)
+     or not math.isfinite(amount) or Decimal(str(amount))!=Decimal(str(plan['rate']))*100):
+  print('Storage quantity verification pending:',plan['sku'],plan['billingMode'],flush=True)
+  return None
+ evidence['probes']=[dict(request=request,response=reply)]
+ return plan
+
 def main():
- with ThreadPoolExecutor(max_workers=4) as executor:batches=list(executor.map(get,['ecs','evs','rds','elb','redis','nat','cce']))
+ parser=argparse.ArgumentParser(description=__doc__)
+ parser.add_argument('--migration-only',action='store_true',help='Verify ECS and CSS, plus MySQL migration prices, preserving other records')
+ parser.add_argument('--output',type=Path,default=ROOT/'public/catalog.json')
+ args=parser.parse_args()
+ paths=['ecs','rds','search'] if args.migration_only else ['ecs','evs','rds','elb','redis','nat','cce','search']
+ with ThreadPoolExecutor(max_workers=4) as executor:batches=list(executor.map(get,paths))
  items=list({row['id']:row for batch in batches for row in batch}.values());chunks=[]
+ if args.migration_only:items=[row for row in items if row['service'] in {'ECS','CSS'} or row.get('migrationCharge')]
  for mode in MODES:
   group=[row for row in items if row['billingMode']==mode]
   chunks.extend(group[index:index+10] for index in range(0,len(group),10))
  with ThreadPoolExecutor(max_workers=4) as executor:verified=[row for batch in executor.map(verify,chunks) for row in batch]
  if not verified:raise ValueError('No official prices verified; preserve existing catalogue')
+ is_storage=lambda row: row.get('migrationCharge') in {'rdsStorage','cssStorage'}
  with ThreadPoolExecutor(max_workers=4) as executor:
-  verified.extend(row for row in executor.map(verify_eip,eip_candidates()) if row)
+  verified=[row for row in verified if not is_storage(row)]+[
+   row for row in executor.map(verify_storage,filter(is_storage,verified)) if row]
+ if args.migration_only:
+  original=json.loads(args.output.read_text())
+  if original.get('region')!=REGION or original.get('currency')!='USD' or original.get('ttlDays')!=7:
+   raise ValueError('Existing catalog must be the seven-day EU-Dublin USD snapshot')
+  preserved=[row for row in original['items'] if not is_storage(row) or row.get('evidence',{}).get('probes')]
+  verified=list({row['id']:row for row in [*preserved,*verified]}.values())
+ else:
+  with ThreadPoolExecutor(max_workers=4) as executor:
+   verified.extend(row for row in executor.map(verify_eip,eip_candidates()) if row)
  output={'region':REGION,'currency':'USD','verifiedAt':datetime.now(timezone.utc).isoformat(),'ttlDays':7,'source':'Huawei Cloud EU public calculator + independent officialWebsiteAmount inquiry for each billing mode','items':verified}
- target=ROOT/'public/catalog.json';temporary=target.with_suffix('.tmp');temporary.write_text(json.dumps(output,ensure_ascii=False));temporary.replace(target)
+ target=args.output;temporary=target.with_suffix('.tmp');temporary.write_text(json.dumps(output,ensure_ascii=False));temporary.replace(target)
  print('Verified price plans:',len(verified),'by mode:',{mode:sum(row['billingMode']==mode for row in verified) for mode in MODES},flush=True)
 
 if __name__=='__main__':

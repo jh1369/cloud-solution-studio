@@ -36,7 +36,9 @@ export function resourceHTML(rows,output,catalog,language='zh',page=0,now=Date.n
  const T=(key,vars)=>t(key,language,vars),E=escapeHTML;
  return rows.slice(page*10,page*10+10).map((row,index)=>{
   const result=output[page*10+index],price=catalog.items.find(p=>p.id===row.targetId),mode=billingOf(row),subscription=mode!=='ONDEMAND';
-  const options=catalog.items.filter(p=>p.service===row.service&&p.billingMode===mode);
+  const migration=row.huaweiMigration;
+  const options=migration?(row.huaweiRanked??[]).map(({item})=>item):
+   catalog.items.filter(p=>p.service===row.service&&p.billingMode===mode&&!p.migrationCharge?.endsWith('Storage'));
   const specMatch=row.huaweiProductMatch;
   const spec=specMatch?.selected??specMatch?.candidates?.[0];
   const specIssue=specMatch&&huaweiProductSpecIssue(row,price);
@@ -59,10 +61,10 @@ export function resourceHTML(rows,output,catalog,language='zh',page=0,now=Date.n
     ${row.huaweiMatch?field(T('resource.hwSpec'),`<input data-field="specification" value="${E(row.specification)}">`):''}
     ${row.huaweiTargetRegion&&row.huaweiTargetRegion!==catalog.region?field(T('resource.hwTargetRegion'),`<select data-field="huaweiTargetRegion"><option>${E(row.huaweiTargetRegion)}</option><option>${E(catalog.region)}</option></select>`):''}
     ${field(T(row.scope==='aggregate'&&!subscription?'resource.unknownCount':'resource.quantity'),`<input data-field="targetQuantity" type="number" min="1" step="1" value="${row.targetQuantity??row.quantity??row.huaweiQuantity??''}" placeholder="${T('resource.required')}" ${row.scope==='aggregate'&&!subscription?'disabled':''}>`)}
-    ${field(T(row.scope==='aggregate'?'resource.aggregateUsage':subscription?'resource.sourceUsage':'resource.monthlyUsage'),`<input data-field="usage" type="number" min="0" step="any" value="${row.usage??''}" placeholder="${T('resource.required')}" ${subscription?'disabled':''}>`)}
+    ${field(T(row.scope==='aggregate'?'resource.aggregateUsage':subscription?'resource.sourceUsage':'resource.monthlyUsage'),`<input data-field="usage" type="number" min="0" step="any" value="${row.usage??''}" placeholder="${T('resource.required')}" ${subscription?'disabled':migration&&row.scope==='aggregate'?'readonly':''}>`)}
     ${field(T('resource.unit'),`<select data-field="unit" ${subscription?'disabled':''}>${[...new Set([row.unit,'hour',...(price?.unit==='day'?['day']:[]),...(row.service==='EIP'?['Mbit/s','TB']:[]),'GB-month','GB-hour','GB','Requests','IOPS-Mo'])].map(unit=>`<option value="${E(unit)}" ${unit===row.unit?'selected':''}>${E(unit?unitLabel(unit,language):T('resource.unspecified'))}</option>`).join('')}</select>`)}
     ${field(T('resource.billing'),`<select class="mode-select" data-field="targetBilling">${['ONDEMAND','MONTHLY','YEARLY'].map(code=>`<option value="${code}" ${mode===code?'selected':''}>${billingLabel(code,language)}</option>`).join('')}</select>`)}
-    ${row.service==='EVS'&&(subscription||row.huaweiMatch)||row.service==='DCS'&&row.huaweiMatch?field(T(row.service==='DCS'?'inventory.field.capacity_gb':'resource.capacity'),`<input data-field="capacity" type="number" min="0" step="any" value="${row.capacity??''}" placeholder="${T('resource.capacityHint')}">`):''}
+    ${row.service==='EVS'&&(subscription||row.huaweiMatch)||row.service==='DCS'&&row.huaweiMatch&&!migration?field(T(row.service==='DCS'?'inventory.field.capacity_gb':'resource.capacity'),`<input data-field="capacity" type="number" min="0" step="any" value="${row.capacity??''}" placeholder="${T('resource.capacityHint')}">`):''}
     ${field(T('resource.period'),`<select data-field="period"><option value="monthly" ${row.period==='monthly'?'selected':''}>${T(subscription?'resource.fullContract':'resource.fullMonth')}</option><option value="source-period" ${row.period==='source-period'?'selected':''}>${T('resource.sourcePeriod')}</option></select>`)}
    </div>
    <div class="target-row"><span class="target-arrow" aria-hidden="true">↳</span><select class="target-select" data-field="targetId" aria-label="${T('resource.targetAria')}"><option value="">${E(T(options.length?'resource.selectSku':'resource.noSku',{mode:billingLabel(mode,language)}))}</option>${row.huaweiSelection==='manual'?'<option value="__auto__">'+E(T('resource.hwAuto'))+'</option>':''}${options.map(p=>`<option value="${E(p.id)}" ${p.id===row.targetId?'selected':''}>${E(p.sku)}${p.cpu?' · '+p.cpu+'vCPU / '+p.memory+'GB':''}${p.engine?' · '+E(p.engine):''}${specMatch?'':' · '+(priceValidation(p,catalog,{now}).valid?'$'+p.rate+'/'+unitLabel(p.unit,language):'Pending')}</option>`).join('')}</select></div>
@@ -74,20 +76,53 @@ export function resourceHTML(rows,output,catalog,language='zh',page=0,now=Date.n
     row.awsProfile.memory?row.awsProfile.memory+' GiB':null,row.awsProfile.architecture].filter(Boolean).join(' · '))}
     <a href="${E(row.awsProfile.evidence.specification.url)}" target="_blank" rel="noopener">${E(T('resource.hwSpecSource'))}</a></div>`:''}
    ${conditional?`<div class="row-notes huawei-conditional-reasons">${E(row.huaweiConditions.map(reasonCode=>reasonLabel({reasonCode},language)).join(' '))}</div>`:''}
+   ${migration?.metering?`<div class="row-notes">${E(T('migration.meter',{
+    source:migration.metering.sourceNodeHours??'—',average:migration.metering.sourceAverageNodes?.toFixed(2)??'—',
+    count:migration.metering.targetInstanceQuantity??'—',target:migration.metering.targetInstanceHours??'—'}))}</div>`:''}
+   ${migration?.comparison?`<div class="row-notes">${E(T('migration.comparison',{sku:migration.comparison.sku,
+    rate:'USD '+migration.comparison.rate,unit:unitLabel(migration.comparison.unit,language)}))}</div>`:''}
+   ${price?.specificationSource?`<div class="row-notes"><a href="${E(price.specificationSource)}" target="_blank" rel="noopener">${T('resource.hwSpecSource')}</a></div>`:''}
    ${row.huaweiCharge?`<div class="row-notes huawei-charge">${E(T('charge.'+row.huaweiCharge))}</div>`:''}
    ${relatedHuaweiCharges(row,result).map(({charge,row:component,result:line})=>{
-    const amount=line.termScenario==null?'':` · ${money(line.termScenario)} · ${E(billingLabel(line.billingMode,language))}`;
+    const chargeAmount=line.termScenario??line.conditionalScenario;
+    const amount=chargeAmount==null?'':` · ${money(chargeAmount)} · ${E(billingLabel(line.billingMode,language))}`;
     const details=[...(component?.huaweiAssumptions??[]).map(reasonCode=>reasonLabel({reasonCode},language)),reasonLabel(line,language)].filter(Boolean);
     const source=line.item&&line.termScenario!==null?` · ${E(line.item.sku)} · ${E(dateLabel(line.item.verifiedAt,language))}`:'';
-    return `<div class="row-notes ${line.status==='Pending'?'huawei-pending-charge':'huawei-related-charge'}">${E(T('charge.'+charge))}${line.status==='Pending'?' · '+E(T('status.pending')):''}${amount}${source}${details.length?' · '+E(details.join(' ')):''}</div>`;
+    return `<div class="row-notes ${line.status==='Pending'?'huawei-pending-charge':'huawei-related-charge'}">${E(T('charge.'+charge))}${line.status==='Pending'?' · '+E(T('status.pending')):line.status==='Conditional'?' · '+E(T('status.conditional')):''}${amount}${source}${details.length?' · '+E(details.join(' ')):''}</div>`;
    }).join('')}
    ${row.importSource?`<div class="row-notes">${E(row.importSource.sheet)} · ${T('inventory.row')} ${row.importSource.row}</div>`:''}
    <div class="row-notes source-notes">${E(T('resource.awsBilling',{billing:translateMessage(row.billing||'未提供',language)}))}<br>${E(translateMessage(row.notes,language))} ${E(reasonLabel(result,language))}</div>
-   <div class="row-bottom">${conditional?`<button class="button secondary" data-review-condition="${E(row.id)}">${T('quote.reviewCondition')}</button>`:
+   <div class="row-bottom">${migration&&!migration.unsupported&&row.awsProfile?`<button class="button secondary" data-review-condition="${E(row.id)}">${T('migration.review')}</button>`:conditional?`<button class="button secondary" data-review-condition="${E(row.id)}">${T('quote.reviewCondition')}</button>`:
     `<label class="check-line"><input data-field="accepted" type="checkbox" ${row.accepted?'checked':''} ${row.targetId&&!specIssue&&!row.awsMatchIssue?'':'disabled'}><span>${T('resource.accept')}</span></label>`}
     <div class="row-cost">${money(estimate)} <small>${T(result.status==='Period'||result.conditionalPeriod==='source-period'?'term.period':mode==='YEARLY'?'term.year':mode==='MONTHLY'?'term.month':'term.monthly')}</small></div></div>
   </article>`;
  }).join('');
+}
+
+export function migrationControls(row,language){
+ const E=escapeHTML,T=(key,vars)=>t(key,language,vars);
+ const settings=row.huaweiMigration?.settings??{},kind=row.huaweiMigration?.kind;
+ const label=(key,control)=>`<label><span>${T('migration.field.'+key)}</span>${control}</label>`;
+ const choice=(key,values)=>label(key,`<select name="${key}">${values.map(value=>
+  `<option value="${E(value)}" ${(settings[key]?.value??'')===value?'selected':''}>${E(value==='ha'||value==='single'||value==='cluster'?T('migration.topology.'+value):
+   key==='nodeGrouping'?T('migration.nodeGrouping.'+value):key==='role'?T('migration.role.'+value):value||'—')}</option>`).join('')}</select>`);
+ const number=(key,step='any')=>label(key,`<input name="${key}" type="number" min="${step==='1'?1:0}" step="${step}" value="${E(settings[key]?.origin==='assumption'?'':settings[key]?.value??'')}">`);
+ const input=(key)=>label(key,`<input name="${key}" maxlength="256" value="${E(settings[key]?.value??'')}">`);
+ const storage=kind==='RDS'||kind==='OpenSearch'?[choice('storageType',kind==='RDS'?['Cloud SSD','ESSD']:['','SSD','SAS']),
+  number('storageGiB'),number('storageHours'),number('storageQuantity','1')]:[];
+ const controls=kind==='RDS'?[choice('engine',['MySQL']),choice('version',['8.0','5.7']),choice('topology',['ha','single']),...storage]:
+  kind==='ElastiCache'?[choice('engine',['Redis OSS']),choice('version',['4.0','5.0','6.0','7.0']),choice('topology',['ha','single','cluster']),
+   number('cacheGiB'),number('replicas','1'),number('shards','1'),choice('nodeGrouping',['assumed','verified']),input('groupingEvidence'),number('sourcePeriodHours'),number('targetInstances','1')]:
+   kind==='OpenSearch'?[choice('engine',['OpenSearch']),choice('role',['data']),input('version'),...storage]:[];
+ const ranked=row.huaweiRanked??[];
+ const candidates=ranked.length?`<label><span>${T('migration.candidate')}</span><select name="candidateId"><option value="">${T('resource.hwAuto')}</option>
+  ${ranked.map(({item,cpu,memory,capacity,category})=>`<option value="${E(item.id)}" ${row.huaweiDesign?.candidateId===item.id?'selected':''}>
+    ${E([item.sku,category??null,item.cpu?item.cpu+' vCPU / '+item.memory+' GiB':capacity?capacity+' GiB':null,
+    cpu&&(cpu>1||memory>1)?cpu.toFixed(2)+'× CPU / '+memory.toFixed(2)+'× RAM':null,'USD '+item.rate+'/'+unitLabel(item.unit,language)]
+     .filter(Boolean).join(' · '))}</option>`).join('')}</select></label>`:'';
+ return `<div class="field-grid">${controls.join('')}${candidates}</div>
+  ${ranked.length?`<p class="row-notes">${T('migration.ranked')}</p>`:''}
+  ${kind==='ElastiCache'&&settings.cacheGiB?.origin==='assumption'?`<p class="row-notes">${T('migration.assumedSize')}</p>`:''}`;
 }
 export function summaryModel(rows,output,language='zh'){
  const T=(key,vars)=>t(key,language,vars);

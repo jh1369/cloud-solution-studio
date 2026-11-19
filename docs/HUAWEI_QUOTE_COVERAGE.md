@@ -1,6 +1,6 @@
 # Huawei Cloud Pricing Studio 自动报价覆盖率
 
-32 行虚构清单的最新覆盖率复测见 [0.3.12-dev EIP 覆盖率复测](#0312-dev-eip-覆盖率复测)。AWS 智能导入后的规格与报价阻塞原因见 [0.3.13-dev Pending 原因评审](HUAWEI_PENDING_REVIEW.md)。
+最新迁移覆盖率见 [0.3.14-dev 四类迁移报价复测](#0314-dev-四类迁移报价复测)。原有 32 行覆盖率与 `0.3.13-dev` 的原因码保留为历史基线。 [EIP 覆盖率复测](#0312-dev-eip-覆盖率复测) · [历史 Pending 评审](HUAWEI_PENDING_REVIEW.md)
 
 ## 基线与口径
 
@@ -197,6 +197,31 @@ case_id,product,specification,quantity,usage,unit,huawei_billing_mode,huawei_tar
 2026-11-19 的公开询价验证了这 5 个计划。固定带宽检查规格、1 和 2,000 Mbit/s 的独立金额，流量检查各阶梯边界和下一 GB，并在 151 TB 重新对账。刷新要求各计划的核验点全部通过。流量超过 154,624 GB、月度或每地址口径缺失、流量订阅、共享带宽、入网流量、流量包和超出区域的费用保持 Pending。随包快照包含 1,250 个有效计划，按需 / 包月 / 包年为 448 / 401 / 401。 [欧站 EIP 目录][eip-catalog] · [欧站公开计算器配置][eip-config] · [费用项规则][eip-billing]
 
 AWS 账期用量表有独立的浏览器本地识别路径。超过通用导入的 60 行窗口时，符合表头和服务编码的表格可完整进入报价。累计实例小时沿用来源账期。来源数量字段可追溯，订阅需要独立的资源数量。虚构回归覆盖 73 行、来源行号、非整数来源数量和不支持的服务。规格迁移仍受目录和配置证据约束。 [虚构回归](../pricing-studio/web/tests/huawei-eip.test.mjs) · [AWS 平台操作编码](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/billing-info-fields.html)
+
+## 0.3.14-dev 四类迁移报价复测
+
+基线为 `2644da6d99d439a0d49a1ccd5b41988f1b7788f7`。两版使用同一份 24 行虚构 AWS 账期表、EU-Dublin / USD、按需、零折扣及 2026-11-19 19:00 UTC 的价格校验时点。指标按原始资源行统计，数据盘与备份另列。候选须存在于当前计费模式的有效官方目录。 [虚构清单](../pricing-studio/web/tests/fixtures/aws-fictional-huawei-migration.csv) · [回归用例](../pricing-studio/web/tests/huawei-migration.test.mjs)
+
+从 `pricing-studio/web/` 执行 `node tests/measure-huawei-migration.mjs` 可复现本版首次导入。向脚本传入基线工作树的 `pricing-studio/web/` 路径即可按相同口径对照。 [统计脚本](../pricing-studio/web/tests/measure-huawei-migration.mjs)
+
+| 服务 | 输入行 | 识别成功 | 官方来源规格 基线 → 本版 | 有候选 基线 → 本版 | 首次确认计价 基线 → 本版 | 首次条件估算 基线 → 本版 | 首次 Pending 基线 → 本版 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| ECS | 10 | 10 | 10 → 10 | 4 → 6 | 1 → 1 | 2 → 5 | 7 → 4 |
+| RDS | 5 | 5 | 2 → 4 | 0 → 4 | 0 → 0 | 0 → 4 | 5 → 1 |
+| DCS | 4 | 4 | 4 → 4 | 0 → 3 | 0 → 0 | 0 → 3 | 4 → 1 |
+| CSS | 5 | 5 | 4 → 4 | 0 → 3 | 0 → 0 | 0 → 3 | 5 → 2 |
+| **合计** | **24** | **24** | **20 → 22** | **4 → 16** | **1 → 1** | **2 → 15** | **21 → 8** |
+
+首次导入服务识别率为 100%，官方来源规格命中率从 83.3% 增至 91.7%，有效候选率从 16.7% 增至 66.7%。浏览器中复核 ECS 升配、RDS 主备方案、DCS 成对运行及 CSS 节点后，主费用为 8 确认、8 条件、8 Pending。12 项独立费用中有 4 项存储费确认，8 项 Pending。金额来自同一报价引擎，五表 Excel 按原始行号追溯。初次导入的 8 个主费用 Pending 包括 3 个 ECS 无兼容计划，及各 1 个 ECS 操作系统、Aurora、DCS 分片、CSS 非数据节点、UltraWarm 阻塞。
+
+### 规格和价格证据
+
+- **ECS** 复核并纳入 119 个规格的 357 个计划，每种计费模式各 119 个，净增 225 个计划。目录限定正常通用、计算增强和内存优化系列，CPU 上限从 32 扩展到 128。候选保持源架构与 OS 许可，vCPU 和内存各在 1–2 倍内，最多显示三项已核价 SKU。T2/T3 用常规实例替代需复核积分、持续性能和计费。当前已核验计划为 Linux x86，兼容 Arm 或 Windows 的价格仍待核验。AWS C3 已从官方处理器和容量表补齐。 [欧站 ECS 目录](https://portal.eu.huaweicloud.com/api/calculator/rest/cbc/portalcalculatornodeservice/v4/api/productInfo?urlPath=ecs&region=eu-west-101&language=en-us&station=en-EU&tag=general.online.portal) · [AWS 上一代规格](https://docs.aws.amazon.com/ec2/latest/instancetypes/pg.html)
+- **RDS** 普通 `InstanceUsage` 和 `Multi-AZUsage` 的型号经 AWS 规格校验。默认目标为 MySQL 8.0 主备 Cloud SSD，作为独立迁移方案显示。支持复核后选单机、版本及盘型。Arm 到 x86 保持条件估算，Aurora 单独审查。实例候选有 66 个计划，Cloud SSD 与 ESSD 独立数据盘有 12 个计划。存储需盘型、每实例容量、计费数量和按需时长。超额备份继续按缺少明确用量、额度和核验费率分项 Pending。 [欧站 RDS 目录][rds-catalog] · [RDS 费用构成][rds-billing] · [AWS DB 实例规格](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.Summary.html)
+- **DCS** 复用已核验的 Redis OSS SKU。可用容量缺失时，按 AWS 节点 `maxmemory` 与默认 25% 预留提出条件估算，并匹配满足容量的最小档位。默认双节点主备，另列单机单位费率。确认时要核实可用容量、节点分组与相同运行时段。集群还需显式分片及每分片节点数。节点小时、平均节点数、目标实例数及目标整体实例小时分别记录。 [AWS Redis OSS 最大内存](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/ParameterGroups.Engine.html) · [AWS 默认内存预留](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/redis-memory-management.html) · [欧站 DCS 规格](https://support.huaweicloud.com/eu/productdesc-dcs/dcs-pd-0522002.html)
+- **CSS** 以 AWS 官方 OpenSearch 表核验普通节点 CPU 与内存。欧站计算器 `search` 产品组返回 12 种 x86 常规托管节点，各核验三种计费模式。Arm 迁移、角色、目标版本及插件兼容性需人工确认。存储独立核验 SSD 与 SAS 按需及 SSD 包月。SAS 包月的 1 GiB 与 100 GiB 官方询价未通过线性验证，CSS 存储暂无已核验包年方案。UltraWarm、冷数据和非数据节点保留独立待确认项。 [AWS OpenSearch 实例表](https://aws.amazon.com/opensearch-service/pricing/) · [欧站 CSS 目录](https://portal.eu.huaweicloud.com/api/calculator/rest/cbc/portalcalculatornodeservice/v4/api/productInfo?urlPath=search&region=eu-west-101&language=en-us&station=en-EU&tag=general.online.portal) · [欧站 OpenSearch 配置](https://support.huaweicloud.com/eu/usermanual-css/css_01_0269.html)
+
+随包目录共 1,532 个计划，按需 / 包月 / 包年为 543 / 495 / 494。新增存储计划的费率由 1 GiB 和 100 GiB 的独立公开询价交叉核验。快照与在线刷新共同校验产品、SKU、区域、币种、计费模式、计量及价格时效。 [公开询价](https://portal.eu.huaweicloud.com/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource) · [随包目录](../pricing-studio/web/public/catalog.json)
 
 [rds-catalog]: https://portal.eu.huaweicloud.com/api/calculator/rest/cbc/portalcalculatornodeservice/v4/api/productInfo?urlPath=rds&region=eu-west-101&language=en-us&station=en-EU&tag=general.online.portal
 [rds-billing]: https://support.huaweicloud.com/eu/productdesc-rds/rds_01_0030.html
