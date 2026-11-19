@@ -7,8 +7,8 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-19，Europe/Berlin |
-| 当前优先目标 / 模式 | Huawei 自动规格匹配与智能导入的主线整合，单 Agent |
-| 本轮检查基线 | `main` / `8f8ff839309f79e7223d9edaa5af770dd3c5f4da` |
+| 当前优先目标 / 模式 | Huawei 自动报价覆盖率分析与长期优先级，单 Agent |
+| 本轮检查基线 | `main` / `563a453e7629daa7fdfbaf963d568fc17daeda08` |
 | `main` 代码合并基线 | `0dbd72463b21e3f85d9ac879fd4de897d5241237`，与已验收代码树一致。[合并提交](https://github.com/jh1369/cloud-solution-studio/commit/0dbd72463b21e3f85d9ac879fd4de897d5241237) · [当前 `main` HEAD](https://github.com/jh1369/cloud-solution-studio/commits/main/) |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
@@ -17,7 +17,7 @@
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
 | 上次记录的 Sites 部署源码 | `4741d6a2b4044f7afee16e3a4ef208c370c804c9`（私有站第 11 版，见 PR #13 记录） |
 | 整体进度 | 已实测华为云在线目录匹配、三种计费、导入复核和浏览器五表导出。本机真实模型复验待运行环境 |
-| 本轮同步范围 | PR #13 和 PR #14 的华为云在线整合及验收记录 |
+| 本轮同步范围 | Huawei 自动报价覆盖率报告及开发状态，文档交付 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -85,6 +85,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 | 优先级 | 任务 | 完成标准 |
 | --- | --- | --- |
 | P0 / 模型复验 | 使用真实本机模型重复两类非标准导入 | 在获准的本机运行时复验 `0.3.8-dev` 字段分类、表头映射、人工纠正和报价导出。记录模型及版本 |
+| P1 / 报价覆盖建议 | RDS 数据盘和超额备份 | 独立核验实例、盘型与备份计费证据，按相应计量口径导出分项费用。[覆盖率分析](HUAWEI_QUOTE_COVERAGE.md) |
 | P2 / 独立任务 | Python CSV starter 数值与单位问题 | 不进入当前报价 MVP；继续保留原逻辑，独立修复 NaN/Infinity 与数量/单位，不重复开发 Python 报价系统 |
 | P1 | SKU/能力复核 | 补充 ARM/x86、OS/许可、引擎/版本、AZ 主备及关联资源差异；不将 CPU/内存接近视为完全等价 |
 | P1 | 官方 BSS 适配与接口治理 | 明确受支持官方端点/字段、注入认证客户端；不自动发现凭证；当前使用公开计算器询价适配 |
@@ -451,3 +452,10 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **浏览器** Chromium 156.0.8078.79 与 openpyxl 3.1.5 核对 15 份真实下载。Redis 2 GB→4 GB→4 GB 主备自动切换 SKU。EVS 两块盘、每盘 100→200 GB，保留 80 GB-month 按需用量，金额 USD 16.70。三种计费模式各有 3 个 SKU 实时询价通过。非标准 CSV 和多表 Excel 经本机模拟端点验证预览修正、确认、核价和导出。当前环境缺可用的真实本机推理运行时与权重，真实模型复验保留待办。[浏览器验收](PRICING_BROWSER_ACCEPTANCE.md#2026-11-19--huawei-主线整合验收)
 - **后续覆盖** 先用真实本机模型复验两类虚构文件。再按官方目录和独立计费证据补充 Redis 版本与拓扑、EVS 性能型用量和 RDS 存储及备份。ELB 和 CCE 仍需手动选型，OBS 缺目录费率，跨区、复杂带宽与流量等缺项保持 Pending。
 - **同步** GitHub 确认 PR #13 和 #14 均为 Merged。#13 的修复随 #14 一次合入，`main` 的 Web 代码基线为 `0dbd72463b21e3f85d9ac879fd4de897d5241237`，版本 `0.3.8-dev`。之后追加了本文状态记录。生产站仍以最近记录的独立发布为准。[PR #13](https://github.com/jh1369/cloud-solution-studio/pull/13) · [PR #14](https://github.com/jh1369/cloud-solution-studio/pull/14)
+
+### 2026-11-19 — Huawei 自动报价覆盖率分析
+
+- **新增** 面向 `0.3.8-dev` 的覆盖矩阵、虚构混合清单、Pending 分类和三个长期覆盖建议。**修改** 本文优先级。**删除** 无。交付内容为仓库文档。[覆盖报告](HUAWEI_QUOTE_COVERAGE.md)
+- **测试** 在 `pricing-studio/web` 以 Node 24.22.1 运行 `node --test tests/huawei-import.test.mjs`，21 通过、0 失败。用实际随包目录和现有导入、匹配、报价逻辑执行 32 行虚构 CSV。Chromium 156.0.8078.79 导入该清单及两份虚构 AWS 样式 XLSX，三份下载均以 openpyxl 3.1.5 重开验证。主清单月均小计 USD 801.70，Pending 金额为空。两份 XLSX 使用不同虚构资源标识及公式或数值来源成本，均为 2 项计价、2 项 Pending 和 USD 127.95 小计。
+- **结果与边界** 主清单识别 31 / 32、自动匹配 13 / 32、计价 12 / 32、Pending 20 / 32。4 行需架构或输入复核，16 行为现有能力缺口，其中 13 行缺项目已验证价格、10 行缺计费规则，两者重叠 10 行。报价采用随包已验证费率，欧站原始目录用于候选发现。真实模型、生产及离线验收沿用各自记录。
+- **长期优先级** RDS 数据盘和超额备份优先，其次为专享 ELB/EIP 分项与 OBS 标准单 AZ 按需。EVS 性能费率需补足明确来源。覆盖率报告和本条状态记录为本轮 GitHub 同步范围。
