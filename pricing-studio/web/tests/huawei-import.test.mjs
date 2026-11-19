@@ -249,7 +249,7 @@ test('RDS compute-only scope, region, unmatched service and manual selection',()
  assert.equal(match(wrong).huaweiMatch,'HW_TARGET_REGION');
  const manually={...resource('1 台 4 vCPU 16 GiB 云主机'),targetId:'manual',accepted:false,huaweiSelection:'manual'};
  assert.equal(match(manually).targetId,'manual');
- assert.equal(resource('ELB dedicated bandwidth').huaweiMatch,'HW_MANUAL_SERVICE');
+ assert.equal(resource('ELB dedicated bandwidth').huaweiMatch,'HW_ANCILLARY_PENDING');
  assert.equal(resource('OBS S3 requests').huaweiMatch,'HW_NO_PLAN');
  assert.equal(resource('RDS SQL Server 2019 2 vCPU 8 GiB Single-AZ Cloud SSD instance only').huaweiMatch,'HW_DB_LICENSE');
 });

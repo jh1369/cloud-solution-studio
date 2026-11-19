@@ -7,13 +7,14 @@ const tcpRelease=tcpReleaseStore(/*TCP_RELEASE*/{});
 const endpoint='https://portal.eu.huaweicloud.com/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource';
 const security={'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'SAMEORIGIN','Permissions-Policy':'camera=(), microphone=(), geolocation=()','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; frame-ancestors 'self' https://chatgpt.com https://*.chatgpt.com; base-uri 'none'; object-src 'none'"};
 function requestForPlan(plan,index){
- const mode=plan.billingMode,suffix={ONDEMAND:'hour',MONTHLY:'month',YEARLY:'year'}[mode];
- if(!suffix||plan.region!=='eu-west-101'||plan.currency!=='USD'||typeof plan.size!=='boolean'||plan.service==='EVS'&&!plan.size||plan.unit!==(plan.size?'GB-':'')+suffix||!plan.productId||!plan.sku||!plan.cloudServiceType||!plan.resourceType)return null;
+ const mode=plan.billingMode,publicNatDay=mode==='ONDEMAND'&&plan.service==='NAT Gateway'&&plan.resourceType==='hws.resource.type.natgateway';
+ const suffix=publicNatDay?'day':{ONDEMAND:'hour',MONTHLY:'month',YEARLY:'year'}[mode];
+ if(!suffix||plan.region!=='eu-west-101'||plan.currency!=='USD'||typeof plan.size!=='boolean'||publicNatDay&&plan.size||plan.service==='EVS'&&!plan.size||plan.unit!==(plan.size?'GB-':'')+suffix||!plan.productId||!plan.sku||!plan.cloudServiceType||!plan.resourceType)return null;
  if(mode!=='ONDEMAND'&&(plan.periodType!==(mode==='MONTHLY'?2:3)||plan.periodNum!==1))return null;
  const product={id:String(index),cloudServiceType:plan.cloudServiceType,resourceType:plan.resourceType,resourceSpecCode:plan.sku,productId:plan.productId,productNum:1};
  if(mode==='ONDEMAND'){
   if(typeof plan.usageFactor!=='string'||!/duration/i.test(plan.usageFactor))return null;
-  Object.assign(product,{usageFactor:plan.usageFactor,usageMeasureId:4,usageValue:1});
+  Object.assign(product,{usageFactor:plan.usageFactor,usageMeasureId:publicNatDay?0:4,usageValue:1});
  }
  if(plan.size)Object.assign(product,{resourceSize:1,resouceSizeMeasureId:17});
  return product;
@@ -70,7 +71,8 @@ export default {async fetch(request,env){
      const quote=bucket[0],plan=group[index];
      if(quote.productId!==plan.productId||typeof quote.officialWebsiteAmount!=='number'||!Number.isFinite(quote.officialWebsiteAmount)||quote.officialWebsiteAmount<0||quote.officialWebsiteAmount>1e12)continue;
      const {productInfos:ignored,...inquiry}=body;
-     items.push({...plan,rate:quote.officialWebsiteAmount,verifiedAt:new Date().toISOString(),evidence:{request:productInfos[index],inquiry,response:quote,currency:result.currency}});
+     items.push({...plan,rate:quote.officialWebsiteAmount,verifiedAt:new Date().toISOString(),evidence:{request:productInfos[index],inquiry,response:quote,currency:result.currency,
+      ...(plan.unit==='day'?{billingSource:plan.evidence?.billingSource}:{})}});
     }
     pending.push(...group.filter(p=>!items.some(item=>item.id===p.id)).map(p=>p.id));
    }catch{pending.push(...group.map(p=>p.id));}

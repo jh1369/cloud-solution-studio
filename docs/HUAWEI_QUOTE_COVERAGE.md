@@ -1,5 +1,7 @@
 # Huawei Cloud Pricing Studio 自动报价覆盖率
 
+最新复测见 [0.3.11-dev 覆盖率复测](#0311-dev-覆盖率复测)。原始分析和 32 行虚构清单保留在下文。
+
 ## 基线与口径
 
 评审对象为 `main` 的 `563a453e7629daa7fdfbaf963d568fc17daeda08`，Web 版本 `0.3.8-dev`。GitHub 确认规格匹配、EVS/DCS 修复和智能导入相关的 PR #13 与 #14 已合入。本报告以仓库中的在线报价路径为准。[评审基线](https://github.com/jh1369/cloud-solution-studio/tree/563a453e7629daa7fdfbaf963d568fc17daeda08) · [PR #13](https://github.com/jh1369/cloud-solution-studio/pull/13) · [PR #14](https://github.com/jh1369/cloud-solution-studio/pull/14)
@@ -120,13 +122,13 @@ case_id,product,specification,quantity,usage,unit,huawei_billing_mode,huawei_tar
 
 **预计收益与验收**覆盖样例 13、14，最多增加 2 / 32 行（6.25 个百分点）。同一虚构实例的实例费、数据盘和备份用量分别可追溯，独立按需和订阅询价按证据对账。已知备份用量在适用免费额度内时金额为零，超出部分独立计价。缺少额度、实例关联或用量证据时，对应费用留空，其余已核实费用保留。
 
-### 2. 专享 ELB 与关联 EIP 计费
+### 2. ELB 容量单位与关联 EIP 计费
 
-**范围和缺口**包括可明确自动匹配的 ELB 基础实例费、具有明确层级和用量的 LCU，以及专用 EIP 的带宽或出网计费。现有 ELB 基础费可手选，EIP 仍缺精确服务映射。欧站计算器提供 ELB 实例时长、L4/L7 LCU，以及独立的 `vpc_ip` 和 `vpc_bandwidth` 候选。EIP 的带宽、出向流量和闲置保留费用各有计费条件。[欧站 ELB 原始目录][elb-catalog] · [ELB 计费模式][elb-billing] · [欧站 EIP 原始目录][eip-catalog] · [EIP 计费项][eip-billing]
+**范围和缺口**包括具有明确层级和用量的 LCU，以及专用 EIP 的带宽或出网计费。`0.3.11-dev` 可自动选中专享弹性 ELB 的按需基础实例费，也能识别典型 EIP 行。欧站计算器提供 L4/L7 LCU 与独立的 `vpc_ip` 和 `vpc_bandwidth` 候选。EIP 的带宽、出向流量和闲置保留费用各有计费条件。[欧站 ELB 原始目录][elb-catalog] · [ELB 计费模式][elb-billing] · [欧站 EIP 原始目录][eip-catalog] · [EIP 计费项][eip-billing]
 
-**模块边界**涉及 `engine.mjs` 的 EIP 服务映射和分项计费、`huawei-match.mjs` 的明确 ELB 规格判别、`scripts/build_catalog.py` 与 `worker.mjs` 的时长/LCU/流量等单位及证据校验，以及 `ui.mjs` 和 `excel.mjs` 的关联费用。
+**模块边界**涉及 `engine.mjs` 的独立计量和分项计费、`huawei-infrastructure-specs.mjs` 的额外费用约束、`scripts/build_catalog.py` 与 `worker.mjs` 的 LCU/带宽/流量单位及证据校验，以及页面和 Excel 的分项金额。
 
-**预计收益与验收**样例 21 已有有效基础费，自动选型可增加 1 行。经独立核价的 LCU、专用带宽和按出流量可再覆盖 22、24、25，合计上限为 4 / 32 行（12.5 个百分点）。纯内网实例、声明公网绑定，以及同一 EIP 单独列出的场景有独立合计，带宽与出流量按对应模式核算，关联费用只计一次。当前样例 23 的包月计划缺口保留。
+**预计收益与验收**经独立核价的 LCU、专用带宽和按出流量可再覆盖 22、24、25，共 3 / 32 行（9.375 个百分点）。纯内网实例、声明公网绑定，以及同一 EIP 单独列出的场景有独立合计，带宽与出流量按对应模式核算，关联费用只计一次。当前样例 23 的包月计划缺口保留。
 
 ### 3. OBS 标准单 AZ 按需计费
 
@@ -137,6 +139,40 @@ case_id,product,specification,quantity,usage,unit,huawei_billing_mode,huawei_tar
 **预计收益与验收**覆盖 29–31，最多增加 3 / 32 行（9.375 个百分点）。存储的测量时段、GET 计费单位和公网出流量分别对照官方费率。跨阈值、缺失用量以及外网与内网流量的分项结果可追溯。未核实阶梯的费用保留 Pending。
 
 **EVS 性能覆盖的依据** 欧站 EVS 原始目录本次仅返回四种容量计价盘型。磁盘性能文档给出 IOPS 和吞吐上限，当前公开候选尚未确认样例 09 的独立性能费率或样例 10 的快照收费。性能要求到已有盘型的规则校验，以及独立收费项的来源确认，分别影响这两类样例的可报价范围。RDS、ELB/EIP 和 OBS 当前已有更明确的官方候选和可验证收益。[欧站 EVS 原始目录][evs-catalog] · [EVS 类型与性能][evs-performance]
+
+## 0.3.11-dev 覆盖率复测
+
+2026-11-19 以 `main` 的 `29f5d3c2243f0aa4c28ea5e2322a51ea63814018` 为开发前基线。两次跑同一 32 行 CSV、730 参考小时和零折扣，目标 EU-Dublin（`eu-west-101`）/ USD。基线已包含 PR #16，所以第 19 行 2 GB Redis 主备已自动计价。结果以输入行为分母，SKU 已选但用量或价格校验未通过时仍计为已匹配。 [开发前基线](https://github.com/jh1369/cloud-solution-studio/tree/29f5d3c2243f0aa4c28ea5e2322a51ea63814018) · [可重复测试](../pricing-studio/web/tests/huawei-infrastructure.test.mjs)
+
+| 指标 | 开发前 | 0.3.11-dev |
+| --- | ---: | ---: |
+| 自动服务识别 | 31 / 32（96.9%） | 32 / 32（100%） |
+| 自动 SKU 匹配 | 14 / 32（43.75%） | 18 / 32（56.25%） |
+| 成功计价 | 13 / 32（40.625%） | 16 / 32（50%） |
+| Pending | 19 / 32 | 16 / 32 |
+| 部分月均小计 | USD 851.34 | USD 1,029.09 |
+| 首期预付小计 | USD 2,148.18 | USD 2,205.48 |
+
+按需有 8 / 23 行计价，包月 4 / 5 行，包年 4 / 4 行。新增计价第 21 行 ELB 基础费 USD 18.25、第 28 行公网 NAT 包月 USD 57.30，以及第 32 行 CCE 管理费 USD 102.20。第 27 行可匹配公网 NAT 规格，保留其 `730 hour` 原始用量并提示填报计费日。第 24、25 行识别为 EIP，仍需独立核价。
+
+| Pending 类别 | 之前 | 当前 | 当前样例及原因 |
+| --- | ---: | ---: | --- |
+| 规格、数量或用量需确认 | 3 | 4 | 04 ECS 多候选，15 RDS 拓扑未明，20 Redis 数量缺失，27 公网 NAT 计费日未给出。 |
+| 区域或计费模式缺可用计划 | 2 | 2 | 05 区域超出范围，23 ELB 包月无已核验计划。 |
+| 缺分项计费及可用价格 | 10 | 10 | 09、10 EVS 性能/快照，13、14 RDS 数据盘/备份，22 ELB LCU，24、25 EIP，29–31 OBS。 |
+| 已有价格的自动选型或用量支持缺口 | 4 | 0 | ELB、CCE、公网 NAT 已接入规格匹配；公网 NAT 的小时输入按上表归为用量待确认。 |
+
+当前目录有 1,245 个验证计划，按需/包月/包年分别为 445 / 400 / 400。新增的 4 条为公网 NAT 按日；其他计划保留各自核验时间。新增实例及相关费用边界如下。
+
+| 费用项 | 自动匹配及模式 | 继续 Pending 的费用或规格 |
+| --- | --- | --- |
+| 专享型 ELB | 弹性规格 `elbv3.professional` 的 `instance_duration` 按需费。按 L4/L7 官方性能上限核对已提供的需求。仅申请专享型基础费时可显示弹性规格假设。 | LCU、EIP、带宽、未核验部署要求、固定/共享实例及无价格的包月/包年。 |
+| CCE Standard | 六个公开文档规格。按明确单主或三主高可用和工作节点规模选档，可按需、包月或包年。通用 Kubernetes 的 Standard 和最小满足档位假设可见。 | Turbo、在欧站文档中缺规格证据的 `cce.s1.large` / `cce.s1.xlarge`、工作节点 ECS、EVS 及网络。 |
+| CCE Autopilot | 公开目录的集群管理按需费，及明确购买的通用 CPU 或内存月度/年度资源包。 | 工作负载用量、包量抵扣和未核验包型。 |
+| 公网 NAT | 四档网关，按实填计费日计按需或按独立价格包月、包年。计费日核验使用计算器 `usageMeasureId=0`。 | 缺计费日、小时输入、独立 EIP、带宽及流量。 |
+| 私网 NAT | 四档按小时网关实例费用。明确私网及实例范围，并以档位、唯一满足的性能条件或精确 SKU 选型。 | 模糊的 AWS NAT 类型、私网订阅价格及独立网络费用。 |
+
+规格来源与核价分别保存在工作簿 Service Mapping 和 Public Pricing。显式申请的关联费用可在 Quotation 用相同 `Row` 分项保留 Pending，金额留空；页面按相同的费用行统计。上述 32 个输入均为独立费用项。当前价格覆盖缺口涉及 12 行，其中 10 行也缺独立计费规则。 [ELB 欧站规格](https://support.huaweicloud.com/eu/productdesc-elb/en-us_topic_0287737145.html) · [ELB 计费项](https://support.huaweicloud.com/eu/price-elb/elb_billing_0003.html) · [CCE 欧站规格](https://support.huaweicloud.com/eu/api-cce/cce_02_0236.html) · [CCE 计费项](https://support.huaweicloud.com/eu/price-cce/cce_03_0006.html) · [NAT 欧站规格](https://support.huaweicloud.com/eu/productdesc-natgateway/en-us_topic_0086739763.html) · [NAT 按需计费边界](https://support.huaweicloud.com/eu/price-natgateway/nat_billing_0005.html) · [欧站公开询价](https://portal.eu.huaweicloud.com/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource)
 
 [rds-catalog]: https://portal.eu.huaweicloud.com/api/calculator/rest/cbc/portalcalculatornodeservice/v4/api/productInfo?urlPath=rds&region=eu-west-101&language=en-us&station=en-EU&tag=general.online.portal
 [rds-billing]: https://support.huaweicloud.com/eu/productdesc-rds/rds_01_0030.html

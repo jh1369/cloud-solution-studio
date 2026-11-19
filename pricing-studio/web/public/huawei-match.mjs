@@ -1,5 +1,8 @@
 import {REGION,awsShape,billingOf,family,priceValidation} from './engine.mjs';
 import {dcsRequirements,documentedDcsSpecs,matchesDcsSpec} from './huawei-dcs-specs.mjs';
+import {infrastructureRules} from './huawei-infrastructure-specs.mjs';
+
+export const usesHuaweiProductSpecs=service=>service==='DCS'||Object.hasOwn(infrastructureRules,service);
 
 function attributes(item){
  if(typeof item.description!=='string')return {};
@@ -110,12 +113,6 @@ const rules={
   return policy((item,fields)=>sameShape(item,shape)&&engines.has(String(item.engine??'').toLowerCase())&&
    fields['db engine version']?.split('|').includes(version)&&fields['db instance type']===type&&fields['storage type']==='Cloud SSD',
    ['HW_DB_INSTANCE_ONLY']);
- },
- 'NAT Gateway'(row,spec){
-  const sizes=new Set(Array.from(spec.matchAll(/\b(small|medium|large|xlarge)\b/gi),match=>match[1].toLowerCase()));
-  if(!/\bprivate\s+nat\b|私网\s*NAT/i.test(spec)||!/\binstance only\b|仅实例/i.test(spec)||
-     /\b(?:public|aws|azure)\b|公网|流量|traffic|bandwidth/i.test(spec)||sizes.size!==1)return missing('HW_NAT_PARAMETERS');
-  return policy((item,fields)=>item.resourceType==='hws.resource.type.privatenat'&&sizes.has(fields.specification),['HW_NAT_INSTANCE_ONLY']);
  }
 };
 
@@ -124,13 +121,16 @@ const servicePatterns=[
  ['EVS',/云盘|云硬盘|硬盘|磁盘|\d\s*块\s*盘|\b(?:EBS|EVS|managed disks?|block storage)\b/i],
  ['DCS',/redis|缓存|\b(?:ElastiCache|DCS|memcached|valkey)\b/i],
  ['RDS',/数据库|\b(?:RDS|MySQL|PostgreSQL|MariaDB|SQL Server)\b/i],
- ['ELB',/负载均衡|\b(?:ELB|load balancers?|load balancing)\b/i],
+ ['ELB',/负载均衡|\b(?:ELB|ALB|NLB|elbv3|load balancers?|load balancing)\b/i],
  ['OBS',/对象存储|\b(?:OBS|S3|object storage)\b/i],
- ['NAT Gateway',/\b(?:private\s+nat|nat gateway)\b|私网\s*NAT/i]
+ ['CCE',/容器集群|\b(?:CCE|EKS|K8s|Kubernetes|Cloud Container Engine)\b/i],
+ ['NAT Gateway',/\b(?:public\s+nat|private\s+nat|nat\s*gateway|natgateway_[a-z]+|privatenat_[a-z]+)\b|[公私]网\s*NAT|NAT\s*网关/i],
+ ['EIP',/弹性公网\s*IP|\b(?:Elastic IP|EIP)\b/i]
 ];
 
 export function identifyHuaweiService(product,specification=''){
  const known=family(product);
+ if(known==='VPC / EIP'&&/^(?:\s*Elastic IP|\s*EIP)\b|^弹性公网\s*IP/i.test(specification))return 'EIP';
  if(known!=='Unmapped')return known;
  for(const text of [product,specification]){
   const candidates=servicePatterns.filter(([,pattern])=>pattern.test(text));
@@ -141,9 +141,30 @@ export function identifyHuaweiService(product,specification=''){
 }
 
 const targetRegion=/(?:华为云区域|华为云目标区域|目标区域|(?:huawei\s+)?target\s+region)\s*[:=：]\s*([a-z]{2}(?:-[a-z]+)+-\d+)\b/i;
+const leadingService=/^(?:\s*(\d+)\s*(?:套|台|个|clusters?\b|instances?\b|load balancers?\b|gateways?\b)\s*)?((?:(?:aws|amazon|dedicated|application|network|private|public)\s+)*(?:负载均衡|\b(?:CCE|EKS|K8s|Kubernetes|ELB|ALB|NLB|load balanc\w*|NAT\s*Gateway)\b)|(?:专享型\s*ELB|[公私]网\s*NAT|容器集群|NAT\s*网关))/i;
+function identifyInfrastructureText(row){
+ const spec=row.specification.normalize('NFKC');
+ const first=spec.match(leadingService);
+ if(first&&!row.huaweiMatch){
+  const service=identifyHuaweiService(first[2]);
+  if(Object.hasOwn(infrastructureRules,service)){row.service=service;row.product=service;}
+ }
+ if(!Object.hasOwn(infrastructureRules,row.service))return;
+ // Counts of worker nodes, IPs and bandwidth options are not counts of clusters or gateways.
+ const explicit=spec.match(/(?:^|[,，])\s*(?:target\s+quantity|resource count|quantity|目标数量|数量)\s*[:=]\s*(\d+(?:\.\d+)?)/i)?.[1];
+ const shortCount=spec.match(/^(\d+)\s*(?:台|个|套)\s*/)?.[1];
+ row.quantity=explicit!=null?Number(explicit):first?.[1]!=null?Number(first[1]):shortCount!=null?Number(shortCount):null;
+ if(row.service==='NAT Gateway'&&!row.unitExplicit&&(row.usage==null||row.huaweiNatUsageFromText)){
+  const days=observedIntegers(spec,/(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*(?:计费日|billed days?\b|billable days?\b)/gi);
+  if(days.size===1){row.usage=days.values().next().value;row.unit='day';row.huaweiNatUsageFromText=true;}
+  else if(row.huaweiNatUsageFromText)row.usage=null;
+ }
+}
 export function identifyHuaweiRow(row){
+ const infrastructureText=!row.sourceService&&!row.importSource&&row.huaweiUsageFromSpec;
+ if(infrastructureText)identifyInfrastructureText(row);
  const text=(row.product+' '+row.specification).normalize('NFKC');
- if(row.service==='Unmapped')row.service=identifyHuaweiService(row.product,row.specification);
+ if(row.service==='Unmapped'||row.service==='VPC / EIP')row.service=identifyHuaweiService(row.product,row.specification);
  if(!row.huaweiTargetRegion||row.huaweiRegionFromSpec){
   row.huaweiTargetRegion=text.match(targetRegion)?.[1].toLowerCase()??'';
   row.huaweiRegionFromSpec=!!row.huaweiTargetRegion;
@@ -160,12 +181,20 @@ export function identifyHuaweiRow(row){
    row.unit=metered?.unit??'';
   }
  }
- if(row.scope==='resource'&&row.quantity==null&&!row.importSource){
+ if(row.scope==='resource'&&row.quantity==null&&!row.importSource&&!(infrastructureText&&Object.hasOwn(infrastructureRules,row.service))){
   const quantities=observedIntegers(text,/(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*(?:套|台|块|instances?\b)/gi);
   const quantity=quantities.values().next().value;
   row.huaweiQuantity=quantities.size===1&&Number.isInteger(quantity)&&quantity>0?quantity:null;
  }
  return row;
+}
+
+function priceForSpec(spec,plans,catalog,now,chosen){
+ const exact=plans.filter(plan=>plan.sku===spec.specCode&&plan.resourceType===spec.resourceType&&plan.size===false&&
+  (!spec.usageFactor||plan.usageFactor===spec.usageFactor&&plan.evidence?.request?.usageFactor===spec.usageFactor));
+ if(exact.length!==1||chosen&&chosen.id!==exact[0].id)return null;
+ const [item]=exact;
+ return {item,spec,code:priceValidation(item,catalog,{now}).valid?'HW_MATCHED':'HW_MATCHED_PRICE'};
 }
 
 function matchDcs(row,catalog,plans,source,now){
@@ -184,15 +213,28 @@ function matchDcs(row,catalog,plans,source,now){
  if(requirements.zone)return pending('HW_DCS_SPEC_AZ_REQUIRED');
  if(matches.length!==1)return pending('HW_MULTIPLE');
  const [spec]=matches;
- const exact=plans.filter(plan=>plan.sku===spec.specCode&&plan.resourceType===spec.resourceType&&plan.size===false);
- if(exact.length!==1||chosen&&chosen.id!==exact[0].id)return pending('HW_DCS_SPEC_PRICE_LINK');
- const [item]=exact;
+ const price=priceForSpec(spec,plans,catalog,now,chosen);
+ if(!price)return pending('HW_DCS_SPEC_PRICE_LINK');
  const assumptions=[...requirements.assumptions];
  if(!requirements.version)assumptions.push('HW_DCS_DOCUMENTED_VERSIONS');
  if(!requirements.architecture)assumptions.push('HW_DCS_DOCUMENTED_X86');
  if(!requirements.replicas&&spec.replicas>1)assumptions.push('HW_DCS_DOCUMENTED_REPLICAS');
  if(!requirements.shards&&spec.shards)assumptions.push('HW_DCS_DOCUMENTED_SHARDS');
- return {item,spec,code:priceValidation(item,catalog,{now}).valid?'HW_MATCHED':'HW_MATCHED_PRICE',assumptions};
+ return {...price,assumptions};
+}
+
+function matchInfrastructure(row,catalog,plans,text,now){
+ const manual=row.huaweiSelection==='manual';
+ const chosen=manual?plans.find(plan=>plan.id===row.targetId):null;
+ const match=infrastructureRules[row.service](row,text,chosen?.sku);
+ const specs=match.specs??[];
+ const pending=code=>({...match,code,candidates:specs.map(spec=>spec.specCode)});
+ if(match.code)return pending(match.code);
+ if(manual&&!chosen)return pending('HW_MANUAL_PLAN');
+ if(!specs.length)return pending('HW_NO_MATCH');
+ if(specs.length>1)return pending('HW_MULTIPLE');
+ const price=priceForSpec(specs[0],plans,catalog,now,chosen);
+ return price?{...match,...price,specs:undefined}:pending('HW_SPEC_PRICE_LINK');
 }
 
 export function matchHuawei(row,catalog,{now=Date.now()}={}){
@@ -202,6 +244,7 @@ export function matchHuawei(row,catalog,{now=Date.now()}={}){
  const plans=catalog.items.filter(item=>item?.region===REGION&&item.service===row.service&&item.billingMode===mode);
  const spec=(row.product+' '+row.specification).normalize('NFKC').trim();
  if(row.service==='DCS')return matchDcs(row,catalog,plans,spec,now);
+ if(Object.hasOwn(infrastructureRules,row.service))return matchInfrastructure(row,catalog,plans,spec,now);
  if(!plans.length)return missing('HW_NO_PLAN');
  if(!rule)return missing('HW_MANUAL_SERVICE');
  const contract=rule(row,spec);
@@ -216,12 +259,14 @@ export function matchHuawei(row,catalog,{now=Date.now()}={}){
 
 export function applyHuaweiMatch(row,catalog,options){
  const manual=row.huaweiSelection==='manual';
- if(manual&&row.service!=='DCS')return row;
+ if(manual&&!usesHuaweiProductSpecs(row.service))return row;
  const match=matchHuawei(row,catalog,options);
  row.huaweiMatch=match.code;
  row.huaweiCandidates=match.candidates;
  row.huaweiAssumptions=match.assumptions??[];
- if(row.service==='DCS'){
+ row.huaweiCharge=match.charge;
+ row.huaweiPendingCharges=match.pendingCharges??[];
+ if(usesHuaweiProductSpecs(row.service)){
   row.huaweiProductMatch={reasonCode:match.spec?null:match.code,selected:match.spec,candidates:match.specs,
    specification:row.specification,product:row.product,capacity:row.capacity};
  }else delete row.huaweiProductMatch;
@@ -238,7 +283,7 @@ export function selectHuaweiBilling(row,mode,catalog,options){
  const chosen=choices.length===1?choices[0]:null;
  row.targetId=chosen?.id??'';
  row.accepted=false;
- if(row.service==='DCS')return applyHuaweiMatch(identifyHuaweiRow(row),catalog,options);
+ if(usesHuaweiProductSpecs(row.service))return applyHuaweiMatch(identifyHuaweiRow(row),catalog,options);
  row.huaweiMatch=chosen?'HW_MATCHED':'HW_MANUAL_PLAN';
  setHuaweiUsageAssumption(row,chosen);
  return row;

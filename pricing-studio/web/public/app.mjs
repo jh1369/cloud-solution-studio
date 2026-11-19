@@ -36,7 +36,7 @@ function setBilling(row,mode){
 }
 function canConfirm(row){
  if(!row.targetId)return false;
- return provider!=='huawei'||row.service!=='DCS'||!huaweiProductSpecIssue(row,catalog.items.find(item=>item.id===row.targetId));
+ return provider!=='huawei'||!row.huaweiProductMatch||!huaweiProductSpecIssue(row,catalog.items.find(item=>item.id===row.targetId));
 }
 function settings(){
  const hours=Number($('#hours').value),discount=Number($('#discount').value)/100;
@@ -268,6 +268,7 @@ $('#resources').addEventListener('change',event=>{
    service:'product',specification:'specification',huaweiTargetRegion:'huawei_target_region'};
   if(row.huaweiImportIssues?.length&&importFields[field])row.huaweiImportIssues=row.huaweiImportIssues.filter(key=>key!==importFields[field]);
   if(field==='huaweiTargetRegion')row.huaweiRegionFromSpec=false;
+  if(row.service==='NAT Gateway'&&(field==='usage'||field==='unit'))row.huaweiNatUsageFromText=false;
   if(field==='capacity'&&['EVS','DCS'].includes(row.service))row.huaweiCapacityExplicit=row.capacity!==null;
   if(row.service==='EVS'){
    if(field==='usage'){
@@ -281,13 +282,13 @@ $('#resources').addEventListener('change',event=>{
     row.huaweiSelection='manual';row.huaweiCandidates=null;
     row.huaweiPreferredSku=catalog.items.find(item=>item.id===row.targetId)?.sku;
     if(field==='targetId'){row.accepted=false;row.huaweiAssumptions=[];row.huaweiMatch=row.targetId?'HW_MATCHED':'HW_MANUAL_SERVICE';}
-    if(row.service==='DCS')selectHuawei(row);
+    if(huaweiMatching.usesHuaweiProductSpecs(row.service))selectHuawei(row);
     else huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
    }
   }else if(['service','targetQuantity','capacity','usage','unit','period','specification','huaweiTargetRegion'].includes(field)){
    if(field==='service'){row.targetId='';row.huaweiSelection=null;row.huaweiPreferredSku=null;}
    row.accepted=false;
-   if(row.huaweiSelection!=='manual'||row.service==='DCS')selectHuawei(row);
+   if(row.huaweiSelection!=='manual'||huaweiMatching.usesHuaweiProductSpecs(row.service))selectHuawei(row);
    else{
     if(['specification','capacity'].includes(field))huaweiMatching.identifyHuaweiRow(row);
     huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));

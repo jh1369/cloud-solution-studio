@@ -7,16 +7,16 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-19，Europe/Berlin |
-| 当前优先目标 / 模式 | Huawei DCS 欧站公开报价，单 Agent |
-| 本轮检查基线 | `main` / `3a169bada40e372cc68cedf00a8eccd011487167`。[PR #15](https://github.com/jh1369/cloud-solution-studio/pull/15) |
+| 当前优先目标 / 模式 | Huawei 欧站 ELB、CCE 与 NAT 自动选型及公开报价，单 Agent |
+| 本轮检查基线 | `main` / `29f5d3c2243f0aa4c28ea5e2322a51ea63814018`，含 [PR #16](https://github.com/jh1369/cloud-solution-studio/pull/16) |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 本轮在线源码和私有站第 12 版均为 `0.3.10-dev` |
+| 当前网页版本 | 在线源码及原私有站第 13 版均为 `0.3.11-dev` |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| Sites 部署源码 | `eeab3eabf489bbc5c020b109e47e9ba198304273`（私有站第 12 版） |
-| 整体进度 | DCS 采用欧站公开规格与已核验的 EU-Dublin 价格，符合条件的规格可直接计价。本机真实模型复验待运行环境 |
-| 本轮同步范围 | Huawei DCS 在线源码、虚构测试夹具及技术和验收记录。源码同步与私有站发布分别记录 |
+| Sites 部署源码 | `6ece7858cbc8428c577701261223505ae4d28aba`（私有站第 13 版） |
+| 整体进度 | 欧站公开规格匹配覆盖 DCS、专享弹性 ELB、CCE 和公网/私网 NAT，与原 ECS、EVS、RDS 共享报价引擎。本机真实模型复验待运行环境 |
+| 本轮同步范围 | Huawei 在线源码、公开规格及四条已核验计费日价格、虚构回归和技术文档 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -28,13 +28,13 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 | 安全及协作规则 | 禁止敏感资料进入仓库；任务结束更新状态；重大架构变更联动 README/路线图；Push 需明确授权 | `AGENTS.md`、`SECURITY.md` |
 | Python CLI 基础映射 | CSV→JSON，8 条产品族映射；SKU/价格待复核，没有费用计算 | `pricing-studio/src/pricing_studio/cli.py` |
 | 网页输入 | 文字、标准 CSV/XLSX、受支持的文字版 AWS 账单 PDF。非标准 CSV/XLSX 支持编辑式预览及配置后的本机模型分析 | `pricing-studio/web/public/app.mjs`、`inventory-import.mjs`、`scripts/local_inventory_api.mjs` |
-| 产品及规格候选 | Huawei ECS、EVS、限实例费 RDS 和私网 NAT 匹配现有目录。Redis DCS 将欧站文档精确规格关联到已核验公开价格。支持人工选型 | `huawei-match.mjs`、`huawei-dcs-specs.mjs`、`huawei-dcs-spec-data.mjs`、`engine.mjs` |
+| 产品及规格候选 | Huawei ECS、EVS 和限实例费 RDS 匹配已有目录。Redis DCS、专享弹性 ELB、CCE 和公网/私网 NAT 将欧站官方规格关联到已核验的公开计划。支持人工选型及规格复核 | `huawei-match.mjs`、`huawei-dcs-specs.mjs`、`huawei-infrastructure-specs.mjs`、`engine.mjs` |
 | 计费模式分离 | AWS 原计费仅作来源记录；华为云目标仅有按需、包月、包年；支持逐项及批量切换，切换后需重新确认 | `engine.mjs`、`app.mjs` |
-| 官方公开价格 | `eu-west-101` / USD；快照有 441 个按需、400 个包月、400 个包年计划，分别独立询价；含官方产品编码、请求/响应、来源和时间 | `public/catalog.json`、`scripts/build_catalog.py` |
+| 官方公开价格 | `eu-west-101` / USD；快照有 445 个按需、400 个包月、400 个包年计划。公网 NAT 按需使用计费日，私网 NAT 按需使用小时。保存 SKU、单位、请求/响应、来源和核验时间 | `public/catalog.json`、`scripts/build_catalog.py` |
 | 价格刷新 | 固定官方端点、服务端产品白名单；按目标计费模式分组请求；验证失败不生成价格 | `worker.mjs` |
 | 费用与情景 | 支持范围内的按需用量、独立月/年订阅价、手动折扣、首期预付、包年月均摊销；年度情景含义明确 | `engine.mjs` |
 | 账单用量边界 | 累计实例小时不反推台数；来源账期不自动外推全年；订阅需明确目标数量/每盘容量 | `engine.mjs` |
-| Excel 导出 | Input、Service Mapping、Public Pricing、Quotation、Assumptions。保留非标准导入的工作表、行号、表头和原始单元格。Pending 金额空白 | `public/excel.mjs` |
+| Excel 导出 | Input、Service Mapping、Public Pricing、Quotation、Assumptions。保留非标准导入的来源和官方规格证据。实例与关联费用分行，Pending 金额空白 | `public/excel.mjs` |
 | 构建与测试 | Python 标准库构建 Worker，浏览器依赖随包提供。在线候选的自动测试及 CLI 结果见本轮记录 | `web/scripts/`、`web/tests/`、`pricing-studio/tests/` |
 | 源码可追溯 | 记录原部署源码提交和运行文件 SHA-256；不上传构建产物或部署身份 | `web/SOURCE_PROVENANCE.json` |
 
@@ -486,3 +486,13 @@ Huawei 欧洲站覆盖率优先补齐 RDS 数据盘和备份，随后为 ELB/EIP
 - **浏览器与 Excel** Chromium 156.0.8078.79 加载构建的 Web + Worker，未配置华为云账号及 IAM Token。通过容量、拓扑编辑、8 GB 主备手选、三模式公开刷新和过期价格回归。混合清单含 ECS、EVS、RDS 与 DCS，6 行计价、4 行 Pending，月均小计 USD 402.51。非标准 CSV 与多表 Excel 使用注入的模拟本机模型完成导入。openpyxl 3.1.5 重开 4 份实际下载，验证五张表、规格及价格证据、原始行号和 Pending 空白。真实本机模型复验沿用独立待办。
 - **版本与部署** 在线源码 `0.3.10-dev` 由 `fix/huawei-dcs-public-quotes` 交付。原私有站第 12 版发布 `succeeded`，生产资产与发布源码逐字节核对，生产公开询价 9 / 9。所有者访问范围复查通过。原生产下载附件逐字节核对通过，TCP 目录保留原校验时间与 SHA-256。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/) · [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
 - **剩余边界** 区域公开报价提供 EU-Dublin 估算。需确认带指定 AZ、跨 AZ、无匹配 Arm 或多副本规格，以及无有效价格的条目。优先扩展 RDS 数据盘和备份、ELB/EIP 与 OBS 的独立计费覆盖。 [覆盖率分析](HUAWEI_QUOTE_COVERAGE.md)
+
+### 2026-11-19 — Huawei ELB、CCE 和公网 NAT 自动规格匹配
+
+- **新增** 对照欧站公开规格自动匹配专享弹性 ELB 基础实例、六档 CCE Standard 管理、Autopilot 管理与明确购买的资源包，以及公网和私网 NAT 实例。四档公网 NAT 已分别核验 1 与 2 个计费日的公开 USD 费率，采用整计费日用量。EIP 识别覆盖典型 Elastic IP 与 VPC 描述。 [规格来源与覆盖范围](HUAWEI_QUOTE_COVERAGE.md#0311-dev-覆盖率复测)
+- **修改** 在 DCS 已有产品规格证据基础上共用规格到价格连接。手选后重新校验输入和计费模式。ELB LCU、CCE 节点/存储/网络、NAT EIP 等关联费用可单列 Pending，页面与 Quotation 小计使用同一组结果。**删除** 无。
+- **覆盖率复测** 原 32 行虚构 CSV 在 `29f5d3c` 与 `0.3.11-dev` 上分别得到识别 31 → 32、自动匹配 14 → 18、计价 13 → 16、Pending 19 → 16。当前部分月均小计 USD 1,029.09。公网 NAT 小时用量行需补计费日，仍匹配到规格。 [复测口径与 Pending 分布](HUAWEI_QUOTE_COVERAGE.md#0311-dev-覆盖率复测)
+- **自动测试** `pricing-studio/web` 使用 Node 24.22.1、Python 3.12.14，通过 `npm run build`，构建引用已有 `0.3.1-dev` 附件。`node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs` 在线项 129 通过。全量 JS 执行中唯一失败项读取本轮未生成的 `0.3.11-dev` 离线 ZIP。`PYTHONPATH=tests python3.12 -m unittest test_catalog test_catalog_updates test_tcp_pdf test_schedule test_catalog_publication` 通过 41 项，2 项因缺 `boto3` 跳过。`pricing-studio` 下 `PYTHONPATH=src python3.12 -m unittest discover -s tests` 通过 1 项。
+- **浏览器与 Excel** Chromium 156.0.8078.79 使用实际构建页面和 Worker 测试标准 CSV、人工选型及编辑、过期和三模式。真实欧站公开刷新通过 8 / 8，未使用华为云账号、Token 或 Cookie。七类服务混合样例含 10 个原始资源行，拆分后 8 项计价、10 项 Pending，小计 USD 729.41。openpyxl 3.1.5 重开 4 份实际下载并核对五张表、计费模式、来源、分项和空白金额。
+- **版本与发布** 在线版本 `0.3.11-dev` 由 `feat/huawei-infrastructure-auto-match` 交付。原私有站第 13 版发布成功，复核访问范围为所有者。13 个生产资产与发布源码逐字节一致。生产 14 / 14 个公开计划核价通过，包含 ELB、CCE Standard/Autopilot、四档公网 NAT 日价、网关订阅价和私网 NAT 小时价。TCP 快照的核验时间与 SHA-256、原下载附件均通过比对。GitHub 同步以包含本记录的 `main` 合并提交为准。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/) · [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
+- **覆盖边界** ELB LCU、EIP、OBS、RDS 数据盘与备份、EVS 性能与快照及 CCE 的工作节点和网络等费用仍需独立核价。主控拓扑、来源用量、目标服务类型或性能要求不明确时需确认。当前优先核验 RDS 数据盘及超额备份。 [后续优先级](HUAWEI_QUOTE_COVERAGE.md#后续优先级)

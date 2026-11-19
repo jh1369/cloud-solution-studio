@@ -16,6 +16,25 @@ def plan(mode="ONDEMAND", size=False):
 
 
 class CatalogAdapterTest(unittest.TestCase):
+    def test_public_nat_uses_calculator_day_measure_and_preserves_billing_source(self):
+        nat = dict(resourceSpecCode="natgateway_small", resourceType="hws.resource.type.natgateway",
+                   cloudServiceType="hws.service.type.natgateway", productSpecSysDesc="Type:small",
+                   planList=[dict(billingMode="ONDEMAND", productId="SYNTHETIC", amount=2.5,
+                                  usageFactor="duration", measureUnit=0)])
+        product_info = {"urlPath": "nat", "region": catalog.REGION, "product": {"natgateway_natgateway": [nat]}}
+        with patch.object(catalog, "fetch", return_value=product_info):
+            [daily] = catalog.get("nat")
+        self.assertEqual(daily["unit"], "day")
+
+        def respond(url, payload):
+            self.assertEqual(payload["productInfos"][0]["usageMeasureId"], 0)
+            self.assertEqual(payload["productInfos"][0]["usageValue"], 1)
+            return {"currency": "USD", "productRatingResult": [dict(id="0", productId="SYNTHETIC", officialWebsiteAmount=2.5)]}
+
+        with patch.object(catalog, "fetch", side_effect=respond):
+            [verified] = catalog.verify([daily])
+        self.assertEqual(verified["evidence"]["billingSource"], catalog.PUBLIC_NAT_DAILY)
+
     def test_independent_contract_requests_and_amounts(self):
         for mode, rate, period in [("ONDEMAND", .125, None), ("MONTHLY", 37, 2), ("YEARLY", 333, 3)]:
             with self.subTest(mode=mode):

@@ -7,9 +7,10 @@ The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, t
 - [x] Use service-specific dimensions and exact catalog matching for ECS, EVS, DCS and scoped RDS instance estimates.
 - [x] Review bounded nonstandard CSV and multi-sheet Excel imports with structured output from a configured local model. Preserve source evidence through export.
 - [x] Verify imported counts, capacity and usage against their source columns or explicit units. Retain header evidence and require review of uncertain pricing inputs.
-- [x] Match explicit ECS series and private NAT instance sizes from the catalog. Keep manually chosen SKUs through billing changes when an equivalent plan exists.
+- [x] Match explicit ECS series and public or private NAT gateway sizes. Use billed days for public pay-per-use and hours for private pay-per-use. Keep manually chosen SKUs through billing changes when an equivalent plan exists.
 - [x] Quote DCS without a Huawei Cloud account using the European product specifications and independently verified EU-Dublin public prices. Keep exact flavor evidence and Pending reasons in the five-sheet export. [Metadata and matching rules](../pricing-studio/web/README.md#official-dcs-product-specifications)
-- [ ] Extend verified EU-Dublin coverage for RDS disks and backups, ELB and EIP charges, and OBS. [Coverage priorities](HUAWEI_QUOTE_COVERAGE.md)
+- [x] Match documented dedicated elastic ELB and CCE management specs. Show unpriced LCU, worker and network costs as separate Pending charges. [Coverage results](HUAWEI_QUOTE_COVERAGE.md#0311-dev-覆盖率复测)
+- [ ] Extend verified EU-Dublin coverage for RDS disks and backups, ELB LCU, EIP and OBS. [Coverage priorities](HUAWEI_QUOTE_COVERAGE.md#后续优先级)
 - [ ] Revalidate the updated import schema with a local language model in the release environment.
 - [ ] Expand supported vendor layouts, service-specific dimensions and verified ancillary price coverage using fictional fixtures and public evidence.
 
