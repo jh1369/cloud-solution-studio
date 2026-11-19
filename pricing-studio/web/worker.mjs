@@ -19,7 +19,7 @@ function requestsForPlan(plan){
   Object.assign(product,{usageFactor:plan.usageFactor,usageMeasureId:publicNatDay?0:4,usageValue:1});
  }
  if(plan.size)Object.assign(product,{resourceSize:1,resouceSizeMeasureId:17});
- return [product];
+ return ['rdsStorage','cssStorage'].includes(plan.migrationCharge)?[product,{...product,resourceSize:100}]:[product];
 }
 async function inquirePriceBatch(inquiry,productInfos){
  const matches=new Map(),expected=new Map(productInfos.map(product=>[product.id,product.productId]));
@@ -81,7 +81,8 @@ export default {async fetch(request,env){
     const [first,...probes]=verified,billingSource=plan.evidence?.billingSource;
     const next={...plan,rate:first.response.officialWebsiteAmount,verifiedAt:new Date().toISOString(),evidence:{...first,inquiry,currency:'USD',
      ...(billingSource?{billingSource}:{}),...(probes.length?{probes}:{})}};
-    if(plan.service==='EIP'&&!huaweiRates.priceValidation(next,catalogue).valid)pending.push(plan.id);
+    if((plan.service==='EIP'||['rdsStorage','cssStorage'].includes(plan.migrationCharge))&&
+       !huaweiRates.priceValidation(next,catalogue).valid)pending.push(plan.id);
     else items.push(next);
    }
   }

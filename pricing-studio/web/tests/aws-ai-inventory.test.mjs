@@ -58,7 +58,7 @@ test('multi-sheet model analysis preserves long workbook identity, context, phys
  assert.equal(calculate(verified,catalogue,opts).status,'Period');
  assert.equal(verified.importSource.fieldSources.usage.confirmed,true);
  assert.equal(imported[67].awsProfile.kind,'ElastiCache');
- assert.equal(calculate(imported[67],catalogue,opts).reasonCode,'HW_CACHE_ENGINE');
+ assert.equal(calculate(imported[67],catalogue,opts).reasonCode,'HW_MIG_USAGE_REQUIRED');
  assert.equal(imported[68].awsProfile.kind,'OpenSearch');
 });
 
@@ -88,7 +88,7 @@ test('verified AWS profiles are shared and keep source-only capacity, architectu
  assert.equal(lookupAwsSpec('RDS','db.r6i.8xlarge.tpc2.mem4x').memory,1024);
  assert.equal(lookupAwsSpec('RDS','db.m6i.large.tpc2.mem9x'),null);
  assert.equal(lookupAwsSpec('AmazonElastiCache','cache.m6g.large').memory,6.38);
- assert.equal(lookupAwsSpec('AmazonES','m7g.large.search').memory,null);
+ assert.equal(lookupAwsSpec('AmazonES','m7g.large.search').memory,8);
  assert.equal(lookupAwsSpec('EC2','c6i.xlarge or m6i.large'),null);
  assert.equal(lookupAwsSpec('EC2','c6i.xlarge or z9z.large'),null);
  assert.deepEqual(awsBatchKnowledge([{cells:['AmazonEC2','c6i.xlarge']},{cells:['EC2','c6i.xlarge']}]),[['c6i.xlarge','EC2',4,8,'x86']]);

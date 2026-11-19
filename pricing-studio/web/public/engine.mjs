@@ -136,6 +136,13 @@ export function priceValidation(item,catalog,{now=Date.now()}={}){
  }else if(inquiry.periodType!==periodType||inquiry.periodNum!==1)return fail('PRICE_EVIDENCE');
  if(eip&&!verifiedEipSamples(item,eipSamples))return fail('PRICE_EVIDENCE');
  if(item.size&&(request.resourceSize!==1||(request.resouceSizeMeasureId??request.resourceSizeMeasureId)!==17||(request.resouceSizeMeasureId!=null&&request.resourceSizeMeasureId!=null&&request.resouceSizeMeasureId!==request.resourceSizeMeasureId)))return fail('PRICE_EVIDENCE');
+ if(['rdsStorage','cssStorage'].includes(item.migrationCharge)){
+  const probe=evidence.probes?.[0],reply=probe?.response,extra=probe?.request;
+  if(!item.size||evidence.probes?.length!==1||!extra||!reply||typeof extra.id!=='string'||!extra.id||extra.id===request.id||reply.id!==extra.id||
+     reply.productId!==item.productId||extra.resourceSize!==100||typeof reply.officialWebsiteAmount!=='number'||
+     !Number.isFinite(reply.officialWebsiteAmount)||Math.abs(reply.officialWebsiteAmount-item.rate*100)>1e-10||
+     Object.keys(request).some(key=>key!=='id'&&key!=='resourceSize'&&request[key]!==extra[key]))return fail('PRICE_EVIDENCE');
+ }
  if(typeof catalog.ttlDays!=='number'||!Number.isFinite(catalog.ttlDays)||catalog.ttlDays<=0||catalog.ttlDays>7)return fail('PRICE_TTL');
  const verifiedAt=Date.parse(item.verifiedAt);
  if(typeof item.verifiedAt!=='string'||!/^\d{4}-\d{2}-\d{2}T/.test(item.verifiedAt)||!Number.isFinite(verifiedAt)||!Number.isFinite(now)||verifiedAt>now)return fail('PRICE_TIME');
@@ -307,17 +314,25 @@ export function huaweiProductSpecIssue(row,item){
     row.service==='EIP'&&(match.usage!==row.usage||match.unit!==row.unit||match.unitExplicit!==row.unitExplicit))return row.service==='DCS'?'HW_DCS_SPEC_RECHECK':'HW_SPEC_RECHECK';
  return null;
 }
+export function huaweiApprovalKey(row,item,{hours=730,discount=0}={}){
+ if(!row.huaweiConditionKey||!item)return null;
+ return JSON.stringify([row.huaweiConditionKey,item.id,item.rate,item.verifiedAt,row.specification,row.huaweiDesign,
+  row.usage,row.unit,row.scope,row.period,row.quantity,row.targetQuantity,row.capacity,row.huaweiMeterUsage,
+  row.huaweiStorageRevision,hours,discount]);
+}
 export function calculate(row,catalog,options={}){
  try{
-  const result=calculateValidated(row,catalog,options);
-  if(!['Valid','Period'].includes(result.status)||!row.huaweiConditionKey||row.huaweiConditionApproval===row.huaweiConditionKey)return result;
+  const item=catalog.items.find(plan=>plan.id===row.targetId);
+  const approved=row.huaweiConditionApproval===huaweiApprovalKey(row,item,options);
+  const result=calculateValidated(row,catalog,options,approved);
+  if(!['Valid','Period'].includes(result.status)||!row.huaweiConditionKey||approved)return result;
   return {...result,...pendingResult('','HW_AWS_CONDITIONAL'),status:'Conditional',conditionalScenario:result.termScenario,
    conditionalPublic:result.termPublic,conditionalMonthly:result.status==='Valid'?result.scenario:null,
    conditionalPeriod:result.status==='Period'?'source-period':result.billingMode};
  }
  catch(error){return pendingResult(error.code==='AMOUNT_PRECISION'?error.message:'Invalid quantity, usage, discount or reference hours.',error.code||'INPUT_INVALID');}
 }
-function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}){
+function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={},approved=false){
  const pending=pendingResult;
  const mode=billingOf(row),item=catalog.items.find(price=>price.id===row.targetId);
  if(row.huaweiImportIssues?.length)return {...pending('', 'HW_IMPORT_REVIEW'),fields:row.huaweiImportIssues};
@@ -331,7 +346,7 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
  if(productSpecIssue)return pending('',productSpecIssue);
  if(!item)return pending(`请为${BILLING_MODES[mode]}选择已验证的目标规格；未获取价格的服务保持 Pending。`,row.huaweiMatch||'PRICE_MISSING');
  if(item.billingMode!==mode)return pending('所选官方价格与华为云目标计费模式不一致，请重新选择。','PRICE_MODE');
- if(!row.accepted&&(!row.huaweiConditionKey||row.huaweiConditionApproval===row.huaweiConditionKey))return pending('请核对并确认目标规格、架构、引擎、计费模式和部署方式。','MAPPING_REVIEW');
+ if(!row.accepted&&(!row.huaweiConditionKey||approved))return pending('请核对并确认目标规格、架构、引擎、计费模式和部署方式。','MAPPING_REVIEW');
  if(item.service!==row.service)return pending('目标产品族不匹配。','MAPPING_SERVICE');
  if(row.service==='DCS'&&!row.huaweiProductMatch&&row.huaweiSelection==='manual'&&row.capacity>0){
   const skuCapacity=String(item.description??'').match(/(?:^|;)\s*capacity:\s*(\d+)\s*MB\s*(?:;|$)/i)?.[1];
@@ -341,7 +356,7 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
  if(!validation.valid)return pending(validation.reason,validation.code);
  if(!['resource','aggregate'].includes(row.scope)||!['monthly','source-period'].includes(row.period))return pending('Unsupported usage scope or billing period.','INPUT_PERIOD');
  const discountNumber=finite(discount,'折扣');if(discountNumber>1)return pending('Invalid quantity, usage, discount or reference hours.');
- const quantity=row.targetQuantity??row.quantity??row.huaweiQuantity;
+ const quantity=row.huaweiMigration?.metering?.targetInstanceQuantity??row.targetQuantity??row.quantity??row.huaweiQuantity;
  const eip=row.service==='EIP'?row.huaweiEip:null;
  if(item.eipMeter&&(!eip||eip.meter!==item.eipMeter))return pending('', 'HW_EIP_PARAMETERS');
  if(eip?.meter==='bandwidth'&&(!Number.isInteger(eip.mbps)||eip.mbps<1||eip.mbps>EIP_BANDWIDTH_LIMIT))return pending('', 'HW_EIP_BANDWIDTH');
@@ -361,17 +376,20 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
   const scenario=mode==='YEARLY'?cost(1,1,contract.scenario/12).monthly:contract.scenario;
   return {status:'Valid',reason:mode==='YEARLY'?'独立官方包年价；首期按一年预付，月均金额仅作12月摊销比较。':'独立官方包月价；按一个月预付，年度为同方案连续12个月的情景。',monthly,scenario,annual,item,billingMode:mode,termPublic:contract.monthly,termScenario:contract.scenario,termLabel:mode==='YEARLY'?'1年':'1个月',upfrontScenario:contract.scenario,effectiveUsage:multiplier,quantity};
  }
- if(quantity==null&&row.scope!=='aggregate')return pending('请补充目标资源数量。','QUANTITY_REQUIRED');
+ const migrationHours=row.huaweiMeterUsage;
+ if(migrationHours===null)return pending('','HW_MIG_USAGE_REQUIRED');
+ const aggregate=row.scope==='aggregate'||migrationHours!==undefined;
+ if(quantity==null&&!aggregate)return pending('请补充目标资源数量。','QUANTITY_REQUIRED');
  const monthlyReference=row.scope==='resource'&&row.period==='monthly'&&row.usage==null;
  const capacityMonth=monthlyReference&&item.size&&row.huaweiUsageAssumption==='HW_STORAGE_MONTH';
  const hourMonth=monthlyReference&&!item.size&&row.huaweiUsageAssumption==='HW_MONTH_HOURS';
- const billable=eip?(eip.referenceHours?hours:eip.amount):capacityMonth?row.capacity:hourMonth?hours:row.usage;
+ const billable=eip?(eip.referenceHours?hours:eip.amount):migrationHours??(capacityMonth?row.capacity:hourMonth?hours:row.usage);
  if(item.eipMeter==='traffic'&&(row.scope!=='resource'||row.period!=='monthly'))return pending('', 'HW_EIP_TRAFFIC_PERIOD');
  if(item.eipMeter==='traffic'&&billable>EIP_TRAFFIC_LIMITS.at(-1))return pending('', 'HW_EIP_TRAFFIC_LIMIT');
  if(item.unit==='day'&&(billable==null||!Number.isInteger(billable)||!['day','days','billable days','计费日','天'].includes(String(row.unit||'').toLowerCase())))return pending('', 'HW_NAT_BILLED_DAYS');
  if(billable==null)return pending('请补充用量。','USAGE_REQUIRED');
- finite(billable,'用量');if(row.scope!=='aggregate')finite(quantity,'目标资源数量');
- if(row.scope!=='aggregate'&&(!Number.isInteger(quantity)||quantity<=0))return pending('资源数量必须是正整数。','QUANTITY_INVALID');
+ finite(billable,'用量');if(!aggregate)finite(quantity,'目标资源数量');
+ if(!aggregate&&(!Number.isInteger(quantity)||quantity<=0))return pending('资源数量必须是正整数。','QUANTITY_INVALID');
  let usage=billable;const unit=capacityMonth?'GB-month'.toLowerCase():hourMonth?'hour':String(row.unit||'').toLowerCase();
  if(item.unit==='GB-hour'){
   if(['gb-month','gb-mo','gb-months'].includes(unit)||row.huaweiMatch&&unit==='gib-month'){
@@ -380,10 +398,10 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
    usage*=referenceHours;
   }else if(!['gb-hour','gb-hours'].includes(unit)&&!(row.huaweiMatch&&unit==='gib-hour'))return pending('存储用量需为 GB-month 或 GB-hour；IOPS、快照单独计价。','USAGE_UNIT');
  }else if(!eip&&item.unit!=='day'&&!['hour','hours','hrs','hr','hourly','instance-hrs'].includes(unit))return pending('此目标按小时计费，请确认用量单位。','USAGE_UNIT');
- const count=row.scope==='aggregate'?1:quantity;
+ const count=aggregate?1:quantity;
  const values=eip?.meter==='traffic'?eipTrafficCost(count,usage,item,discount):cost(count,usage,item.rate,discount,eip?.mbps??1);
  if(row.period==='source-period')values.annual=null;
- return {status:row.period==='source-period'?'Period':'Valid',reason:row.period==='source-period'?'华为云按需 × 来源账期用量，未折算整月或全年。':'华为云独立按需价格 × 已确认目标方案用量；AWS 原计费方式不参与目标定价。',...values,item,billingMode:mode,termPublic:values.monthly,termScenario:values.scenario,termLabel:row.period==='source-period'?'来源账期':'1个月参考',upfrontScenario:null,effectiveUsage:usage,quantity:row.scope==='aggregate'?null:quantity};
+ return {status:row.period==='source-period'?'Period':'Valid',reason:row.period==='source-period'?'华为云按需 × 来源账期用量，未折算整月或全年。':'华为云独立按需价格 × 已确认目标方案用量；AWS 原计费方式不参与目标定价。',...values,item,billingMode:mode,termPublic:values.monthly,termScenario:values.scenario,termLabel:row.period==='source-period'?'来源账期':'1个月参考',upfrontScenario:null,effectiveUsage:usage,quantity:aggregate?null:quantity};
 }
 export const BILL_SERVICES=['Elastic Compute Cloud','CloudWatch','Managed Streaming for Apache Kafka','Network Firewall','ElastiCache','CloudHSM','Relational Database Service','Data Transfer','Elastic Load Balancing','Virtual Private Cloud','GuardDuty','Elastic Container Service for Kubernetes','DocumentDB (with MongoDB compatibility)','Simple Storage Service','Inspector','Config','WAF','Security Hub','EC2 Container Registry (ECR)','Key Management Service','Elastic File System','Secrets Manager','Simple Email Service','Backup','Simple Queue Service','Lambda','Glue','Simple Notification Service'];
 export function parseBillPages(pages){

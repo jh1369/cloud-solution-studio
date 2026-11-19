@@ -1,6 +1,6 @@
 import {finite,normalizeRows} from './engine.mjs';
 import {identifyHuaweiService} from './huawei-match.mjs';
-import {awsSourceService,awsUsageSemantics,lookupAwsSpec} from './aws-specs.mjs';
+import {awsSourceService,awsUsageSemantics,hasAwsSourceType,lookupAwsSpec} from './aws-specs.mjs';
 
 export const INVENTORY_FIELDS=['product','specification','region','quantity','usage','unit','billing_method','capacity_gb','usage_scope','usage_period','huawei_target_region'];
 export const INVENTORY_NUMBERS=new Set(['quantity','usage','capacity_gb']);
@@ -28,10 +28,10 @@ function awsUsageRows(sheet,name,originalHeaders,XLSX){
   let amount=null;
   try{amount=finite(cells[usage],'使用量',true);}catch{/* Preserve the original cell for manual review. */}
   const meter=awsUsageSemantics(awsSourceService(sourceProduct),sku);
-  const ecs=sourceProduct.toLowerCase()==='amazonec2',licenseReview=ecs&&!/^RunInstances(?::0002)?$/i.test(op);
+  const ecs=sourceProduct.toLowerCase()==='amazonec2';
   const [row]=normalizeRows([{product:sourceProduct||'Unknown',specification:[sku,op,ecs&&/^RunInstances:0002$/i.test(op)?'Windows':''].filter(Boolean).join(' '),
    usage:amount,unit:meter?'hour':'',usage_scope:'aggregate',usage_period:'source-period',billing_method:/\bSpotUsage:/i.test(sku)?'spot':''}]);
-  row.huaweiImportIssues=[...(!sourceProduct?['product']:[]),...(amount===null?['usage']:[]),...(licenseReview?['specification']:[])];
+  row.huaweiImportIssues=[...(!sourceProduct?['product']:[]),...(amount===null?['usage']:[])];
   row.awsInventory=true;
   const fieldSources={product,specification:spec,usage,operation,source_quantity:headers.indexOf('数量')};
   row.importSource={sheet:name,row:index+2,cells,headerRow:1,headers:originalHeaders,
@@ -55,7 +55,28 @@ export function readInventory(book,XLSX,{reviewAws=false}={}){
   }
   if(standardTemplate&&header.some(cell=>productHeaders.has(cell))&&
      (header.some(cell=>standardData.has(cell))||header.length>1&&header.every(cell=>standardFields.has(cell)))){
-   return {standard:normalizeRows(XLSX.utils.sheet_to_json(sheet,{defval:''}))};
+   const records=XLSX.utils.sheet_to_json(sheet,{defval:''});
+   const standard=normalizeRows(records);
+   const headings=first??[],known=knownColumns(headings);
+   let cellsByRow;
+   for(const [index,row] of standard.entries()){
+    const kind=awsSourceService(row.product),meter=awsUsageSemantics(kind,row.specification);
+    const specialty=kind==='RDS'&&/aurora|serverless|\bacu\b/i.test(row.specification)||
+     kind==='ElastiCache'&&/serverless/i.test(row.specification);
+    if(!kind||!meter&&!hasAwsSourceType(row.product,row.specification)&&kind!=='OpenSearch'&&!specialty)continue;
+    row.awsInventory=true;
+    cellsByRow??=XLSX.utils.sheet_to_json(sheet,{header:1,range:0,defval:'',blankrows:true});
+    const sourceRow=records[index].__rowNum__??index+1;
+    row.importSource={sheet:name,row:sourceRow+1,cells:cellsByRow[sourceRow],headerRow:1,headers:headings,
+     fieldSources:Object.fromEntries(Object.entries(known).map(([field,column])=>
+      [field==='quantity'&&meter?'source_quantity':field,{origin:'excel',columns:[column+1],headerRow:1}]))};
+    if(meter){
+     // The meter defines source usage. Preserve its original quantity in the workbook review.
+     row.scope=meter.scope;row.period=meter.period;row.quantity=null;
+     if(!row.unitExplicit)row.unit=meter.unit;
+    }
+   }
+   return {standard};
   }
  }
  const source=[];

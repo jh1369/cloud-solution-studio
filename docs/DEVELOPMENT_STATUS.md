@@ -7,16 +7,16 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-19，Europe/Berlin |
-| 当前优先目标 / 模式 | Huawei EU-Dublin 本机智能导入与 AWS 来源官方规格转换，单 Agent |
-| 本轮检查基线 | `main` / `66aff2b9c4df35f6019abbc48fb9bec76686aa84`，含 [PR #19](https://github.com/jh1369/cloud-solution-studio/pull/19) |
+| 当前优先目标 / 模式 | Huawei EU-Dublin 的 ECS、RDS、DCS、CSS 迁移报价，单 Agent |
+| 本轮检查基线 | `main` / `2644da6d99d439a0d49a1ccd5b41988f1b7788f7`，含 [PR #20](https://github.com/jh1369/cloud-solution-studio/pull/20) |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 在线源码及原私有站第 15 版均为 `0.3.13-dev` |
+| 当前网页版本 | 在线源码及原私有站第 16 版均为 `0.3.14-dev` |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| Sites 部署源码 | `6cb31070d9bc68b163c1bd421e4ac601a5bf9a6f`（私有站第 15 版） |
-| 整体进度 | Huawei 在线版加入分批本机模型、AWS 官方来源规格、条件估算及同配置批量复核。保留标准表直通导入与报价引擎 |
-| 本轮同步范围 | Huawei Pending 复现、原因及评审议题文档。 [Pending 原因评审](HUAWEI_PENDING_REVIEW.md) |
+| Sites 部署源码 | `495e939c90135e5ac7610667206d135219be24e0`（私有站第 16 版） |
+| 整体进度 | ECS 受限升配与候选排序，RDS 主备迁移方案及独立存储，DCS 容量与节点小时换算，CSS 托管节点与独立存储 |
+| 本轮同步范围 | Huawei 在线代码、官方规格及 EU-Dublin 公开目录、虚构测试、覆盖率和脱敏反馈模板。 [四类报价复测](HUAWEI_QUOTE_COVERAGE.md#0314-dev-四类迁移报价复测) |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -31,7 +31,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 | AWS 官方来源规格 | EC2、RDS、ElastiCache、OpenSearch 精确型号查询。版本化公开记录保存来源日期、URL 和摘要，供标准化、模型上下文和导出共同使用 | `aws-specs.mjs`、`aws-spec-data.mjs`、`scripts/build_aws_specs.py` |
 | 产品及规格候选 | Huawei ECS、EVS、限实例费 RDS、Redis DCS、专享弹性 ELB、CCE、公网/私网 NAT 和动态 BGP EIP 支持限定的自动选型及价格匹配。保留人工选型及规格复核 | `huawei-match.mjs`、`huawei-dcs-specs.mjs`、`huawei-infrastructure-specs.mjs`、`huawei-eip.mjs`、`engine.mjs` |
 | 计费模式分离 | AWS 原计费仅作来源记录；华为云目标仅有按需、包月、包年；支持逐项及批量切换，切换后需重新确认 | `engine.mjs`、`app.mjs` |
-| 官方公开价格 | `eu-west-101` / USD；快照有 448 个按需、401 个包月、401 个包年计划。EIP 固定带宽和流量分别核验带宽单位及完整阶梯样本。保存 SKU、单位、请求/响应、来源和核验时间 | `public/catalog.json`、`scripts/build_catalog.py` |
+| 官方公开价格 | `eu-west-101` / USD；快照有 543 个按需、495 个包月、494 个包年计划。EIP 保留阶梯证据，新增 RDS 和 CSS 存储核对 1 GiB 与 100 GiB 的独立询价。保存 SKU、单位、请求/响应、来源和核验时间 | `public/catalog.json`、`scripts/build_catalog.py` |
 | 价格刷新 | 固定官方端点、服务端产品白名单；按目标计费模式分组请求；验证失败不生成价格 | `worker.mjs` |
 | 费用与情景 | 支持范围内的按需用量、独立月/年订阅价、手动折扣、首期预付、包年月均摊销。已确认报价、条件估算、Pending 独立展示，用户可按同配置和目标方案批量复核 | `engine.mjs`、`huawei-match.mjs`、`ui.mjs` |
 | 账单用量边界 | 累计实例小时不反推台数；来源账期不自动外推全年；订阅需明确目标数量/每盘容量 | `engine.mjs` |
@@ -125,6 +125,14 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 - 原私有 Sites 的身份和访问配置未放入 GitHub；下载源码不会自动取得该站点的管理或访问权限。
 
 ## 7. 最近一次测试与同步检查
+
+### Web V0.3.14-dev
+
+- 在 `pricing-studio/web/` 使用 Node 24.22.1 / Python 3.12.14 构建 Worker 成功。运行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，148 项通过、0 项失败。旧下载附件按实际响应字节核对。
+- 在 `pricing-studio/web/` 执行 `PYTHONPATH=tests python3.12 -m unittest test_catalog test_catalog_updates test_tcp_pdf test_schedule test_catalog_publication`，41 项通过、0 项失败、2 项因缺 boto3 跳过。原 CLI 在 `pricing-studio/` 用 `PYTHONPATH=src python3.12 -m unittest discover -s tests` 通过 1 项。
+- 本地打包 Worker 使用公开产品号核验 17 个实际计划，覆盖 ECS、RDS 实例和存储、DCS 主备、CSS 实例和存储；币种、单位、模式和收费均与随包证据一致。CSS SAS 包月的两种存储容量样本未通过线性核验，相应计划保持 Pending。
+- Chromium 156.0.8078.79 实际导入 24 行虚构 Excel，三类报价分开显示。ECS、RDS、DCS、CSS 分组复核后，8 项主费用和 4 项独立存储费确认。修改折扣使相关确认失效。openpyxl 3.1.5 重开复核前后两份五表工作簿，核对来源小时、节点小时换算、金额和缺项空白。 [覆盖率及官方证据](HUAWEI_QUOTE_COVERAGE.md#0314-dev-四类迁移报价复测)
+- 原私有站第 16 版发布成功。13 个线上资源与源码逐字节一致，生产独立复核 17 个公开计划。所有者范围、既有 TCP 快照核验时间与摘要、旧下载附件均相符。托管模型路径返回 HTTP 404。 [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
 
 ### Web V0.3.13-dev
 
@@ -530,3 +538,10 @@ Huawei 欧洲站覆盖率优先补齐 RDS 数据盘和备份，随后为 ELB/EIP
 - **新增** 公开评审文档，以八个虚构示例说明 ECS、RDS、DCS 和 CSS 的首个阻塞原因、所需证据及待讨论问题。**修改** 覆盖率报告和开发状态加入评审入口。**删除** 无。 [Pending 原因评审](HUAWEI_PENDING_REVIEW.md)
 - **验证** 在 `pricing-studio/web/` 使用 Node 24.22.1 复核八个虚构示例并执行 `node --test tests/aws-ai-inventory.test.mjs tests/huawei-import.test.mjs`，26 项通过、0 项失败。核对文档链接及提交范围。核价依据为随包目录。
 - **剩余问题** 来源字段缺失、ECS 候选歧义及 CSS 目录缺口仍待评审。此次为文档同步，运行基线为 `0.3.13-dev` 和原私有站第 15 版。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/)
+
+### 2026-11-19 — Huawei 四类 AWS 迁移报价
+
+- **新增** ECS 受限升配和最多三个验证候选，AWS C3 架构证据、RDS 账单型号缩写、DCS 可用容量依据、CSS 普通 OpenSearch 节点与独立存储费。目标参数按来源配置分组设定，保留来源、用户确认和假设标记。
+- **修改** 原报价引擎沿用证据校验，DCS 源节点小时与目标整体实例小时分列。RDS 与 CSS 的实例和存储分开。原始账期用量保留，价格或方案变更使相关确认失效。**删除** ECS 替代方案依赖严格等规格的限制，保留架构、OS 及许可校验。
+- **验证与待确认** 24 行虚构清单有候选从 4 行升至 16 行，分组复核后主费用 8 行确认。Aurora、UltraWarm、部分架构或 OS、RDS 超额备份及 CSS 部分存储计费保留 Pending。真实清单由所有者自行在私有站复验，反馈采用公开脱敏模板。 [验证结果](HUAWEI_QUOTE_COVERAGE.md#0314-dev-四类迁移报价复测) · [脱敏模板](HUAWEI_PRIVATE_ACCEPTANCE_TEMPLATE.md)
+- **同步** 分支 `feat/huawei-migration-coverage`，GitHub 以包含本条记录的主线合并提交为准。在线 `0.3.14-dev` 已发布至原私有站第 16 版。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/) · [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)

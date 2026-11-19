@@ -32,7 +32,7 @@ test('match ECS and generic SSD without using rate to choose, with visible defau
 test('ECS requires consistent dimensions and honors explicit series and target region',()=>{
  const candidates=resource('1 台 4 vCPU 16 GiB General Computing-plus Linux 云主机');
  assert.equal(candidates.huaweiMatch,'HW_MULTIPLE');
- assert.deepEqual(new Set(candidates.huaweiCandidates),new Set(['c6.xlarge.4.linux','c9.xlarge.4.linux']));
+ assert.deepEqual(new Set(candidates.huaweiCandidates),new Set(['c6.xlarge.4.linux','c7n.xlarge.4.linux','c9.xlarge.4.linux']));
  assert.equal(selection(resource('1 台 4 vCPU 16 GiB 云主机 Ubuntu Series: C9')),'c9.xlarge.4.linux');
  assert.equal(resource('1 台 4 vCPU 16 GiB / 32 GiB 云主机').huaweiMatch,'HW_SHAPE_REQUIRED');
  assert.equal(resource('1 台 4 vCPU 或 8 vCPU 16 GiB 云主机').huaweiMatch,'HW_SHAPE_REQUIRED');

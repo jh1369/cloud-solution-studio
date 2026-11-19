@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="app-build" content="neon-bilingual-v0.3.13"><meta name="theme-color" content="#0b0719">
+  <meta name="app-build" content="neon-bilingual-v0.3.14"><meta name="theme-color" content="#0b0719">
   <meta name="description" content="Cloud Solution Studio Pricing Studio — traceable AWS to Huawei Cloud pricing, in English and Chinese.">
   <title>Pricing Studio · 云迁移报价指挥台</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='11' fill='%23150b2b'/%3E%3Cpath d='M10 27a7 7 0 0 1 0-14 10 10 0 0 1 19 3 6 6 0 0 1-1 11Z' fill='none' stroke='%23c77dff' stroke-width='3'/%3E%3C/svg%3E">
@@ -29,7 +29,7 @@
 </defs></svg>
 <aside class="sidebar">
   <a class="brand" href="/" aria-label="Cloud Solution Studio"><span class="brand-symbol"><svg class="icon"><use href="#i-cloud"/></svg></span><span>Cloud Solution<small>STUDIO / PRICING</small></span></a>
-  <div class="workspace-label"><span data-i18n="nav.label">工作空间</span><span class="version">V0.3.13-dev</span></div>
+  <div class="workspace-label"><span data-i18n="nav.label">工作空间</span><span class="version">V0.3.14-dev</span></div>
   <nav>
     <button class="nav-item active" data-view="studio"><svg class="icon"><use href="#i-grid"/></svg><span data-i18n="nav.workspace">报价工作台</span></button>
     <button class="nav-item" id="mapping-nav"><svg class="icon"><use href="#i-map"/></svg><span data-i18n="nav.mapping">产品映射</span></button>
@@ -71,7 +71,17 @@ EBS gp3 500 GB, quantity=1</pre><p data-i18n="guide.oneNote"></p></section><sect
 </div>
 <div id="message" class="toast" role="status" aria-live="polite" hidden></div>
 <dialog id="confirm-dialog"><div class="modal-icon"><svg class="icon"><use href="#i-check"/></svg></div><h2 data-i18n="dialog.title">确认当前所选的目标方案？</h2><p data-i18n="dialog.text"></p><label class="check-line"><input id="confirm-check" type="checkbox"><span data-i18n="dialog.check"></span></label><div class="dialog-actions"><button id="cancel-confirm" class="button secondary" data-i18n="dialog.cancel">返回核对</button><button id="apply-confirm" class="button primary" disabled data-i18n="dialog.apply">确认并计算</button></div></dialog>
-  <dialog id="condition-dialog" aria-labelledby="condition-title"><h2 id="condition-title" data-i18n="quote.reviewCondition">核对同类型估算</h2><p id="condition-detail"></p><div class="dialog-actions"><button id="cancel-condition" class="button secondary" data-i18n="dialog.cancel">返回核对</button><button id="apply-condition" class="button primary" data-i18n="dialog.apply">确认并计算</button></div></dialog>
+  <dialog id="condition-dialog" aria-labelledby="condition-title">
+   <h2 id="condition-title" data-i18n="quote.reviewCondition">核对同类型估算</h2>
+   <p id="condition-detail"></p>
+   <form id="migration-form" hidden></form>
+   <label class="check-line" id="migration-check-label" hidden><input id="migration-check" type="checkbox"><span data-i18n="migration.confirm"></span></label>
+   <div class="dialog-actions">
+    <button id="cancel-condition" class="button secondary" data-i18n="dialog.cancel">返回核对</button>
+    <button id="save-migration" class="button secondary" data-i18n="migration.save" hidden>应用方案并重新匹配</button>
+    <button id="apply-condition" class="button primary" data-i18n="dialog.apply">确认并计算</button>
+   </div>
+  </dialog>
   <dialog id="inventory-review" aria-labelledby="inventory-title">
     <h2 id="inventory-title" data-i18n="inventory.title">预览标准化清单</h2>
     <p id="inventory-status" aria-live="polite"></p>

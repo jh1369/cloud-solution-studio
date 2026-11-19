@@ -1,6 +1,6 @@
 # Cloud Solution Studio · Pricing Studio Web
 
-Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.13-dev` adds batched local model review and official AWS source specification evidence. [Development status](../../docs/DEVELOPMENT_STATUS.md)
+Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.14-dev` adds ranked, evidenced AWS migration options for ECS, RDS, DCS, and CSS. [Development status](../../docs/DEVELOPMENT_STATUS.md)
 
 ## Features
 
@@ -83,6 +83,8 @@ EC2, RDS, ElastiCache and OpenSearch source instances are looked up by exact typ
 Source billable instance hours remain cumulative hours for the original billing period. They cannot establish an instance count for a Huawei subscription. EC2 target plans require exact vCPU, memory, architecture and supported OS. Specialized or burstable source families need confirmation of the target performance assumption. Database engine, version, deployment and storage scope require independent evidence. Cache engine and topology also require evidence. A verified AWS profile can therefore coexist with several Huawei SKUs or a Pending target price.
 
 **Review matching estimates** shows the condition and the number of rows sharing the same source configuration and selected Huawei plan. Confirming those rows triggers deterministic revalidation and preserves per-row usage. The webpage and Excel subtotal confirmed charges separately from conditional estimates. The Service Mapping worksheet records AWS evidence, candidate Huawei SKUs and conditions. The Quotation worksheet keeps Pending amounts blank.
+
+**Review matching migration plans** applies a target design to an equivalent source group and reruns matching. Review the resulting priced SKU and billing basis to confirm. ECS keeps compatible architecture and OS and bounds both dimensions at 2×. AWS RDS defaults to MySQL 8.0 primary/standby with separate data disk and backup lines. CSS uses managed OpenSearch data-node prices and separate storage. DCS uses usable cache capacity and distinguishes aggregate source node hours from target whole-instance hours. Pairing and capacity assumptions require evidence before confirmation. [Coverage and price evidence](../../docs/HUAWEI_QUOTE_COVERAGE.md#0314-dev-四类迁移报价复测)
 
 ## Commands
 

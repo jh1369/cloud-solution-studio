@@ -1,6 +1,7 @@
 """Build a source-specification snapshot from the AWS public documentation tables."""
 
 import argparse
+import gzip
 import hashlib
 from html import unescape
 import json
@@ -13,11 +14,15 @@ SOURCES = {
     'general': 'https://docs.aws.amazon.com/ec2/latest/instancetypes/gp.html',
     'compute': 'https://docs.aws.amazon.com/ec2/latest/instancetypes/co.html',
     'memory': 'https://docs.aws.amazon.com/ec2/latest/instancetypes/mo.html',
-    'previous': 'https://aws.amazon.com/ec2/previous-generation/',
+    'previous': 'https://docs.aws.amazon.com/ec2/latest/instancetypes/pg.html',
     't2': 'https://aws.amazon.com/ec2/instance-types/t2/',
     'rds': 'https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.Summary.html',
     'cache': 'https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/CacheNodes.SupportedTypes.html',
+    'cache_arch': 'https://aws.amazon.com/about-aws/whats-new/2020/10/amazon-elasticache-now-supports-m6g-and-r6g-graviton2-based-instances/',
+    'cache_params': 'https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/ParameterGroups.Engine.html',
+    'cache_reserve': 'https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/redis-memory-management.html',
     'search': 'https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-instance-types.html',
+    'search_dimensions': 'https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/es/USD/current/es-ondemand.json',
 }
 SIZE = r'[a-z][a-z\d]*\.(?:[\d]*xlarge|metal(?:-\d+xl)?|large|medium|small|micro|nano)'
 
@@ -79,7 +84,7 @@ def shape_rows(tables, prefix):
 
 
 def build(pages):
-    tables = {name: Tables(body.decode('utf-8')).tables for name, body in pages.items()}
+    tables = {name: Tables(body.decode('utf-8')).tables for name, body in pages.items() if name != 'search_dimensions'}
     arch, records = {}, {}
     for source in ('general', 'compute', 'memory'):
         for table in tables[source]:
@@ -100,13 +105,13 @@ def build(pages):
         for row in table:
             if len(row) >= 3 and re.fullmatch(r't2\.[\da-z]+', row[0]) and number(row[1]) and number(row[2]):
                 records['EC2', row[0]] = ['EC2', row[0], number(row[1]), number(row[2]), 'x86', 'burstable', 't2', arch['t2'][1]]
-    # The previous-generation product table lists C3 capacity. 32/64-bit alone does not prove architecture.
     for table in tables['previous']:
-        if table and table[0][:5] == ['Instance Family', 'Instance Type', 'Processor Arch', 'vCPU', 'Memory (GiB)']:
+        if table and [cell.lower() for cell in table[0][:4]] == ['instance type', 'memory (gib)', 'processor', 'vcpus']:
             for row in table[1:]:
-                if len(row) >= 5 and row[1].startswith('c3.') and number(row[3]) and number(row[4]):
-                    architecture, arch_source = arch.get('c3', (None, None))
-                    records['EC2', row[1]] = ['EC2', row[1], number(row[3]), number(row[4]), architecture, 'compute', 'previous', arch_source]
+                if len(row) >= 4 and row[0].startswith('c3.') and row[2].startswith('Intel Xeon') and number(row[3]) and number(row[1]):
+                    records['EC2', row[0]] = ['EC2', row[0], number(row[3]), number(row[1]), 'x86', 'compute', 'previous', 'previous']
+    if ('EC2', 'c3.large') not in records:
+        raise ValueError('Missing official C3 processor/shape')
 
     cache_shapes = {}
     for sku, cpu, memory in shape_rows(tables['cache'], r'cache\.'):
@@ -132,6 +137,32 @@ def build(pages):
             heading, types, restrictions = row
             if 'Graviton' in heading or re.search(r'compatible with other Graviton', restrictions):
                 search_arch.update({family: ('arm', 'search') for family in re.findall(r'\b([a-z][a-z\d]*)\.[\da-z]+\.search\b', types)})
+    search_payload = pages['search_dimensions']
+    search_doc = json.loads(gzip.decompress(search_payload) if search_payload.startswith(b'\x1f\x8b') else search_payload)
+    if search_doc['manifest']['serviceId'] != 'es' or search_doc['manifest']['source'] != 'es-ondemand':
+        raise ValueError('Expected the official OpenSearch instance table')
+    search_shapes = {}
+    ireland = search_doc['regions']['EU (Ireland)']
+    for label, values in search_doc['sets'].items():
+        category = {'Compute optimized':'compute','General purpose':'general','Memory optimized':'memory'}.get(label.split(' - ')[1])
+        if category is None:
+            continue
+        for key in set(values).intersection(ireland):
+            entry = ireland[key]
+            sku = entry.get('Instance Type', '')
+            cpu, memory = number(entry.get('vCPU', '')), number(entry.get('Memory (GiB)', ''))
+            if re.fullmatch(SIZE+r'\.search', sku) and cpu and memory:
+                search_shapes.setdefault(sku, set()).add((cpu, memory, category))
+    cache_arch = {family: ('arm', 'cache_arch') for family in ('m6g','r6g')
+                  if family in pages['cache_arch'].decode('utf-8').lower() and b'Graviton2' in pages['cache_arch']}
+    maximums = {}
+    for table in tables['cache_params']:
+        if table and any('maxmemory' in column.lower() for column in table[0]):
+            for row in table[1:]:
+                if len(row) == 2 and re.fullmatch(r'cache\.'+SIZE, row[0]) and number(row[1]):
+                    maximums.setdefault(row[0], set()).add(int(number(row[1])))
+    if len(maximums) < 20 or 'defaults to 25%' not in pages['cache_reserve'].decode('utf-8'):
+        raise ValueError('Missing documented Redis OSS maxmemory or reserve')
     tables_by_kind = [('RDS', 'rds', shape_rows(tables['rds'], r'db\.')),
                       ('ElastiCache', 'cache', ((sku, *(next(iter(v)) if len(v) == 1 else None for v in values))
                                               for sku, values in cache_shapes.items())),
@@ -140,8 +171,21 @@ def build(pages):
     for kind, source, rows in tables_by_kind:
         for sku, cpu, memory in rows:
             family = sku.split('.')[0 if kind == 'OpenSearch' else 1]
-            cpu_arch, arch_source = {'RDS': rds_arch, 'OpenSearch': search_arch}.get(kind, {}).get(family, (None, None))
-            records[kind, sku] = [kind, sku, cpu, memory, cpu_arch, None, source, arch_source]
+            cpu_arch, arch_source = {'RDS': rds_arch, 'OpenSearch': search_arch, 'ElastiCache': cache_arch}[kind].get(family, (None, None))
+            category, type_source = None, None
+            if kind == 'OpenSearch' and len(search_shapes.get(sku, ())) == 1:
+                cpu, memory, category = next(iter(search_shapes[sku]))
+                type_source, source = source, 'search_dimensions'
+                ec2 = records.get(('EC2', sku.removesuffix('.search')))
+                if cpu_arch is None and ec2 and ec2[2:4] == [cpu, memory]:
+                    cpu_arch, arch_source = ec2[4], ec2[7]
+            entry = [kind, sku, cpu, memory, cpu_arch, category, source, arch_source]
+            cache_bytes = maximums.get(sku, ())
+            if kind == 'ElastiCache' and len(cache_bytes) == 1:
+                entry += [None, next(iter(cache_bytes))]
+            elif type_source:
+                entry += [type_source]
+            records[kind, sku] = entry
     return [records[key] for key in sorted(records)]
 
 
@@ -153,7 +197,7 @@ def main():
     if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', args.date):
         parser.error('Use YYYY-MM-DD')
     if args.source_dir:
-        pages = {name: (args.source_dir / f'{name}.html').read_bytes() for name in SOURCES}
+        pages = {name: (args.source_dir / f"{name}.{'json' if name == 'search_dimensions' else 'html'}").read_bytes() for name in SOURCES}
     else:
         pages = {}
         for name, url in SOURCES.items():
