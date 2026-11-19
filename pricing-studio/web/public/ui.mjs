@@ -1,4 +1,4 @@
-import {SERVICES,billingOf,priceValidation,mappingReview,sumMoney,huaweiProductSpecIssue} from './engine.mjs';
+import {SERVICES,billingOf,priceValidation,mappingReview,sumMoney,huaweiProductSpecIssue,huaweiQuoteLines,relatedHuaweiCharges} from './engine.mjs';
 import {t,billingLabel,unitLabel,dateLabel,serviceLabel,translateMessage,reasonLabel,mappingLabel} from './i18n.mjs';
 export const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const money=(value,currency='USD')=>value===null||value===undefined?'—':new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:2}).format(value);
@@ -47,9 +47,9 @@ export function resourceHTML(rows,output,catalog,language='zh',page=0,now=Date.n
     [spec.specCode,spec.layer,spec.masters&&T('resource.hwSpecMasters',{count:spec.masters}),spec.workers&&T('resource.hwSpecWorkers',{count:spec.workers})]),
    spec.evidence.revision
   ].filter(Boolean).map(E).join(' · '):'';
-  const services=[...new Set([...Object.keys(SERVICES),row.service])];
+  const services=[...new Set([...Object.keys(SERVICES),'EIP',row.service])];
   const field=(label,html)=>`<label><span>${E(label)}</span>${html}</label>`;
-  const badge=result.status==='Valid'?'valid':result.status==='Period'?'period':'pending';
+  const badge=result.status==='Valid'?'valid':result.status==='Period'?'period':result.status==='Linked'?'linked':'pending';
   return `<article class="resource-row" data-id="${E(row.id)}">
    <div class="resource-head"><span class="service-icon">${icon(row.service==='EVS'?'layers':'server')}</span><div class="resource-name">${E(row.product)}<small title="${E(row.specification)}">${E(row.specification.slice(0,120)||T('resource.specMissing'))}${row.region?' · '+E(row.region):''}</small></div><span class="badge ${badge==='pending'?'pending':'valid'}">${T('status.'+badge)}</span><button class="delete-row" data-delete="${E(row.id)}" aria-label="${T('resource.delete')}">×</button></div>
    <div class="field-grid">
@@ -58,7 +58,7 @@ export function resourceHTML(rows,output,catalog,language='zh',page=0,now=Date.n
     ${row.huaweiTargetRegion&&row.huaweiTargetRegion!==catalog.region?field(T('resource.hwTargetRegion'),`<select data-field="huaweiTargetRegion"><option>${E(row.huaweiTargetRegion)}</option><option>${E(catalog.region)}</option></select>`):''}
     ${field(T(row.scope==='aggregate'&&!subscription?'resource.unknownCount':'resource.quantity'),`<input data-field="targetQuantity" type="number" min="1" step="1" value="${row.targetQuantity??row.quantity??row.huaweiQuantity??''}" placeholder="${T('resource.required')}" ${row.scope==='aggregate'&&!subscription?'disabled':''}>`)}
     ${field(T(row.scope==='aggregate'?'resource.aggregateUsage':subscription?'resource.sourceUsage':'resource.monthlyUsage'),`<input data-field="usage" type="number" min="0" step="any" value="${row.usage??''}" placeholder="${T('resource.required')}" ${subscription?'disabled':''}>`)}
-    ${field(T('resource.unit'),`<select data-field="unit" ${subscription?'disabled':''}>${[...new Set([row.unit,'hour',...(price?.unit==='day'?['day']:[]),'GB-month','GB-hour','GB','Requests','IOPS-Mo'])].map(unit=>`<option value="${E(unit)}" ${unit===row.unit?'selected':''}>${E(unit?unitLabel(unit,language):T('resource.unspecified'))}</option>`).join('')}</select>`)}
+    ${field(T('resource.unit'),`<select data-field="unit" ${subscription?'disabled':''}>${[...new Set([row.unit,'hour',...(price?.unit==='day'?['day']:[]),...(row.service==='EIP'?['Mbit/s','TB']:[]),'GB-month','GB-hour','GB','Requests','IOPS-Mo'])].map(unit=>`<option value="${E(unit)}" ${unit===row.unit?'selected':''}>${E(unit?unitLabel(unit,language):T('resource.unspecified'))}</option>`).join('')}</select>`)}
     ${field(T('resource.billing'),`<select class="mode-select" data-field="targetBilling">${['ONDEMAND','MONTHLY','YEARLY'].map(code=>`<option value="${code}" ${mode===code?'selected':''}>${billingLabel(code,language)}</option>`).join('')}</select>`)}
     ${row.service==='EVS'&&(subscription||row.huaweiMatch)||row.service==='DCS'&&row.huaweiMatch?field(T(row.service==='DCS'?'inventory.field.capacity_gb':'resource.capacity'),`<input data-field="capacity" type="number" min="0" step="any" value="${row.capacity??''}" placeholder="${T('resource.capacityHint')}">`):''}
     ${field(T('resource.period'),`<select data-field="period"><option value="monthly" ${row.period==='monthly'?'selected':''}>${T(subscription?'resource.fullContract':'resource.fullMonth')}</option><option value="source-period" ${row.period==='source-period'?'selected':''}>${T('resource.sourcePeriod')}</option></select>`)}
@@ -69,7 +69,12 @@ export function resourceHTML(rows,output,catalog,language='zh',page=0,now=Date.n
    ${row.huaweiCandidates?.length?E(row.huaweiCandidates.slice(0,12).join(', ')):''}</div>`:''}
    ${spec?`<div class="row-notes huawei-spec-evidence">${specDetails} <a href="${E(spec.evidence.url)}" target="_blank" rel="noopener">${E(T('resource.hwSpecSource'))}</a>${specMatch.selected?' · '+E(T('resource.hwSpecPurchase')):''}</div>`:''}
    ${row.huaweiCharge?`<div class="row-notes huawei-charge">${E(T('charge.'+row.huaweiCharge))}</div>`:''}
-   ${(row.huaweiPendingCharges??[]).map(charge=>`<div class="row-notes huawei-pending-charge">${E(T('charge.'+charge))} · ${E(T('status.pending'))}</div>`).join('')}
+   ${relatedHuaweiCharges(row,result).map(({charge,row:component,result:line})=>{
+    const amount=line.termScenario==null?'':` · ${money(line.termScenario)} · ${E(billingLabel(line.billingMode,language))}`;
+    const details=[...(component?.huaweiAssumptions??[]).map(reasonCode=>reasonLabel({reasonCode},language)),reasonLabel(line,language)].filter(Boolean);
+    const source=line.item&&line.termScenario!==null?` · ${E(line.item.sku)} · ${E(dateLabel(line.item.verifiedAt,language))}`:'';
+    return `<div class="row-notes ${line.status==='Pending'?'huawei-pending-charge':'huawei-related-charge'}">${E(T('charge.'+charge))}${line.status==='Pending'?' · '+E(T('status.pending')):''}${amount}${source}${details.length?' · '+E(details.join(' ')):''}</div>`;
+   }).join('')}
    ${row.importSource?`<div class="row-notes">${E(row.importSource.sheet)} · ${T('inventory.row')} ${row.importSource.row}</div>`:''}
    <div class="row-notes source-notes">${E(T('resource.awsBilling',{billing:translateMessage(row.billing||'未提供',language)}))}<br>${E(translateMessage(row.notes,language))} ${E(reasonLabel(result,language))}</div>
    <div class="row-bottom"><label class="check-line"><input data-field="accepted" type="checkbox" ${row.accepted?'checked':''} ${row.targetId&&!specIssue?'':'disabled'}><span>${T('resource.accept')}</span></label><div class="row-cost">${money(result.termScenario)} <small>${T(mode==='YEARLY'?'term.year':mode==='MONTHLY'?'term.month':result.status==='Period'?'term.period':'term.monthly')}</small></div></div>
@@ -78,9 +83,9 @@ export function resourceHTML(rows,output,catalog,language='zh',page=0,now=Date.n
 }
 export function summaryModel(rows,output,language='zh'){
  const T=(key,vars)=>t(key,language,vars);
- const valid=output.filter(r=>r.status==='Valid'),period=output.filter(r=>r.status==='Period'),pending=output.filter(r=>r.status==='Pending');
- const ancillaryCount=rows.reduce((count,row)=>count+(row.huaweiPendingCharges?.length??0),0);
- const pendingCount=pending.length+ancillaryCount,total=rows.length+ancillaryCount;
+ const lines=huaweiQuoteLines(rows,output),results=lines.map(line=>line.result);
+ const valid=results.filter(r=>r.status==='Valid'),period=results.filter(r=>r.status==='Period'),pending=results.filter(r=>r.status==='Pending');
+ const pendingCount=pending.length,total=valid.length+period.length+pendingCount;
  const onlyPeriod=period.length>0&&valid.length===0,quoted=onlyPeriod?period:valid;
  const sum=key=>sumMoney(quoted.map(result=>result[key])),has=quoted.length>0;
  const hasYear=quoted.some(result=>result.billingMode==='YEARLY'),hasPrepaid=quoted.some(result=>result.upfrontScenario!==null);
@@ -92,7 +97,7 @@ export function summaryModel(rows,output,language='zh'){
   if(period.length&&!onlyPeriod)notes.push(T('quote.mixedNote',{count:period.length}));
   if(pendingCount)notes.push(T('quote.pendingNote'));
  }
- const groups={};rows.forEach((row,i)=>{if(quoted.includes(output[i]))(groups[row.service]??=[]).push(output[i].scenario);});
+ const groups={};for(const {row,result} of lines)if(quoted.includes(result))(groups[row.service]??=[]).push(result.scenario);
  return {
   ready:valid.length+period.length,total,has,onlyPeriod,hasPrepaid,
   monthly:has?sum('monthly'):null,scenario:has?sum('scenario'):null,annual:has&&!onlyPeriod?sum('annual'):null,upfront:hasPrepaid?sum('upfrontScenario'):null,

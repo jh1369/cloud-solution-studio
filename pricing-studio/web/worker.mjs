@@ -1,27 +1,44 @@
 const assets=/*ASSETS*/{};
 const catalogue=/*CATALOG*/{};
 const offlineDownload=/*OFFLINE_DOWNLOAD*/{};
+const huaweiRates=/*HUAWEI_RATES*/{};
 /*TCP_INSPECTOR*/
 /*TCP_PUBLICATION*/
 const tcpRelease=tcpReleaseStore(/*TCP_RELEASE*/{});
 const endpoint='https://portal.eu.huaweicloud.com/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource';
 const security={'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'SAMEORIGIN','Permissions-Policy':'camera=(), microphone=(), geolocation=()','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; frame-ancestors 'self' https://chatgpt.com https://*.chatgpt.com; base-uri 'none'; object-src 'none'"};
-function requestForPlan(plan,index){
+function requestsForPlan(plan){
  const mode=plan.billingMode,publicNatDay=mode==='ONDEMAND'&&plan.service==='NAT Gateway'&&plan.resourceType==='hws.resource.type.natgateway';
+ const product={cloudServiceType:plan.cloudServiceType,resourceType:plan.resourceType,resourceSpecCode:plan.sku,productId:plan.productId,productNum:1};
+ if(plan.service==='EIP')return huaweiRates.eipPriceSamples(plan)?.map(sample=>({...product,...sample}))??[];
  const suffix=publicNatDay?'day':{ONDEMAND:'hour',MONTHLY:'month',YEARLY:'year'}[mode];
- if(!suffix||plan.region!=='eu-west-101'||plan.currency!=='USD'||typeof plan.size!=='boolean'||publicNatDay&&plan.size||plan.service==='EVS'&&!plan.size||plan.unit!==(plan.size?'GB-':'')+suffix||!plan.productId||!plan.sku||!plan.cloudServiceType||!plan.resourceType)return null;
- if(mode!=='ONDEMAND'&&(plan.periodType!==(mode==='MONTHLY'?2:3)||plan.periodNum!==1))return null;
- const product={id:String(index),cloudServiceType:plan.cloudServiceType,resourceType:plan.resourceType,resourceSpecCode:plan.sku,productId:plan.productId,productNum:1};
+ if(!suffix||plan.region!=='eu-west-101'||plan.currency!=='USD'||typeof plan.size!=='boolean'||publicNatDay&&plan.size||plan.service==='EVS'&&!plan.size||plan.unit!==(plan.size?'GB-':'')+suffix||!plan.productId||!plan.sku||!plan.cloudServiceType||!plan.resourceType)return [];
+ if(mode!=='ONDEMAND'&&(plan.periodType!==(mode==='MONTHLY'?2:3)||plan.periodNum!==1))return [];
  if(mode==='ONDEMAND'){
-  if(typeof plan.usageFactor!=='string'||!/duration/i.test(plan.usageFactor))return null;
+  if(typeof plan.usageFactor!=='string'||!/duration/i.test(plan.usageFactor))return [];
   Object.assign(product,{usageFactor:plan.usageFactor,usageMeasureId:publicNatDay?0:4,usageValue:1});
  }
  if(plan.size)Object.assign(product,{resourceSize:1,resouceSizeMeasureId:17});
- return product;
+ return [product];
 }
-function resultIndex(quote,count){
- if(!quote||typeof quote!=='object'||typeof quote.id!=='string'||!/^(0|[1-9]\d*)$/.test(quote.id))return null;
- const index=Number(quote.id);return Number.isSafeInteger(index)&&index<count?index:null;
+async function inquirePriceBatch(inquiry,productInfos){
+ const matches=new Map(),expected=new Map(productInfos.map(product=>[product.id,product.productId]));
+ try{
+  const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Origin':'https://www.huaweicloud.com'},
+   body:JSON.stringify({...inquiry,productInfos}),signal:AbortSignal.timeout(20000)});
+  if(!response.ok)return matches;
+  const result=await response.json();
+  if(result.currency!=='USD'||!Array.isArray(result.productRatingResult))return matches;
+  for(const quote of result.productRatingResult){
+   if(!expected.has(quote?.id))continue;
+   // A duplicate response ID makes its price ambiguous even when one record is valid.
+   if(matches.has(quote.id)){matches.set(quote.id,null);continue;}
+   const valid=quote.productId===expected.get(quote.id)&&typeof quote.officialWebsiteAmount==='number'&&
+    Number.isFinite(quote.officialWebsiteAmount)&&quote.officialWebsiteAmount>=0&&quote.officialWebsiteAmount<=1e12;
+   matches.set(quote.id,valid?quote:null);
+  }
+ }catch{return new Map();}
+ return matches;
 }
 function json(value,status=200){return new Response(JSON.stringify(value),{status,headers:{...security,'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});}
 export default {async fetch(request,env){
@@ -51,31 +68,22 @@ export default {async fetch(request,env){
   const items=[],pending=[];
   for(const mode of ['ONDEMAND','MONTHLY','YEARLY']){
    const group=products.filter(p=>(p.billingMode||'ONDEMAND')===mode);if(!group.length)continue;
-   const productInfos=group.map(requestForPlan);
-   if(productInfos.some(product=>product===null)){pending.push(...group.map(p=>p.id));continue;}
-   const body={regionId:'eu-west-101',chargingMode:mode==='ONDEMAND'?1:0,subscriptionNum:1,siteCode:'HWC',productInfos};
-   if(mode!=='ONDEMAND'){body.periodType=mode==='MONTHLY'?2:3;body.periodNum=1;}
-   try{
-    const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Origin':'https://www.huaweicloud.com'},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
-    if(!response.ok){pending.push(...group.map(p=>p.id));continue;}
-    const result=await response.json();
-    if(result.currency!=='USD'||!Array.isArray(result.productRatingResult)){pending.push(...group.map(p=>p.id));continue;}
-    const matches=new Map();
-    for(const quote of result.productRatingResult){
-     const index=resultIndex(quote,group.length);if(index===null)continue;
-     const bucket=matches.get(index)||[];bucket.push(quote);matches.set(index,bucket);
-    }
-    for(const [index,bucket] of matches){
-     // A duplicate response ID is ambiguous even when one of the prices looks valid.
-     if(bucket.length!==1)continue;
-     const quote=bucket[0],plan=group[index];
-     if(quote.productId!==plan.productId||typeof quote.officialWebsiteAmount!=='number'||!Number.isFinite(quote.officialWebsiteAmount)||quote.officialWebsiteAmount<0||quote.officialWebsiteAmount>1e12)continue;
-     const {productInfos:ignored,...inquiry}=body;
-     items.push({...plan,rate:quote.officialWebsiteAmount,verifiedAt:new Date().toISOString(),evidence:{request:productInfos[index],inquiry,response:quote,currency:result.currency,
-      ...(plan.unit==='day'?{billingSource:plan.evidence?.billingSource}:{})}});
-    }
-    pending.push(...group.filter(p=>!items.some(item=>item.id===p.id)).map(p=>p.id));
-   }catch{pending.push(...group.map(p=>p.id));}
+   let id=0;
+   const byPlan=group.map(plan=>requestsForPlan(plan).map(product=>({...product,id:String(id++)})));
+   const requests=byPlan.flat(),inquiry={regionId:'eu-west-101',chargingMode:mode==='ONDEMAND'?1:0,subscriptionNum:1,siteCode:'HWC'};
+   if(mode!=='ONDEMAND'){inquiry.periodType=mode==='MONTHLY'?2:3;inquiry.periodNum=1;}
+   const batches=[];
+   for(let start=0;start<requests.length;start+=10)batches.push(inquirePriceBatch(inquiry,requests.slice(start,start+10)));
+   const matches=new Map((await Promise.all(batches)).flatMap(results=>[...results]));
+   for(const [index,plan] of group.entries()){
+    const verified=byPlan[index].map(request=>({request,response:matches.get(request.id)}));
+    if(!verified.length||verified.some(entry=>!entry.response)){pending.push(plan.id);continue;}
+    const [first,...probes]=verified,billingSource=plan.evidence?.billingSource;
+    const next={...plan,rate:first.response.officialWebsiteAmount,verifiedAt:new Date().toISOString(),evidence:{...first,inquiry,currency:'USD',
+     ...(billingSource?{billingSource}:{}),...(probes.length?{probes}:{})}};
+    if(plan.service==='EIP'&&!huaweiRates.priceValidation(next,catalogue).valid)pending.push(plan.id);
+    else items.push(next);
+   }
   }
   return json({items,pending:[...new Set(pending)],...(pending.length?{error:'Some official prices could not be verified'}:{})},items.length?200:502);
  }

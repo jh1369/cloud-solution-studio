@@ -1,6 +1,6 @@
 # Huawei Cloud Pricing Studio 自动报价覆盖率
 
-最新复测见 [0.3.11-dev 覆盖率复测](#0311-dev-覆盖率复测)。原始分析和 32 行虚构清单保留在下文。
+最新复测见 [0.3.12-dev EIP 覆盖率复测](#0312-dev-eip-覆盖率复测)。原始分析和 32 行虚构清单保留在下文。
 
 ## 基线与口径
 
@@ -122,13 +122,13 @@ case_id,product,specification,quantity,usage,unit,huawei_billing_mode,huawei_tar
 
 **预计收益与验收**覆盖样例 13、14，最多增加 2 / 32 行（6.25 个百分点）。同一虚构实例的实例费、数据盘和备份用量分别可追溯，独立按需和订阅询价按证据对账。已知备份用量在适用免费额度内时金额为零，超出部分独立计价。缺少额度、实例关联或用量证据时，对应费用留空，其余已核实费用保留。
 
-### 2. ELB 容量单位与关联 EIP 计费
+### 2. ELB 容量单位
 
-**范围和缺口**包括具有明确层级和用量的 LCU，以及专用 EIP 的带宽或出网计费。`0.3.11-dev` 可自动选中专享弹性 ELB 的按需基础实例费，也能识别典型 EIP 行。欧站计算器提供 L4/L7 LCU 与独立的 `vpc_ip` 和 `vpc_bandwidth` 候选。EIP 的带宽、出向流量和闲置保留费用各有计费条件。[欧站 ELB 原始目录][elb-catalog] · [ELB 计费模式][elb-billing] · [欧站 EIP 原始目录][eip-catalog] · [EIP 计费项][eip-billing]
+**范围和缺口**为具有明确层级和用量的 LCU。现有版本可自动报价专享弹性 ELB 的按需基础实例费和已核验的关联 EIP。欧站计算器提供 L4/L7 LCU 候选，需按独立计费单位验证。 [欧站 ELB 原始目录][elb-catalog] · [ELB 计费模式][elb-billing]
 
 **模块边界**涉及 `engine.mjs` 的独立计量和分项计费、`huawei-infrastructure-specs.mjs` 的额外费用约束、`scripts/build_catalog.py` 与 `worker.mjs` 的 LCU/带宽/流量单位及证据校验，以及页面和 Excel 的分项金额。
 
-**预计收益与验收**经独立核价的 LCU、专用带宽和按出流量可再覆盖 22、24、25，共 3 / 32 行（9.375 个百分点）。纯内网实例、声明公网绑定，以及同一 EIP 单独列出的场景有独立合计，带宽与出流量按对应模式核算，关联费用只计一次。当前样例 23 的包月计划缺口保留。
+**预计收益与验收**样例 24、25 已在 `0.3.12-dev` 计价。独立核验 L4/L7 LCU 可再覆盖样例 22，共 1 / 32 行（3.125 个百分点）。同一 ELB 的实例、LCU 与关联 EIP 应能分别对账。样例 23 仍缺包月基础实例计划。
 
 ### 3. OBS 标准单 AZ 按需计费
 
@@ -174,6 +174,30 @@ case_id,product,specification,quantity,usage,unit,huawei_billing_mode,huawei_tar
 
 规格来源与核价分别保存在工作簿 Service Mapping 和 Public Pricing。显式申请的关联费用可在 Quotation 用相同 `Row` 分项保留 Pending，金额留空；页面按相同的费用行统计。上述 32 个输入均为独立费用项。当前价格覆盖缺口涉及 12 行，其中 10 行也缺独立计费规则。 [ELB 欧站规格](https://support.huaweicloud.com/eu/productdesc-elb/en-us_topic_0287737145.html) · [ELB 计费项](https://support.huaweicloud.com/eu/price-elb/elb_billing_0003.html) · [CCE 欧站规格](https://support.huaweicloud.com/eu/api-cce/cce_02_0236.html) · [CCE 计费项](https://support.huaweicloud.com/eu/price-cce/cce_03_0006.html) · [NAT 欧站规格](https://support.huaweicloud.com/eu/productdesc-natgateway/en-us_topic_0086739763.html) · [NAT 按需计费边界](https://support.huaweicloud.com/eu/price-natgateway/nat_billing_0005.html) · [欧站公开询价](https://portal.eu.huaweicloud.com/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource)
 
+## 0.3.12-dev EIP 覆盖率复测
+
+在 `main` 的 `978ddd4cbfeed72bc90fc6ae6a6e0870f33f6462` 和 `0.3.12-dev` 上，使用同一 32 行虚构 CSV、EU-Dublin / USD、730 参考小时和零折扣。 [开发前基线](https://github.com/jh1369/cloud-solution-studio/tree/978ddd4cbfeed72bc90fc6ae6a6e0870f33f6462)
+
+| 指标 | `0.3.11-dev` | `0.3.12-dev` |
+| --- | ---: | ---: |
+| 自动服务识别 | 32 / 32（100%） | 32 / 32（100%） |
+| 自动 SKU 匹配 | 18 / 32（56.25%） | 20 / 32（62.5%） |
+| 成功计价 | 16 / 32（50%） | 18 / 32（56.25%） |
+| Pending | 16 / 32 | 14 / 32 |
+| 部分月均小计 | USD 1,029.09 | USD 1,169.29 |
+
+样例 24 按 10 Mbit/s 和 730 小时报 USD 129.94，样例 25 按 120 GB 出公网流量报 USD 10.26。剩余 14 行中，4 行需确认规格、数量或用量，2 行缺适用区域或计费模式，8 行缺分项计费及可用价格。按需有效行 10 / 23，包月 4 / 5，包年 4 / 4。关联费用测试独立于这 32 行，ECS、ELB 和 NAT 父项各自保留，带相同 `eip_ref` 的 EIP 费用只计一次。不同声明冲突或无法判明关联时，相关费用保持 Pending。
+
+| 动态 BGP 费用 | 欧站 SKU 及来源组 | 计量和核验费率 |
+| --- | --- | --- |
+| 独享固定带宽 | `19_bgp` / `vpc_bandwidth` | 1–2,000 Mbit/s。按需 USD 0.0178 / Mbit/s-hour，包月 USD 8.55 / Mbit/s-month，包年 USD 85.50 / Mbit/s-year。计算器带宽规格单位 `15`，按需时长单位 `4`。 |
+| 公网出流量 | `12_bgp` / `vpc_bandwidth` | 仅按需，GB 询价单位 `10`。每个 EIP 的月度用量按 0–10、10–50、50–150、150–151 TB 分段计算，分别 USD 0.0855、0.08075、0.0665、0.0475 / GB。计算器按 `1 TB = 1024 GB`。 |
+| 闲置 IPv4 地址 | `5_bgp` / `vpc_ip` | 仅按需，未绑定时 USD 0.005 / 小时。已绑定期间免收保留费。 |
+
+2026-11-19 的公开询价验证了这 5 个计划。固定带宽检查规格、1 和 2,000 Mbit/s 的独立金额，流量检查各阶梯边界和下一 GB，并在 151 TB 重新对账。刷新要求各计划的核验点全部通过。流量超过 154,624 GB、月度或每地址口径缺失、流量订阅、共享带宽、入网流量、流量包和超出区域的费用保持 Pending。随包快照包含 1,250 个有效计划，按需 / 包月 / 包年为 448 / 401 / 401。 [欧站 EIP 目录][eip-catalog] · [欧站公开计算器配置][eip-config] · [费用项规则][eip-billing]
+
+AWS 账期用量表有独立的浏览器本地识别路径。超过通用导入的 60 行窗口时，符合表头和服务编码的表格可完整进入报价。累计实例小时沿用来源账期。来源数量字段可追溯，订阅需要独立的资源数量。虚构回归覆盖 73 行、来源行号、非整数来源数量和不支持的服务。规格迁移仍受目录和配置证据约束。 [虚构回归](../pricing-studio/web/tests/huawei-eip.test.mjs) · [AWS 平台操作编码](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/billing-info-fields.html)
+
 [rds-catalog]: https://portal.eu.huaweicloud.com/api/calculator/rest/cbc/portalcalculatornodeservice/v4/api/productInfo?urlPath=rds&region=eu-west-101&language=en-us&station=en-EU&tag=general.online.portal
 [rds-billing]: https://support.huaweicloud.com/eu/productdesc-rds/rds_01_0030.html
 [rds-od]: https://support.huaweicloud.com/eu/price-rds/rds_00_0005.html
@@ -181,6 +205,7 @@ case_id,product,specification,quantity,usage,unit,huawei_billing_mode,huawei_tar
 [elb-catalog]: https://portal.eu.huaweicloud.com/api/calculator/rest/cbc/portalcalculatornodeservice/v4/api/productInfo?urlPath=elb&region=eu-west-101&language=en-us&station=en-EU&tag=general.online.portal
 [elb-billing]: https://support.huaweicloud.com/eu/price-elb/elb_billing_0102.html
 [eip-catalog]: https://portal.eu.huaweicloud.com/api/calculator/rest/cbc/portalcalculatornodeservice/v4/api/productInfo?urlPath=eip&region=eu-west-101&language=en-us&station=en-EU&tag=general.online.portal
+[eip-config]: https://portal.eu.huaweicloud.com/api/calculator/rest/cbc/portalcalculatornodeservice/v4/api/config?urlPath=eip&language=en-us&station=en-EU&tag=general.online.portal
 [eip-billing]: https://support.huaweicloud.com/eu/price-eip/eip_billing_0011.html
 [obs-catalog]: https://portal.eu.huaweicloud.com/api/calculator/rest/cbc/portalcalculatornodeservice/v4/api/productInfo?urlPath=obs&region=eu-west-101&language=en-us&station=en-EU&tag=general.online.portal
 [obs-billing]: https://support.huaweicloud.com/eu/price-obs/obs_42_0001.html

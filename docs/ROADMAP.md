@@ -10,7 +10,8 @@ The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, t
 - [x] Match explicit ECS series and public or private NAT gateway sizes. Use billed days for public pay-per-use and hours for private pay-per-use. Keep manually chosen SKUs through billing changes when an equivalent plan exists.
 - [x] Quote DCS without a Huawei Cloud account using the European product specifications and independently verified EU-Dublin public prices. Keep exact flavor evidence and Pending reasons in the five-sheet export. [Metadata and matching rules](../pricing-studio/web/README.md#official-dcs-product-specifications)
 - [x] Match documented dedicated elastic ELB and CCE management specs. Show unpriced LCU, worker and network costs as separate Pending charges. [Coverage results](HUAWEI_QUOTE_COVERAGE.md#0311-dev-覆盖率复测)
-- [ ] Extend verified EU-Dublin coverage for RDS disks and backups, ELB LCU, EIP and OBS. [Coverage priorities](HUAWEI_QUOTE_COVERAGE.md#后续优先级)
+- [x] Price EU-Dublin EIP fixed bandwidth, outbound internet traffic and idle address reservation. Link the same independently listed EIP fee to one billed row. [EIP verification](HUAWEI_QUOTE_COVERAGE.md#0312-dev-eip-覆盖率复测)
+- [ ] Extend verified EU-Dublin coverage for RDS disks and backups, ELB LCU and OBS. [Coverage priorities](HUAWEI_QUOTE_COVERAGE.md#后续优先级)
 - [ ] Revalidate the updated import schema with a local language model in the release environment.
 - [ ] Expand supported vendor layouts, service-specific dimensions and verified ancillary price coverage using fictional fixtures and public evidence.
 
