@@ -8,7 +8,7 @@
 | --- | --- |
 | 更新日期 | 2026-11-19，Europe/Berlin |
 | 当前优先目标 / 模式 | Huawei EU-Dublin 本机智能导入与 AWS 来源官方规格转换，单 Agent |
-| 本轮检查基线 | `main` / `5c4fd6e722b2d2e525efcf37506b405da1c3dc8a`，含 [PR #18](https://github.com/jh1369/cloud-solution-studio/pull/18) |
+| 本轮检查基线 | `main` / `66aff2b9c4df35f6019abbc48fb9bec76686aa84`，含 [PR #19](https://github.com/jh1369/cloud-solution-studio/pull/19) |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
@@ -16,7 +16,7 @@
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
 | Sites 部署源码 | `6cb31070d9bc68b163c1bd421e4ac601a5bf9a6f`（私有站第 15 版） |
 | 整体进度 | Huawei 在线版加入分批本机模型、AWS 官方来源规格、条件估算及同配置批量复核。保留标准表直通导入与报价引擎 |
-| 本轮同步范围 | Huawei 在线源码、AWS 公开规格及来源、虚构测试与技术文档 |
+| 本轮同步范围 | Huawei Pending 复现、原因及评审议题文档。 [Pending 原因评审](HUAWEI_PENDING_REVIEW.md) |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -524,3 +524,9 @@ Huawei 欧洲站覆盖率优先补齐 RDS 数据盘和备份，随后为 ELB/EIP
 - **修改** 直接导入 AWS 账期表复用官方来源记录。目标只使用现有 EU-Dublin 价格引擎，保留累计账期用量，按来源配置和目标报价方案批量复核条件估算。页面和五表分别汇总确认金额及条件金额。**删除** 单次模型预览 60 行上限，由分批和完整性约束替代。
 - **验收与边界** 自动计价需要同时核验 AWS 来源规格与适用的 Huawei 价格。RDS 仍需引擎、版本和部署参数，数据盘及备份需独立报价。ElastiCache 节点内存不能确定 DCS 缓存容量或拓扑。CSS 暂缺核验过的目标计划。测试记录见第 7 节。
 - **同步与部署** 开发分支 `feat/aws-ai-inventory`，GitHub 主线以包含本条记录的合并提交为准。在线 `0.3.13-dev` 已部署到原私有站第 15 版，下载附件沿用既有归档。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/) · [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
+
+### 2026-11-19 — Huawei Pending 原因评审
+
+- **新增** 公开评审文档，以八个虚构示例说明 ECS、RDS、DCS 和 CSS 的首个阻塞原因、所需证据及待讨论问题。**修改** 覆盖率报告和开发状态加入评审入口。**删除** 无。 [Pending 原因评审](HUAWEI_PENDING_REVIEW.md)
+- **验证** 在 `pricing-studio/web/` 使用 Node 24.22.1 复核八个虚构示例并执行 `node --test tests/aws-ai-inventory.test.mjs tests/huawei-import.test.mjs`，26 项通过、0 项失败。核对文档链接及提交范围。核价依据为随包目录。
+- **剩余问题** 来源字段缺失、ECS 候选歧义及 CSS 目录缺口仍待评审。此次为文档同步，运行基线为 `0.3.13-dev` 和原私有站第 15 版。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/)
