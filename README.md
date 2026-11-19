@@ -37,7 +37,7 @@ pricing-studio/
 
 The web app uses browser JavaScript and a Cloudflare Worker. Python 3.12 runs the catalog updater with SQLite and can publish the validated TCP catalog through an S3-compatible client. The Worker reads the private bucket binding directly. The original Python CLI declares `Python >=3.10` and uses the standard library.
 
-## Pricing Studio Web V0.3.14-dev
+## Pricing Studio Web V0.3.15-dev
 
 Implemented:
 
@@ -52,6 +52,7 @@ Implemented:
 - The local Web + Worker workspace uses a loopback model to review nonstandard CSV and multi-sheet XLSX in batches. Standard templates take the existing direct import path. Each source row retains its sheet, row, cells and field evidence. Official AWS EC2, RDS, ElastiCache and OpenSearch instance records supplement model suggestions. The hosted workspace supports manual review with the same source records. [Local model configuration](pricing-studio/web/README.md#model-assisted-csv-and-excel-on-the-user-machine)
 - The same Huawei price engine calculates confirmed charges and conditional estimates separately. A review action can confirm rows with the same source type, target plan and conditions while preserving each row's metered usage. Both statuses and Pending charges are visible in the five-sheet export. [AWS source specification evidence](pricing-studio/web/README.md#aws-source-specifications-and-conditional-quotes)
 - AWS migration review ranks verified ECS choices, keeps RDS and CSS storage separate, and shows DCS node-to-instance metering evidence. Grouped target-design fields preserve source values and identify assumptions. [Migration coverage](docs/HUAWEI_QUOTE_COVERAGE.md#0314-dev-四类迁移报价复测)
+- Huawei's browser regression export produces stage-specific aggregate counts, with separate primary and ancillary Pending reasons. The owner can share the statistics after privately validating a reference workbook. [Real regression history](docs/HUAWEI_REAL_REGRESSION.md)
 
 Build and run tests from the repository root, with Python 3.12 and Node.js 20+:
 
