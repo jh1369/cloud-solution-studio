@@ -43,6 +43,65 @@ export function finite(value,name,missing=false){
  return result;
 }
 export const OFFICIAL_PRICE_SOURCE='https://portal.eu.huaweicloud.com/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource';
+export const EIP_BILLING_SOURCE='https://support.huaweicloud.com/eu/price-eip/eip_billing_0011.html';
+export const EIP_CATALOG_SOURCE='https://portal.eu.huaweicloud.com/api/calculator/rest/cbc/portalcalculatornodeservice/v4/api/productInfo?urlPath=eip&region=eu-west-101&language=en-us&station=en-EU&tag=general.online.portal';
+const EIP_TRAFFIC_LIMITS=[10240,51200,153600,154624];
+const EIP_TRAFFIC_SAMPLES=[1,...EIP_TRAFFIC_LIMITS.flatMap((cap,i)=>i<3?[cap,cap+1]:[cap])];
+const EIP_BANDWIDTH_LIMIT=2000;
+const EIP_METERS={
+ bandwidth:{sku:'19_bgp',type:'bandwidth',factor:'Duration'},
+ traffic:{sku:'12_bgp',type:'bandwidth',factor:'upflow'},
+ reservation:{sku:'5_bgp',type:'ip',factor:'duration'}
+};
+function eipContract(plan){
+ const mode=plan.billingMode,meter=plan.eipMeter;
+ if(plan.service!=='EIP'||!Object.hasOwn(EIP_METERS,meter)||!Object.hasOwn(BILLING_MODES,mode))return null;
+ const {sku,type,factor}=EIP_METERS[meter],active=mode==='ONDEMAND';
+ if(plan.sku!==sku||plan.resourceType!==`hws.resource.type.${type}`||plan.cloudServiceType!=='hws.service.type.vpc'||
+   plan.size!==false||plan.usageFactor!==(active?factor:null)||!active&&meter!=='bandwidth')return null;
+ const term={ONDEMAND:'hour',MONTHLY:'month',YEARLY:'year'}[mode];
+ const duration=usageValue=>({usageFactor:factor,usageMeasureId:4,usageValue});
+ if(meter==='bandwidth')return {unit:`Mbit/s-${term}`,samples:[1,EIP_BANDWIDTH_LIMIT].map(resourceSize=>({
+  resourceSize,resouceSizeMeasureId:15,...(active?duration(1):{})
+ }))};
+ if(meter==='reservation')return {unit:'hour',samples:[duration(1),duration(10)]};
+ return {unit:'GB',samples:EIP_TRAFFIC_SAMPLES.map(usageValue=>({usageFactor:factor,usageMeasureId:10,usageValue}))};
+}
+export function eipPriceSamples(plan){
+ const contract=eipContract(plan);
+ return contract&&contract.unit===plan.unit?contract.samples:null;
+}
+function eipTrafficTiers(amounts){
+ const rates=[amounts[0],amounts[2]-amounts[1],amounts[4]-amounts[3],amounts[6]-amounts[5]];
+ let lower=0,total=0n;
+ for(const [i,upper] of EIP_TRAFFIC_LIMITS.entries()){
+  if(rates[i]<=0n||i&&rates[i]>rates[i-1])return null;
+  total+=BigInt(upper-lower)*rates[i];
+  if(total!==amounts[2*i+1])return null;
+  lower=upper;
+ }
+ return rates;
+}
+function verifiedEipSamples(item,samples){
+ const evidence=item.evidence,probes=evidence.probes;
+ if(item.catalogUrl!==EIP_CATALOG_SOURCE||evidence.billingSource!==EIP_BILLING_SOURCE||
+   !Array.isArray(probes)||probes.length!==samples.length-1)return false;
+ const entries=[evidence,...probes],ids=new Set();
+ const keys=['resourceSize','resouceSizeMeasureId','usageFactor','usageMeasureId','usageValue'];
+ if(!entries.every((entry,index)=>{
+  const {request,response}=entry??{};
+  if(!request||!response||typeof request.id!=='string'||!request.id||ids.has(request.id)||response.id!==request.id||
+    request.resourceSpecCode!==item.sku||request.resourceType!==item.resourceType||request.cloudServiceType!==item.cloudServiceType||
+    request.productNum!==1||request.productId!==item.productId||response.productId!==item.productId||
+    request.resourceSizeMeasureId!=null||keys.some(key=>request[key]!==samples[index][key])||
+    typeof response.officialWebsiteAmount!=='number'||!Number.isFinite(response.officialWebsiteAmount)||
+    response.officialWebsiteAmount<=0||response.officialWebsiteAmount>1e12)return false;
+  ids.add(request.id);return true;
+ }))return false;
+ const amounts=entries.map(entry=>decimalInt(entry.response.officialWebsiteAmount));
+ if(item.eipMeter==='traffic')return !!eipTrafficTiers(amounts);
+ return amounts[1]===amounts[0]*BigInt(item.eipMeter==='bandwidth'?EIP_BANDWIDTH_LIMIT:10);
+}
 const PRICE_FAILURES={
  PRICE_REGION:'Price region must be eu-west-101.',
  PRICE_CURRENCY:'Price currency must be USD.',
@@ -63,17 +122,19 @@ export function priceValidation(item,catalog,{now=Date.now()}={}){
  if(typeof item.rate!=='number'||!Number.isFinite(item.rate)||item.rate<0||item.rate>1e12)return fail('PRICE_RATE');
  const mode=item.billingMode;
  if(!Object.hasOwn(BILLING_MODES,mode))return fail('PRICE_MODE');
+ const eip=item.service==='EIP',eipSamples=eip?eipPriceSamples(item):null;
  const publicNatDay=mode==='ONDEMAND'&&item.service==='NAT Gateway'&&item.resourceType==='hws.resource.type.natgateway';
  const suffix=publicNatDay?'day':{ONDEMAND:'hour',MONTHLY:'month',YEARLY:'year'}[mode];
- if(typeof item.size!=='boolean'||publicNatDay&&item.size||item.service==='EVS'&&!item.size||item.unit!==(item.size?'GB-':'')+suffix)return fail('PRICE_UNIT');
+ if(eip?!eipSamples:typeof item.size!=='boolean'||publicNatDay&&item.size||item.service==='EVS'&&!item.size||item.unit!==(item.size?'GB-':'')+suffix)return fail('PRICE_UNIT');
  const periodType=mode==='MONTHLY'?2:mode==='YEARLY'?3:null;
  if(mode!=='ONDEMAND'&&(item.periodType!==periodType||item.periodNum!==1)||mode==='ONDEMAND'&&(item.periodType!=null||item.periodNum!=null))return fail('PRICE_PERIOD');
  if(item.sourceUrl!==OFFICIAL_PRICE_SOURCE)return fail('PRICE_SOURCE');
  const evidence=item.evidence,request=evidence?.request,response=evidence?.response,inquiry=evidence?.inquiry;
  if(!evidence||evidence.currency!=='USD'||!request||!response||!inquiry||typeof item.productId!=='string'||!item.productId||typeof item.sku!=='string'||!item.sku||request.productId!==item.productId||response.productId!==item.productId||request.resourceSpecCode!==item.sku||request.cloudServiceType!==item.cloudServiceType||request.resourceType!==item.resourceType||!item.cloudServiceType||!item.resourceType||request.productNum!==1||typeof request.id!=='string'||!request.id||response.id!==request.id||response.officialWebsiteAmount!==item.rate||inquiry.regionId!==REGION||inquiry.subscriptionNum!==1||inquiry.chargingMode!==(mode==='ONDEMAND'?1:0))return fail('PRICE_EVIDENCE');
  if(mode==='ONDEMAND'){
-  if(typeof request.usageFactor!=='string'||!/duration/i.test(request.usageFactor)||request.usageMeasureId!==(publicNatDay?0:4)||request.usageValue!==1||inquiry.periodType!=null||inquiry.periodNum!=null)return fail('PRICE_EVIDENCE');
+  if(inquiry.periodType!=null||inquiry.periodNum!=null||!eip&&(typeof request.usageFactor!=='string'||!/duration/i.test(request.usageFactor)||request.usageMeasureId!==(publicNatDay?0:4)||request.usageValue!==1))return fail('PRICE_EVIDENCE');
  }else if(inquiry.periodType!==periodType||inquiry.periodNum!==1)return fail('PRICE_EVIDENCE');
+ if(eip&&!verifiedEipSamples(item,eipSamples))return fail('PRICE_EVIDENCE');
  if(item.size&&(request.resourceSize!==1||(request.resouceSizeMeasureId??request.resourceSizeMeasureId)!==17||(request.resouceSizeMeasureId!=null&&request.resourceSizeMeasureId!=null&&request.resouceSizeMeasureId!==request.resourceSizeMeasureId)))return fail('PRICE_EVIDENCE');
  if(typeof catalog.ttlDays!=='number'||!Number.isFinite(catalog.ttlDays)||catalog.ttlDays<=0||catalog.ttlDays>7)return fail('PRICE_TTL');
  const verifiedAt=Date.parse(item.verifiedAt);
@@ -102,7 +163,7 @@ export function normalizeRows(objects){
  const targetQuantity=finite(get(raw,'target_quantity'),'目标资源数量',true);
  return {id:crypto.randomUUID(),product,specification:spec,region:String(get(raw,'region')),quantity,usage,unit:explicitUnit||(['ECS','RDS','DCS','DMS Kafka','ELB','NAT Gateway','CCE'].includes(service)?'hour':''),billing:String(get(raw,'billing_method')||'未提供'),targetBilling,targetQuantity,capacity,service,scope:aggregate?'aggregate':'resource',period:String(get(raw,'period')||(aggregate?'source-period':'monthly')),notes:aggregate?'来源账期累计用量，未推断资源数量；需确认是否完整月。':!explicitUnit?'用量单位根据服务推定，请核对。':'',accepted:false,targetId:'',manualRate:null,
   ...(explicitCapacity!==null?{huaweiCapacityExplicit:true}:{}),
-  sourceService:service,unitExplicit:!!explicitUnit,huaweiUsageFromSpec:usage===null&&!explicitUnit,huaweiTargetRegion:String(raw.huawei_target_region||'').trim(),tcpTarget:String(raw.tcp_target_sku||'').trim(),tcpTargetRegion:String(raw.tcp_target_region||'').trim(),tcpTargetBilling:targetMode(raw.tcp_target_billing||'ONDEMAND')};
+  sourceService:service,unitExplicit:!!explicitUnit,huaweiUsageFromSpec:usage===null&&!explicitUnit,huaweiEipRef:String(raw.eip_ref??'').trim(),huaweiTargetRegion:String(raw.huawei_target_region||'').trim(),tcpTarget:String(raw.tcp_target_sku||'').trim(),tcpTargetRegion:String(raw.tcp_target_region||'').trim(),tcpTargetBilling:targetMode(raw.tcp_target_billing||'ONDEMAND')};
  });
 }
 export function awsShape(text){
@@ -187,10 +248,13 @@ function decimalRatio(value,name){
  return {coefficient,scale};
 }
 export function decimalInt(value){const {coefficient,scale}=decimalRatio(value,'计算数值');return scale<=9?coefficient*10n**BigInt(9-scale):(coefficient+10n**BigInt(scale-9)/2n)/(10n**BigInt(scale-9));}
-export function cost(quantity,usage,rate,discount=0){
- const discountNumber=finite(discount,'折扣');if(discountNumber>1)throw Error('折扣必须在 0–1 之间');
- const factors=[decimalRatio(quantity,'数量'),decimalRatio(usage,'用量'),decimalRatio(rate,'计算数值')];
+export function cost(quantity,usage,rate,discount=0,size=1){
+ const factors=[decimalRatio(quantity,'数量'),decimalRatio(usage,'用量'),decimalRatio(rate,'计算数值'),decimalRatio(size,'规格')];
  const numerator=factors.reduce((product,factor)=>product*factor.coefficient,1n),denominator=10n**BigInt(factors.reduce((sum,factor)=>sum+factor.scale,0));
+ return quoteAmounts(numerator,denominator,discount);
+}
+function quoteAmounts(numerator,denominator,discount){
+ const discountNumber=finite(discount,'折扣');if(discountNumber>1)throw Error('折扣必须在 0–1 之间');
  const reduction=decimalRatio(discount,'折扣'),discountScale=10n**BigInt(reduction.scale);
  const scenarioNumerator=numerator*(discountScale-reduction.coefficient),scenarioDenominator=denominator*discountScale;
  const round=(top,bottom)=>{
@@ -199,6 +263,18 @@ export function cost(quantity,usage,rate,discount=0){
   return Number(cents)/100;
  };
  return {monthly:round(numerator,denominator),scenario:round(scenarioNumerator,scenarioDenominator),annual:round(scenarioNumerator*12n,scenarioDenominator)};
+}
+function eipTrafficCost(quantity,usage,item,discount){
+ const amounts=[item.evidence,...item.evidence.probes].map(x=>decimalInt(x.response.officialWebsiteAmount));
+ const rates=eipTrafficTiers(amounts),{coefficient,scale}=decimalRatio(usage,'出网流量');
+ const unit=10n**BigInt(scale);
+ let total=0n,lower=0n;
+ for(const [index,upper] of EIP_TRAFFIC_LIMITS.entries()){
+  const cap=BigInt(upper)*unit,end=coefficient<cap?coefficient:cap;
+  if(end>lower)total+=(end-lower)*rates[index];
+  lower=cap;
+ }
+ return quoteAmounts(BigInt(quantity)*total,unit*1000000000n,discount);
 }
 export function sumMoney(values){
  const cents=values.reduce((sum,value)=>{
@@ -210,7 +286,14 @@ export function sumMoney(values){
  if(cents>BigInt(Number.MAX_SAFE_INTEGER))throw Error('Subtotal exceeds the supported precision range.');
  return Number(cents)/100;
 }
-const pendingResult=(reason,reasonCode='INPUT_INVALID')=>({status:'Pending',reason,reasonCode,monthly:null,scenario:null,annual:null,termPublic:null,termScenario:null,upfrontScenario:null});
+export const pendingResult=(reason,reasonCode='INPUT_INVALID')=>({status:'Pending',reason,reasonCode,monthly:null,scenario:null,annual:null,termPublic:null,termScenario:null,upfrontScenario:null});
+export function relatedHuaweiCharges(row,result){
+ return result.related??(row.huaweiPendingCharges??[]).map(charge=>({charge,result:pendingResult('','HW_ANCILLARY_PENDING')}));
+}
+export function huaweiQuoteLines(rows,output){
+ return rows.flatMap((row,index)=>[{row,index,charge:row.huaweiCharge,result:output[index]},
+  ...relatedHuaweiCharges(row,output[index]).map(line=>({...line,index}))]);
+}
 export function huaweiProductSpecIssue(row,item){
  const match=row.huaweiProductMatch;
  if(!match)return null;
@@ -219,7 +302,8 @@ export function huaweiProductSpecIssue(row,item){
  if(!['official-doc','official-catalog'].includes(spec?.evidence?.kind)||!item||spec.specCode!==item.sku||spec.service!==row.service||
     spec.service!==item.service||spec.resourceType!==item.resourceType||item.size!==false||
     spec.usageFactor&&(item.usageFactor!==spec.usageFactor||item.evidence?.request?.usageFactor!==spec.usageFactor)||
-    match.specification!==row.specification||match.product!==row.product||match.capacity!==row.capacity)return row.service==='DCS'?'HW_DCS_SPEC_RECHECK':'HW_SPEC_RECHECK';
+    spec.eipMeter&&item.eipMeter!==spec.eipMeter||match.specification!==row.specification||match.product!==row.product||match.capacity!==row.capacity||
+    row.service==='EIP'&&(match.usage!==row.usage||match.unit!==row.unit||match.unitExplicit!==row.unitExplicit))return row.service==='DCS'?'HW_DCS_SPEC_RECHECK':'HW_SPEC_RECHECK';
  return null;
 }
 export function calculate(row,catalog,options={}){
@@ -250,12 +334,15 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
  if(!['resource','aggregate'].includes(row.scope)||!['monthly','source-period'].includes(row.period))return pending('Unsupported usage scope or billing period.','INPUT_PERIOD');
  const discountNumber=finite(discount,'折扣');if(discountNumber>1)return pending('Invalid quantity, usage, discount or reference hours.');
  const quantity=row.targetQuantity??row.quantity??row.huaweiQuantity;
+ const eip=row.service==='EIP'?row.huaweiEip:null;
+ if(item.eipMeter&&(!eip||eip.meter!==item.eipMeter))return pending('', 'HW_EIP_PARAMETERS');
+ if(eip?.meter==='bandwidth'&&(!Number.isInteger(eip.mbps)||eip.mbps<1||eip.mbps>EIP_BANDWIDTH_LIMIT))return pending('', 'HW_EIP_BANDWIDTH');
  if(mode!=='ONDEMAND'){
   if(row.period==='source-period')return pending('累计账单用量不能推断订阅方案；请明确目标数量、容量并选择完整订阅方案。','SUBSCRIPTION_REVIEW');
   if(quantity===null||quantity===undefined)return pending('包月/包年需要明确的目标资源数量，不能从累计账单小时数推断。','QUANTITY_REQUIRED');
   finite(quantity,'目标资源数量');
   if(!Number.isInteger(quantity)||quantity<=0)return pending('订阅资源数量必须是正整数。','QUANTITY_INVALID');
-  let multiplier=1;
+  let multiplier=eip?.mbps??1;
   if(item.size){
    multiplier=finite(row.capacity,'目标容量 GB');
    if(multiplier<=0)return pending('请填写大于零的目标云硬盘容量 GB；累计 GB-month 不能反推容量。','CAPACITY_REQUIRED');
@@ -270,7 +357,9 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
  const monthlyReference=row.scope==='resource'&&row.period==='monthly'&&row.usage==null;
  const capacityMonth=monthlyReference&&item.size&&row.huaweiUsageAssumption==='HW_STORAGE_MONTH';
  const hourMonth=monthlyReference&&!item.size&&row.huaweiUsageAssumption==='HW_MONTH_HOURS';
- const billable=capacityMonth?row.capacity:hourMonth?hours:row.usage;
+ const billable=eip?(eip.referenceHours?hours:eip.amount):capacityMonth?row.capacity:hourMonth?hours:row.usage;
+ if(item.eipMeter==='traffic'&&(row.scope!=='resource'||row.period!=='monthly'))return pending('', 'HW_EIP_TRAFFIC_PERIOD');
+ if(item.eipMeter==='traffic'&&billable>EIP_TRAFFIC_LIMITS.at(-1))return pending('', 'HW_EIP_TRAFFIC_LIMIT');
  if(item.unit==='day'&&(billable==null||!Number.isInteger(billable)||!['day','days','billable days','计费日','天'].includes(String(row.unit||'').toLowerCase())))return pending('', 'HW_NAT_BILLED_DAYS');
  if(billable==null)return pending('请补充用量。','USAGE_REQUIRED');
  finite(billable,'用量');if(row.scope!=='aggregate')finite(quantity,'目标资源数量');
@@ -282,8 +371,9 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
    if(referenceHours<=0||referenceHours>744)return pending('Invalid quantity, usage, discount or reference hours.');
    usage*=referenceHours;
   }else if(!['gb-hour','gb-hours'].includes(unit)&&!(row.huaweiMatch&&unit==='gib-hour'))return pending('存储用量需为 GB-month 或 GB-hour；IOPS、快照单独计价。','USAGE_UNIT');
- }else if(item.unit!=='day'&&!['hour','hours','hrs','hr','hourly','instance-hrs'].includes(unit))return pending('此目标按小时计费，请确认用量单位。','USAGE_UNIT');
- const values=cost(row.scope==='aggregate'?1:quantity,usage,item.rate,discount);
+ }else if(!eip&&item.unit!=='day'&&!['hour','hours','hrs','hr','hourly','instance-hrs'].includes(unit))return pending('此目标按小时计费，请确认用量单位。','USAGE_UNIT');
+ const count=row.scope==='aggregate'?1:quantity;
+ const values=eip?.meter==='traffic'?eipTrafficCost(count,usage,item,discount):cost(count,usage,item.rate,discount,eip?.mbps??1);
  if(row.period==='source-period')values.annual=null;
  return {status:row.period==='source-period'?'Period':'Valid',reason:row.period==='source-period'?'华为云按需 × 来源账期用量，未折算整月或全年。':'华为云独立按需价格 × 已确认目标方案用量；AWS 原计费方式不参与目标定价。',...values,item,billingMode:mode,termPublic:values.monthly,termScenario:values.scenario,termLabel:row.period==='source-period'?'来源账期':'1个月参考',upfrontScenario:null,effectiveUsage:usage,quantity:row.scope==='aggregate'?null:quantity};
 }

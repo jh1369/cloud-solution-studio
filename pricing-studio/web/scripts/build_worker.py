@@ -16,6 +16,8 @@ download_path='/downloads/pricing-studio-offline.zip'
 assets[download_path]=base64.b64encode(offline_archive.read_bytes()).decode()
 catalog=json.loads((ROOT/'public/catalog.json').read_text())
 source=(ROOT/'worker.mjs').read_text().replace('/*ASSETS*/{}',json.dumps(assets)).replace('/*CATALOG*/{}',json.dumps(catalog)).replace('/*OFFLINE_DOWNLOAD*/{}',json.dumps({'path':download_path,'filename':offline_archive.name}))
+engine=re.sub(r'^export ','',(ROOT/'public/engine.mjs').read_text(),flags=re.M)
+source=source.replace('/*HUAWEI_RATES*/{}','(()=>{'+engine+'\nreturn {eipPriceSamples,priceValidation};})()')
 inspector=re.sub(r'^export ','',(ROOT/'public/catalog_status.mjs').read_text(),flags=re.M)
 publication=re.sub(r'^export ','',(ROOT/'tcp_publication.mjs').read_text(),flags=re.M)
 snapshot={}

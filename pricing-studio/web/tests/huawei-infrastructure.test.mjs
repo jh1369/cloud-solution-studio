@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import worker from '../dist/server/index.js';
 import {calculate,normalizeRows,parseText,priceValidation,sumMoney} from '../public/engine.mjs';
-import {applyHuaweiMatch,identifyHuaweiRow,selectHuaweiBilling} from '../public/huawei-match.mjs';
+import {applyHuaweiMatch,identifyHuaweiRow,selectHuaweiBilling,quoteHuaweiRows} from '../public/huawei-match.mjs';
 import {buildWorkbook} from '../public/excel.mjs';
 import {summaryModel} from '../public/ui.mjs';
 
@@ -125,28 +125,30 @@ test('one quote retains priced base lines and exports explicitly related Pending
   raw('CCE','Standard cluster with 3 masters and 30 worker nodes, ECS and EVS',{unit:'hour',usage:730}),
   raw('Public NAT Gateway','Small gateway with EIP and outbound traffic',{unit:'day',usage:30})
  ];
- const results=rows.map(row=>calc(row));
+ const results=quoteHuaweiRows(rows,catalog,options);
  assert.deepEqual(results.map(r=>r.monthly),[18.25,306.6,73.14]);
- assert.deepEqual(rows.map(row=>row.huaweiPendingCharges),[['lcu','eip','bandwidth'],['workers','storage','cceNetwork'],['eip','traffic']]);
+ assert.deepEqual(results.map(result=>result.related.filter(line=>line.result.status==='Pending').map(line=>line.charge)),
+  [['lcu','eipBandwidth'],['workers','storage','cceNetwork'],['eipTraffic']]);
  const summary=summaryModel(rows,results,'en');
- assert.deepEqual([summary.ready,summary.total,summary.monthly,summary.status],[3,11,397.99,'8 Pending']);
- const book=buildWorkbook(XLSX,rows,catalog,{now,language:'en',hours:730,discount:0},'Fictional quote');
+ assert.deepEqual([summary.ready,summary.total,summary.monthly,summary.status],[3,9,397.99,'6 Pending']);
+ const book=buildWorkbook(XLSX,rows,catalog,{now,language:'en',hours:730,discount:0,output:results},'Fictional quote');
  assert.deepEqual(Array.from(book.SheetNames),['Input','Service Mapping','Public Pricing','Quotation','Assumptions']);
  const quote=XLSX.utils.sheet_to_json(book.Sheets.Quotation,{defval:null});
  assert.equal(quote.length,11);
- assert.equal(quote.filter(r=>r.Status==='Pending').length,8);
+ assert.equal(quote.filter(r=>r.Status==='Pending').length,6);
  assert.ok(quote.filter(r=>r.Status==='Pending').every(r=>r.Charge&&r['Term Public USD']===null&&r['Monthly Public or Amortized USD']===null));
  assert.equal(quote.find(r=>r.Charge==='ELB capacity units (LCU)')?.Row,1);
 });
 
-test('current 32-row coverage inventory matches 18 rows and prices 16 without collapsing Pending charges',()=>{
+test('current 32-row coverage inventory matches 20 rows and prices 18 without collapsing Pending charges',()=>{
  const markdown=readFileSync(new URL('../../../docs/HUAWEI_QUOTE_COVERAGE.md',import.meta.url),'utf8');
  const csv=markdown.match(/\x60\x60\x60csv\n(case_id,[\s\S]*?)\n\x60\x60\x60/)[1];
  const book=XLSX.read(csv,{type:'string'});
  const rows=normalizeRows(XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]],{defval:''})).map(row=>select(row));
  const results=rows.map(row=>calc(row));
  assert.deepEqual([rows.length,rows.filter(row=>row.service!=='Unmapped').length,rows.filter(row=>row.targetId).length,
-  results.filter(r=>r.status==='Valid').length,sumMoney(results.map(r=>r.monthly))],[32,32,18,16,1029.09]);
+  results.filter(r=>r.status==='Valid').length,sumMoney(results.map(r=>r.monthly))],[32,32,20,18,1169.29]);
+ assert.deepEqual([results[23].item?.sku,results[23].monthly,results[24].item?.sku,results[24].monthly],['19_bgp',129.94,'12_bgp',10.26]);
  assert.deepEqual([results[20].item?.sku,results[26].reasonCode,results[27].item?.sku,results[31].item?.sku],
   ['elbv3.professional','HW_NAT_BILLED_DAYS','natgateway_small','cce.s1.small']);
 });

@@ -1,5 +1,5 @@
 import {buildWorkbook} from './excel.mjs';
-import {normalizeRows,parseText,recommend,calculate,parseBillPages,switchBilling,priceValidation,huaweiProductSpecIssue} from './engine.mjs';
+import {normalizeRows,parseText,recommend,calculate,parseBillPages,switchBilling,priceValidation,huaweiProductSpecIssue,huaweiQuoteLines} from './engine.mjs';
 import {tcpQuoteRows,tcpQuoteTotals} from './providers.mjs';
 import {t,billingLabel,dateLabel,translateMessage,readLanguage,saveLanguage,applyTranslations,serviceLabel} from './i18n.mjs';
 import {escapeHTML,icon,money,emptyResources,resourceHTML,tcpResourceHTML,summaryModel,breakdownHTML,catalogueHTML} from './ui.mjs';
@@ -37,6 +37,9 @@ function setBilling(row,mode){
 function canConfirm(row){
  if(!row.targetId)return false;
  return provider!=='huawei'||!row.huaweiProductMatch||!huaweiProductSpecIssue(row,catalog.items.find(item=>item.id===row.targetId));
+}
+function refreshIds(output){
+ return [...new Set(huaweiQuoteLines(rows,output).filter(({row,result})=>row&&result.status!=='Linked'&&canConfirm(row)).map(({row})=>row.targetId))];
 }
 function settings(){
  const hours=Number($('#hours').value),discount=Number($('#discount').value)/100;
@@ -101,7 +104,7 @@ function render({now=Date.now()}={}){
    renderTCPSummary(output,now);
   }else{
    const options={...settings(),now};
-   output=rows.map(row=>calculate(row,catalog,options));renderSummary(output,now);
+   output=huaweiMatching?huaweiMatching.quoteHuaweiRows(rows,catalog,options):rows.map(row=>calculate(row,catalog,options));renderSummary(output,now);
   }
  }catch(error){
   $('#monthly-money').textContent='—';$('#annual-money').textContent='—';$('#scenario-money').textContent='—';
@@ -114,7 +117,7 @@ function render({now=Date.now()}={}){
  $('#resource-count').textContent=rows.length;
  $('#export').disabled=!rows.length||(isTCP&&tcpQuoteLoading);$('#quote-export').disabled=$('#export').disabled;
  $('#confirm-all').disabled=!rows.some(row=>!row.accepted&&canConfirm(row));
- $('#refresh-prices').disabled=!!offlineBundle||busy||(isTCP?tcpQuoteLoading:!rows.some(canConfirm));
+ $('#refresh-prices').disabled=!!offlineBundle||busy||(isTCP?tcpQuoteLoading:!refreshIds(output).length);
  $('#parse').disabled=busy;$('#file').disabled=busy;
  $('#resources').innerHTML=!rows.length?emptyResources(language):isTCP?tcpResourceHTML(rows,output,tcpPublication.state,language,page):resourceHTML(rows,output,catalog,language,page,now);
  $('#resource-pagination').hidden=rows.length<=10;
@@ -374,7 +377,7 @@ function exportExcel(){
   const options={now,language,delivery:offlineBundle?'offline':'web'};
   const isTCP=provider==='tcp';
   const book=buildWorkbook(window.XLSX,rows,isTCP?tcpPublication.catalog:catalog,
-   isTCP?{...options,provider,output,updateState:tcpPublication.state}:{...options,...settings()},$('#project-name').value);
+   isTCP?{...options,provider,output,updateState:tcpPublication.state}:{...options,...settings(),output},$('#project-name').value);
   window.XLSX.writeFile(book,(isTCP?'TCP':'Huawei-Cloud')+'-Quotation-'+new Date(now).toISOString().slice(0,10)+'.xlsx');toast(T('toast.exported'));
  }catch(error){report(error);}
 }
@@ -384,7 +387,7 @@ $('#export-evidence').addEventListener('click',()=>download(JSON.stringify(catal
 $('#refresh-prices').addEventListener('click',async()=>{
  if(offlineBundle){toast(T('offline.noRefresh'),true);return;}
  if(provider==='tcp'){await loadTCPQuote();return;}
- const ids=[...new Set(rows.filter(canConfirm).map(row=>row.targetId))];
+ const output=render(),ids=output?refreshIds(output):[];
  if(!ids.length||busy)return;
  const updates=new Map();
  busy=true;render();toast(T('toast.refreshing'));

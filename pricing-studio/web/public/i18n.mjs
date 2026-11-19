@@ -181,7 +181,7 @@ export const COPY={
  'resource.accept':['已核对目标规格与计价假设','I have checked the target specification and pricing assumptions'],
  'resource.required':['待填写','Required'], 'resource.unspecified':['需确认','Review required'],
  'resource.unmapped':['未映射','Unmapped'], 'resource.design':['需人工设计','Manual design required'],
- 'status.pending':['Pending','Pending'], 'status.valid':['可计价','Ready to price'], 'status.period':['来源账期','Source period'],
+ 'status.pending':['Pending','Pending'], 'status.valid':['可计价','Ready to price'], 'status.period':['来源账期','Source period'], 'status.linked':['已关联','Linked'],
  'status.waiting':['等待输入','Awaiting resources'], 'status.review':['等待确认','Awaiting confirmation'],
  'status.confirmed':['已确认方案','Design confirmed'], 'status.pendingCount':['{count} 项 Pending','{count} Pending'],
  'status.invalid':['输入需修正','Check your inputs'],
@@ -282,6 +282,10 @@ export const COPY={
  'charge.workload':['Autopilot 工作负载资源','Autopilot workload resources'],
  'charge.natInstance':['NAT 网关实例费','NAT gateway instance charge'],
  'charge.eip':['弹性公网 IP','Elastic IP (EIP)'],
+ 'charge.eipBandwidth':['EIP 固定公网带宽','EIP fixed public bandwidth'],
+ 'charge.eipTraffic':['EIP 出公网流量','EIP outbound internet traffic'],
+ 'charge.eipReservation':['EIP 闲置地址保留费','EIP idle address reservation'],
+ 'resource.eipLinked':['该 EIP 费用以第 {row} 行为准。','This EIP charge is represented by row {row}.'],
  'charge.bandwidth':['公网带宽','Public bandwidth'],
  'charge.traffic':['流量或数据处理','Traffic or data processing'],
  'unit.GB-month':['GB·月','GB-month'], 'unit.year':['年','year'], 'unit.GB-year':['GB·年','GB-year']
@@ -370,6 +374,25 @@ export const ENGINE_REASON_MESSAGES={
  HW_ANCILLARY_PENDING:['此费用需独立计量和核价。','This charge requires its own billed unit and verified price.'],
  HW_SPEC_PRICE_LINK:['官方规格在本区域及计费模式没有唯一匹配的有效价格计划。','No unique verified price plan links to this flavor in the selected region and billing mode.'],
  HW_SPEC_RECHECK:['规格或价格方案已更改，请重新匹配。','The specification or plan changed. Match the specification again.'],
+ HW_EIP_PARAMETERS:['请明确 EIP 按固定带宽、出网流量或闲置地址计费。','Specify fixed bandwidth, outbound traffic or idle address reservation.'],
+ HW_EIP_BANDWIDTH:['请确认 1–2,000 Mbit/s 的整数固定带宽。','Enter a whole fixed bandwidth from 1 to 2,000 Mbit/s.'],
+ HW_EIP_TRAFFIC_USAGE:['请补充单个 EIP 的月度出公网流量及 GB 或 TB 单位。','Enter monthly outbound volume per EIP in GB or TB.'],
+ HW_EIP_TRAFFIC_LIMIT:['出公网流量超过每个 EIP 每月已核验的 154,624 GB 范围。','Outbound usage exceeds the verified range of 154,624 GB per EIP per month.'],
+ HW_EIP_TRAFFIC_PERIOD:['流量阶梯需要单个 EIP 的整月出网用量。','Traffic tiers require full-month outbound usage per EIP.'],
+ HW_EIP_IDLE_HOURS:['请填写 EIP 未绑定时长和小时单位。','Enter the number of hours the EIP remains unbound.'],
+ HW_EIP_MODE:['当前 EIP 费用项仅支持按需计费。','This EIP charge supports pay-per-use only.'],
+ HW_EIP_UNIT:['缺少 EIP 用量单位，或单位与收费项不符。','The EIP usage unit is missing or conflicts with the charge.'],
+ HW_EIP_CONFLICT:['EIP 的带宽、流量或时长存在冲突，请分别确认。','EIP bandwidth, traffic or duration values conflict. Verify the intended charge.'],
+ HW_EIP_UNSUPPORTED:['当前 EIP 报价范围为动态 BGP 独享带宽、出网流量和 IPv4 闲置地址。','EIP pricing covers Dynamic BGP dedicated bandwidth, outbound traffic and idle IPv4 addresses.'],
+ HW_EIP_DYNAMIC_BGP:['使用 EU-Dublin 动态 BGP 公共价格。','Uses public EU-Dublin Dynamic BGP pricing.'],
+ HW_EIP_PER_PARENT:['未单列地址数量，按每个父资源一个地址估算。','Estimates one address per parent resource when no address count is specified.'],
+ HW_EIP_REFERENCE_HOURS:['固定带宽按参考月小时数估算。','Uses the reference monthly hours for fixed bandwidth.'],
+ HW_EIP_OUTBOUND_TIERS:['按单个地址的整月公网出流量逐阶梯计费。','Bills graduated tiers for full-month outbound usage per EIP.'],
+ HW_EIP_BOUND:['地址绑定期间免收闲置保留费。','Address reservation is waived while the EIP is bound.'],
+ HW_EIP_RESERVATION_SEPARATE:['地址保留费按未绑定小时另算。','Address reservation is billed separately for unbound hours.'],
+ HW_EIP_REFERENCE:['请提供唯一且有效的 eip_ref。','Use one valid eip_ref for the EIP association.'],
+ HW_EIP_LINK_REQUIRED:['同时存在独立 EIP 行。填写相同的 eip_ref 确认关联，或为不同地址填写不同的关联键。','Standalone EIP rows exist. Use matching eip_ref values to associate the same address, or distinct references for separate addresses.'],
+ HW_EIP_REFERENCE_CONFLICT:['同一 eip_ref 的计费方式、用量或数量冲突。','Rows sharing eip_ref disagree on the billed mode, usage or quantity.'],
  HW_TARGET_REGION:['当前只支持华为云 eu-west-101，请确认目标区域。','Huawei target region must be eu-west-101.'],
  HW_NO_PLAN:['当前区域或计费模式没有可用目录记录。','The catalog has no plans for this region or billing mode.'],
  HW_MANUAL_SERVICE:['请核对成本维度并手动选择目标规格。','Confirm the billing dimensions and select a target manually.'],
@@ -418,6 +441,7 @@ export const ENGINE_REASON_MESSAGES={
  AMOUNT_PRECISION:['计算金额超过支持的精度范围。','Calculation amount exceeds the supported precision range.']
 };
 export function reasonLabel(result,language='zh'){
+ if(result?.status==='Linked')return t('resource.eipLinked',language,{row:result.linkedRow});
  if(result?.reasonCode==='HW_IMPORT_REVIEW'){
   return t('inventory.quoteReview',language,{fields:result.fields.map(key=>t('inventory.field.'+key,language)).join(', ')});
  }

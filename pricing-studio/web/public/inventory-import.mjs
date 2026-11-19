@@ -25,11 +25,38 @@ export const INVENTORY_SCHEMA={
 export const INVENTORY_LIMIT=12000;
 const productHeaders=new Set(['product','service','aws service','产品','服务','product/productname']);
 const standardData=new Set(['specification','instance_type','instancetype','规格','description','描述','usage','monthly_usage','用量','period aggregate usage','lineitem/usageamount','explicit instance specification']);
-const standardFields=new Set([...productHeaders,...standardData,'region','aws region label','区域','regioncode','quantity','count','数量','billing_method','billing method','aws billing method','unit','original unit','单位','计费方式','usage_scope','usage period','usage_period','capacity_gb','target_quantity','huawei_billing_mode','huawei_target_region']);
+const standardFields=new Set([...productHeaders,...standardData,'region','aws region label','区域','regioncode','quantity','count','数量','billing_method','billing method','aws billing method','unit','original unit','单位','计费方式','usage_scope','usage period','usage_period','capacity_gb','target_quantity','huawei_billing_mode','huawei_target_region','eip_ref']);
 const clean=value=>String(value).normalize('NFKC').trim();
 const comparable=value=>clean(value).toLowerCase().replace(/\s+/g,' ');
 const headerLabel=value=>comparable(value).replaceAll('_',' ');
 const blank=value=>value==null||clean(value)==='';
+const awsHourMeters=new Map([
+ ['amazonec2',/(?:^|-)\b(?:BoxUsage|SpotUsage):[\w.]+$/i],
+ ['amazonrds',/(?:^|-)\bInstanceUsage:[\w.]+$/i],
+ ['amazonelasticache',/(?:^|-)\bNodeUsage:[\w.]+$/i]
+]);
+
+function awsUsageRows(sheet,name,originalHeaders,XLSX){
+ const headers=originalHeaders.map(cell=>clean(cell).replace(/^\uFEFF/,''));
+ const product=headers.indexOf('产品类型'),spec=headers.indexOf('规格类型'),operation=headers.indexOf('操作');
+ const usage=headers.findIndex(value=>/^(?:使用量|用量)\s*\(\s*小时(?:数)?\s*\)$/.test(value));
+ if([product,spec,operation,usage,headers.indexOf('数量')].includes(-1))return null;
+ const records=XLSX.utils.sheet_to_json(sheet,{header:1,range:0,defval:'',blankrows:true}).slice(1);
+ if(!records.some(cells=>/^(?:Amazon|AWS)[a-z\d]+$/i.test(clean(cells[product]??''))))return null;
+ return records.flatMap((cells,index)=>{
+  if(cells.every(blank))return [];
+  const sourceProduct=clean(cells[product]??''),sku=clean(cells[spec]??''),op=clean(cells[operation]??'');
+  let amount=null;
+  try{amount=finite(cells[usage],'使用量',true);}catch{/* Preserve the original cell for manual review. */}
+  const meter=awsHourMeters.get(sourceProduct.toLowerCase())?.test(sku);
+  const ecs=sourceProduct.toLowerCase()==='amazonec2',licenseReview=ecs&&!/^RunInstances(?::0002)?$/i.test(op);
+  const [row]=normalizeRows([{product:sourceProduct||'Unknown',specification:[sku,op,ecs&&/^RunInstances:0002$/i.test(op)?'Windows':''].filter(Boolean).join(' '),
+   usage:amount,unit:meter?'hour':'',usage_scope:'aggregate',usage_period:'source-period',billing_method:/\bSpotUsage:/i.test(sku)?'spot':''}]);
+  row.huaweiImportIssues=[...(!sourceProduct?['product']:[]),...(amount===null?['usage']:[]),...(licenseReview?['specification']:[])];
+  row.importSource={sheet:name,row:index+2,cells,headerRow:1,headers:originalHeaders};
+  return [row];
+ });
+}
 
 export function readInventory(book,XLSX){
  const name=book.SheetNames.includes('Input')?'Input':book.SheetNames[0];
@@ -40,6 +67,10 @@ export function readInventory(book,XLSX){
   const header=(first??[]).map(cell=>String(cell).replace(/^\uFEFF/,'').trim().toLowerCase()).filter(Boolean);
   const quoteSheets=new Set(['Input','Service Mapping','Public Pricing','Quotation','Assumptions','Notes','Readme','说明']);
   const standardTemplate=book.SheetNames.length===1||name==='Input'&&book.SheetNames.every(name=>quoteSheets.has(name));
+  if(standardTemplate){
+   const aws=awsUsageRows(sheet,name,first??[],XLSX);
+   if(aws?.length)return {standard:aws};
+  }
   if(standardTemplate&&header.some(cell=>productHeaders.has(cell))&&
      (header.some(cell=>standardData.has(cell))||header.length>1&&header.every(cell=>standardFields.has(cell)))){
    return {standard:normalizeRows(XLSX.utils.sheet_to_json(sheet,{defval:''}))};
