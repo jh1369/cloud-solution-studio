@@ -10,6 +10,7 @@ const modelEnabled=!!process.env.INVENTORY_MODEL_PORT;
 const inventoryEndpoint=createLocalInventoryEndpoint({
  port:process.env.INVENTORY_MODEL_PORT,model:process.env.INVENTORY_MODEL,token:process.env.INVENTORY_MODEL_TOKEN
 });
+const dcsSpecEnv={DCS_SPEC_PROJECT_ID:process.env.DCS_SPEC_PROJECT_ID,DCS_SPEC_AUTH_TOKEN:process.env.DCS_SPEC_AUTH_TOKEN};
 const server=http.createServer(async(incoming,outgoing)=>{
  try{
   const init={method:incoming.method,headers:incoming.headers};
@@ -18,12 +19,12 @@ const server=http.createServer(async(incoming,outgoing)=>{
   const protocol=incoming.headers['x-forwarded-proto']==='https'?'https':'http';
   const host=incoming.headers['x-forwarded-host']||incoming.headers.host;
   const request=new Request(`${protocol}://${host}${incoming.url}`,init);
-  const localModelRequest=modelEnabled&&incoming.headers.host===`127.0.0.1:${port}`&&!incoming.headers['x-forwarded-host']&&!incoming.headers['x-forwarded-proto'];
-  const response=(localModelRequest&&await inventoryEndpoint(request))||await handleLocalCatalogRequest(request)||await worker.fetch(request);
+  const localRequest=incoming.headers.host===`127.0.0.1:${port}`&&!incoming.headers['x-forwarded-host']&&!incoming.headers['x-forwarded-proto'];
+  const response=(modelEnabled&&localRequest&&await inventoryEndpoint(request))||await handleLocalCatalogRequest(request)||await worker.fetch(request,localRequest?dcsSpecEnv:undefined);
   outgoing.writeHead(response.status,Object.fromEntries(response.headers));
   if(response.body)Readable.fromWeb(response.body).pipe(outgoing);else outgoing.end();
  }catch{
   outgoing.writeHead(500,{'Content-Type':'text/plain'});outgoing.end('Local Worker request failed');
  }
 });
-server.listen(port,modelEnabled?'127.0.0.1':'0.0.0.0',()=>console.log(`Local Pricing Studio Worker listening on ${port}`));
+server.listen(port,modelEnabled||dcsSpecEnv.DCS_SPEC_AUTH_TOKEN?'127.0.0.1':'0.0.0.0',()=>console.log(`Local Pricing Studio Worker listening on ${port}`));

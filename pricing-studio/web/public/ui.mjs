@@ -1,4 +1,4 @@
-import {SERVICES,billingOf,priceValidation,mappingReview,sumMoney} from './engine.mjs';
+import {SERVICES,billingOf,priceValidation,mappingReview,sumMoney,huaweiProductSpecIssue} from './engine.mjs';
 import {t,billingLabel,unitLabel,dateLabel,serviceLabel,translateMessage,reasonLabel,mappingLabel} from './i18n.mjs';
 export const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const money=(value,currency='USD')=>value===null||value===undefined?'—':new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:2}).format(value);
@@ -37,6 +37,15 @@ export function resourceHTML(rows,output,catalog,language='zh',page=0,now=Date.n
  return rows.slice(page*10,page*10+10).map((row,index)=>{
   const result=output[page*10+index],price=catalog.items.find(p=>p.id===row.targetId),mode=billingOf(row),subscription=mode!=='ONDEMAND';
   const options=catalog.items.filter(p=>p.service===row.service&&p.billingMode===mode);
+  const specMatch=row.service==='DCS'?row.huaweiProductMatch:null;
+  const spec=specMatch?.selected??specMatch?.candidates?.[0];
+  const specIssue=specMatch&&huaweiProductSpecIssue(row,price,now);
+  const specDetails=spec?[
+   T(spec.evidence.kind==='official-doc'?'resource.hwSpecDoc':'resource.hwSpecApi'),T('resource.hwTopology.'+spec.topology),
+   spec.capacityMiB/1024+' GB','Redis '+spec.versions.join('/'),spec.architecture,
+   spec.replicas&&T('resource.hwSpecReplicas',{count:spec.replicas}),spec.availableZones.join(', '),
+   spec.evidence.verifiedAt?dateLabel(spec.evidence.verifiedAt,language):spec.evidence.revision
+  ].filter(Boolean).map(E).join(' · '):'';
   const services=[...new Set([...Object.keys(SERVICES),row.service])];
   const field=(label,html)=>`<label><span>${E(label)}</span>${html}</label>`;
   const badge=result.status==='Valid'?'valid':result.status==='Period'?'period':'pending';
@@ -53,13 +62,14 @@ export function resourceHTML(rows,output,catalog,language='zh',page=0,now=Date.n
     ${row.service==='EVS'&&(subscription||row.huaweiMatch)||row.service==='DCS'&&row.huaweiMatch?field(T(row.service==='DCS'?'inventory.field.capacity_gb':'resource.capacity'),`<input data-field="capacity" type="number" min="0" step="any" value="${row.capacity??''}" placeholder="${T('resource.capacityHint')}">`):''}
     ${field(T('resource.period'),`<select data-field="period"><option value="monthly" ${row.period==='monthly'?'selected':''}>${T(subscription?'resource.fullContract':'resource.fullMonth')}</option><option value="source-period" ${row.period==='source-period'?'selected':''}>${T('resource.sourcePeriod')}</option></select>`)}
    </div>
-   <div class="target-row"><span class="target-arrow" aria-hidden="true">↳</span><select class="target-select" data-field="targetId" aria-label="${T('resource.targetAria')}"><option value="">${E(T(options.length?'resource.selectSku':'resource.noSku',{mode:billingLabel(mode,language)}))}</option>${row.huaweiSelection==='manual'?'<option value="__auto__">'+E(T('resource.hwAuto'))+'</option>':''}${options.map(p=>`<option value="${E(p.id)}" ${p.id===row.targetId?'selected':''}>${E(p.sku)}${p.cpu?' · '+p.cpu+'vCPU / '+p.memory+'GB':''}${p.engine?' · '+E(p.engine):''} · ${priceValidation(p,catalog,{now}).valid?'$'+p.rate+'/'+unitLabel(p.unit,language):'Pending'}</option>`).join('')}</select></div>
-   ${price?`<div class="row-notes">${E(price.description)}<br>${E(priceValidation(price,catalog,{now}).valid?T('resource.verified',{date:dateLabel(price.verifiedAt,language)}):reasonLabel(priceValidation(price,catalog,{now}),language))}</div><div class="row-notes mapping-review">${row.huaweiMatch&&row.huaweiSelection!=='manual'?T('resource.hwMatched'):mappingReview(row,price).map(issue=>E(mappingLabel(issue,language))).join('<br>')}</div>`:''}
+   <div class="target-row"><span class="target-arrow" aria-hidden="true">↳</span><select class="target-select" data-field="targetId" aria-label="${T('resource.targetAria')}"><option value="">${E(T(options.length?'resource.selectSku':'resource.noSku',{mode:billingLabel(mode,language)}))}</option>${row.huaweiSelection==='manual'?'<option value="__auto__">'+E(T('resource.hwAuto'))+'</option>':''}${options.map(p=>`<option value="${E(p.id)}" ${p.id===row.targetId?'selected':''}>${E(p.sku)}${p.cpu?' · '+p.cpu+'vCPU / '+p.memory+'GB':''}${p.engine?' · '+E(p.engine):''}${specMatch?'':' · '+(priceValidation(p,catalog,{now}).valid?'$'+p.rate+'/'+unitLabel(p.unit,language):'Pending')}</option>`).join('')}</select></div>
+   ${price&&!specIssue?`<div class="row-notes">${specMatch?'':E(price.description)+'<br>'}${E(priceValidation(price,catalog,{now}).valid?T('resource.verified',{date:dateLabel(price.verifiedAt,language)}):reasonLabel(priceValidation(price,catalog,{now}),language))}</div><div class="row-notes mapping-review">${row.huaweiMatch&&row.huaweiSelection!=='manual'?T('resource.hwMatched'):mappingReview(row,price).map(issue=>E(mappingLabel(issue,language))).join('<br>')}</div>`:''}
    ${row.huaweiMatch?`<div class="row-notes huawei-match">${[...(row.huaweiAssumptions??[]),row.huaweiUsageAssumption].filter(Boolean).map(reasonCode=>E(reasonLabel({reasonCode},language))).join(' ')}
    ${row.huaweiCandidates?.length?E(row.huaweiCandidates.slice(0,12).join(', ')):''}</div>`:''}
+   ${spec?`<div class="row-notes huawei-spec-evidence">${specDetails} <a href="${E(spec.evidence.url)}" target="_blank" rel="noopener">${E(T('resource.hwSpecSource'))}</a></div>`:''}
    ${row.importSource?`<div class="row-notes">${E(row.importSource.sheet)} · ${T('inventory.row')} ${row.importSource.row}</div>`:''}
    <div class="row-notes source-notes">${E(T('resource.awsBilling',{billing:translateMessage(row.billing||'未提供',language)}))}<br>${E(translateMessage(row.notes,language))} ${E(reasonLabel(result,language))}</div>
-   <div class="row-bottom"><label class="check-line"><input data-field="accepted" type="checkbox" ${row.accepted?'checked':''} ${row.targetId?'':'disabled'}><span>${T('resource.accept')}</span></label><div class="row-cost">${money(result.termScenario)} <small>${T(mode==='YEARLY'?'term.year':mode==='MONTHLY'?'term.month':result.status==='Period'?'term.period':'term.monthly')}</small></div></div>
+   <div class="row-bottom"><label class="check-line"><input data-field="accepted" type="checkbox" ${row.accepted?'checked':''} ${row.targetId&&!specIssue?'':'disabled'}><span>${T('resource.accept')}</span></label><div class="row-cost">${money(result.termScenario)} <small>${T(mode==='YEARLY'?'term.year':mode==='MONTHLY'?'term.month':result.status==='Period'?'term.period':'term.monthly')}</small></div></div>
   </article>`;
  }).join('');
 }

@@ -1,6 +1,7 @@
 const assets=/*ASSETS*/{};
 const catalogue=/*CATALOG*/{};
 const offlineDownload=/*OFFLINE_DOWNLOAD*/{};
+/*HUAWEI_DCS_SPECS*/
 /*TCP_INSPECTOR*/
 /*TCP_PUBLICATION*/
 const tcpRelease=tcpReleaseStore(/*TCP_RELEASE*/{});
@@ -25,6 +26,12 @@ function resultIndex(quote,count){
 function json(value,status=200){return new Response(JSON.stringify(value),{status,headers:{...security,'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});}
 export default {async fetch(request,env){
  const url=new URL(request.url);
+ if(url.pathname==='/api/specifications/dcs'){
+  if(request.method!=='GET')return json({error:'GET required'},405);
+  if(url.search)return json({error:'Query parameters are not supported'},400);
+  if(request.headers.get('Sec-Fetch-Site')==='cross-site'||request.headers.get('Origin')&&request.headers.get('Origin')!==url.origin)return json({error:'Origin mismatch'},403);
+  return json(await loadDcsSpecs(env));
+ }
  if(url.pathname==='/api/catalog/tcp/status'||url.pathname==='/api/catalog/tcp/catalog'){
   if(request.method!=='GET')return json({error:'GET required'},405);
   const bucket=env?.TCP_CATALOG_BUCKET;

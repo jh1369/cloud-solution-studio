@@ -167,7 +167,8 @@ export function parseText(text){
  const lines=text.split(/[\n；;]/).map(s=>s.trim()).filter(Boolean);if(!lines.length)throw Error('请先输入资源描述');
  return lines.map(line=>{
  let service='Unmapped';for(const [f,aliases] of Object.entries(SERVICES))if(aliases.some(a=>new RegExp(`(?:^|[^a-z])${a.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?:$|[^a-z])`,'i').test(line))){service=f;break;}
- const quantity=line.match(/(?:数量|quantity|count)\s*[=:：]?\s*(\d+(?:\.\d+)?)/i)||line.match(/(\d+(?:\.\d+)?)\s*(?:台|个|instances?)/i);
+ const countedResources=service==='DCS'?/(\d+(?:\.\d+)?)\s*(?:套|[台个](?!\s*(?:副本|节点|分片))|instances?\b)/i:/(\d+(?:\.\d+)?)\s*(?:台|个|instances?)/i;
+ const quantity=line.match(/(?:数量|quantity|count)\s*[=:：]?\s*(\d+(?:\.\d+)?)/i)||line.match(countedResources);
  const usage=line.match(/(?:用量|usage)\s*[=:：]?\s*(\d+(?:\.\d+)?)/i)||line.match(/(\d+(?:\.\d+)?)\s*(?:小时|hours?|hrs?)/i);
  const capacity=line.match(/(\d+(?:\.\d+)?)\s*(?:GB|G)(?:\s*[-/]?\s*(?:月|month|mo))?/i);
  const storage=service==='EVS'||service==='OBS';
@@ -209,6 +210,21 @@ export function sumMoney(values){
  return Number(cents)/100;
 }
 const pendingResult=(reason,reasonCode='INPUT_INVALID')=>({status:'Pending',reason,reasonCode,monthly:null,scenario:null,annual:null,termPublic:null,termScenario:null,upfrontScenario:null});
+export function productSpecAvailability(spec,region,now){
+ if(spec?.evidence?.kind!=='official-api'||spec.region!==region||!Array.isArray(spec.availableZones)||!spec.availableZones.length)return 'HW_DCS_SPEC_AZ_REQUIRED';
+ const checked=Date.parse(spec.evidence.verifiedAt),expires=Date.parse(spec.evidence.expiresAt);
+ if(!(checked<=now&&expires>now))return 'HW_DCS_SPEC_EXPIRED';
+ return null;
+}
+export function huaweiProductSpecIssue(row,item,now=Date.now()){
+ const match=row.huaweiProductMatch;
+ if(row.service!=='DCS'||!match)return null;
+ if(match.reasonCode)return match.reasonCode;
+ const spec=match.selected;
+ if(!spec||spec.specCode!==item?.sku||spec.service!==item.service||spec.resourceType!==item.resourceType||item.size!==false||
+    match.specification!==row.specification||match.product!==row.product||match.capacity!==row.capacity)return 'HW_DCS_SPEC_RECHECK';
+ return productSpecAvailability(spec,item.region,now);
+}
 export function calculate(row,catalog,options={}){
  try{return calculateValidated(row,catalog,options);}
  catch(error){return pendingResult(error.code==='AMOUNT_PRECISION'?error.message:'Invalid quantity, usage, discount or reference hours.',error.code||'INPUT_INVALID');}
@@ -222,11 +238,13 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
  if(row.service==='DCS'&&row.huaweiCapacityConflict)return pending('', 'HW_CACHE_CAPACITY');
  if(row.service==='EVS'&&mode==='ONDEMAND'&&row.evsUsageConflict)return pending('', 'HW_DISK_USAGE_CONFLICT');
  if(!Object.hasOwn(BILLING_MODES,mode))return pending('华为云目标计费模式仅支持按需、包月、包年。','PRICE_MODE');
+ const productSpecIssue=huaweiProductSpecIssue(row,item,now);
+ if(productSpecIssue)return pending('',productSpecIssue);
  if(!item)return pending(`请为${BILLING_MODES[mode]}选择已验证的目标规格；未获取价格的服务保持 Pending。`,row.huaweiMatch||'PRICE_MISSING');
  if(item.billingMode!==mode)return pending('所选官方价格与华为云目标计费模式不一致，请重新选择。','PRICE_MODE');
  if(!row.accepted)return pending('请核对并确认目标规格、架构、引擎、计费模式和部署方式。','MAPPING_REVIEW');
  if(item.service!==row.service)return pending('目标产品族不匹配。','MAPPING_SERVICE');
- if(row.service==='DCS'&&row.huaweiSelection==='manual'&&row.capacity>0){
+ if(row.service==='DCS'&&!row.huaweiProductMatch&&row.huaweiSelection==='manual'&&row.capacity>0){
   const skuCapacity=String(item.description??'').match(/(?:^|;)\s*capacity:\s*(\d+)\s*MB\s*(?:;|$)/i)?.[1];
   if(Number(skuCapacity)!==row.capacity*1024)return pending('', 'HW_CACHE_SKU_CAPACITY');
  }

@@ -1,6 +1,6 @@
 # Cloud Solution Studio · Pricing Studio Web
 
-Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.8-dev` includes catalog-based Huawei SKU matching and a local model-assisted review workflow. [Browser acceptance](../../docs/PRICING_BROWSER_ACCEPTANCE.md)
+Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.9-dev` adds regional DCS product specification evidence to the existing Huawei matcher and local model-assisted review workflow. [Development status](../../docs/DEVELOPMENT_STATUS.md)
 
 ## Features
 
@@ -21,12 +21,32 @@ The bundled public catalog has 441 pay-per-use and 400 plans each for one month 
 | --- | --- |
 | ECS | Match vCPU, memory, architecture, OS, compute class and explicit series. Generic requests use visible x86, Linux and General Computing assumptions. Specialized hosts, licenses and accelerators require review. |
 | EVS | Match the disk class and keep per-disk capacity separate from metered usage. Generic SSD uses a disclosed GPSSD estimate. Performance, snapshots and inconsistent capacities require review. |
-| DCS | Match Redis capacity and a compatible topology. With unspecified topology and one compatible single-node SKU, disclose the single-node assumption. Pricing requires a resource count. Multiple node counts, version constraints and conflicting capacities require review. A manual SKU with a different capacity remains Pending. |
+| DCS | Match Redis capacity, topology and supplied architecture, version, replicas, shards and verifiable performance requirements against official flavor metadata. The single-node assumption is visible when topology is omitted. Both automatic and manual pricing require regional availability evidence and an exact official rate plan. |
 | RDS | Match engine, version, shape, topology and explicit Cloud SSD for instance-only estimates. Storage, backups and database licensing require review. |
 | NAT Gateway | Match a declared private NAT size (`small`, `medium`, `large`, `xlarge`) for an explicitly scoped instance-only estimate. |
 | ELB, CCE and other services | Manual candidate selection where a catalog plan exists. ELB has one hourly SKU. OBS has no usable price rows. |
 
 Each eligible service checks the requested target region, billing mode and verified rate before pricing. A known count with omitted usage can use a disclosed full-month estimate for supported per-resource rows. Aggregate usage keeps its source period. When billing changes after manual selection, the same SKU requires fresh confirmation. If the plan is unavailable, choose another SKU or select **Match automatically**. Pending lines have blank quote amounts and are excluded from subtotals.
+
+## Official DCS product specifications
+
+The browser requests same-origin `GET /api/specifications/dcs` when a DCS row first appears and when the user refreshes rates. The Worker uses a fixed EU-Dublin `GET /v2/{project_id}/flavors?engine=Redis&spec_type=instance`. The browser request has no inventory, SKU filters or credential data. The response exposes normalized fields and AZ codes. [ListFlavors reference](https://support.huaweicloud.com/eu/api-dcs/ListFlavors.html) · [Huawei Cloud SDK regional endpoint](https://pkg.go.dev/github.com/huaweicloud/huaweicloud-sdk-go-v3@v0.1.219/services/dcs/v2/region)
+
+An approved read-only EU-Dublin project requires `DCS_SPEC_PROJECT_ID` and a valid IAM `DCS_SPEC_AUTH_TOKEN` in the private Worker bindings or the local server process environment. A local server configured with a token listens on `127.0.0.1` and uses that token only for direct loopback requests. Store the token as a runtime secret and renew it according to the approved IAM process. The endpoint returns `authentication_required` for missing credentials or upstream HTTP 401/403. Timeouts, failed requests and malformed responses return `unavailable`. Both states use the same versioned official document candidates. [Redis product specifications, 2025-11-03](https://support.huaweicloud.com/eu/productdesc-dcs/dcs-pd-0522002.html)
+
+The version 1 metadata contract keeps `service`, `region`, `resourceType`, `specCode`, `topology`, `architecture`, `versions`, `capacityMiB`, `performance` and `evidence` as structured fields. DCS includes the Redis engine, replica count and shard count. API evidence includes the fixed source, fetch time, 15-minute expiry and AZ codes for the exact capacity. Documentation evidence includes a revision and table with region unspecified. The browser holds these records in memory. Workbook Service Mapping retains selected or candidate records and Public Pricing retains the independent official inquiry evidence.
+
+The DCS adapter covers normal Redis DRAM instance flavors. A candidate needs an `az_codes` entry for its exact capacity and any explicitly requested AZ. A single-AZ listing only establishes that the project returned placement evidence at lookup time. Multi-AZ placement and QPS commitments require separate review. `max_connections` can support an explicit connection requirement. Bandwidth without a proven unit or assured vs peak semantics stays Pending. Tiered flavors and add-ons require a separate billing rule.
+
+Eligible spec codes join on service, region, resource type and exact SKU. The existing pricing engine independently validates the selected mode and its official request, response, unit, currency and expiry. ListFlavors documents the hourly marker for the EU response. Subscription prices are checked against their respective verified monthly and yearly inquiries. Multiple eligible specs require manual selection. Each manual choice uses the same dimension, availability and price checks.
+
+Future adapters share this evidence contract and add only service-specific fields and an explicit price code link.
+
+| Service | Official dimensions and minimum extension |
+| --- | --- |
+| ECS | Normalize flavor ID, vCPU, memory, CPU architecture, flavor class and AZ status. Join the flavor to a verified OS or license price variant. [ECS flavor details](https://support.huaweicloud.com/eu/api-ecs/en-us_topic_0020212656.html) |
+| RDS | Normalize engine and version, instance class, topology, vCPU, memory and AZ status. Join the instance SKU and retain separate storage, backup and licensing charges. [RDS flavor API](https://support.huaweicloud.com/intl/en-us/api-rds/rds_06_0002.html) |
+| ELB | Normalize load balancer flavor ID, layer, performance limits and AZ evidence. Join the instance plan and verify separate capacity, bandwidth or traffic billing. [ELB flavor API](https://support.huaweicloud.com/intl/en-us/api-elb/ListFlavors.html) |
 
 ## Model-assisted CSV and Excel on the user machine
 

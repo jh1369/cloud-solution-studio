@@ -16,6 +16,9 @@ download_path='/downloads/pricing-studio-offline.zip'
 assets[download_path]=base64.b64encode(offline_archive.read_bytes()).decode()
 catalog=json.loads((ROOT/'public/catalog.json').read_text())
 source=(ROOT/'worker.mjs').read_text().replace('/*ASSETS*/{}',json.dumps(assets)).replace('/*CATALOG*/{}',json.dumps(catalog)).replace('/*OFFLINE_DOWNLOAD*/{}',json.dumps({'path':download_path,'filename':offline_archive.name}))
+dcs_specs=(ROOT/'public/huawei-dcs-specs.mjs').read_text()
+dcs_api=(ROOT/'huawei-dcs-spec-api.mjs').read_text().split('\n',1)[1]  # Imports the DCS module above.
+source=source.replace('/*HUAWEI_DCS_SPECS*/',re.sub(r'^export ','',dcs_specs+'\n'+dcs_api,flags=re.M))
 inspector=re.sub(r'^export ','',(ROOT/'public/catalog_status.mjs').read_text(),flags=re.M)
 publication=re.sub(r'^export ','',(ROOT/'tcp_publication.mjs').read_text(),flags=re.M)
 snapshot={}

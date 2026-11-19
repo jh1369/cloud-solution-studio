@@ -1,4 +1,4 @@
-import {calculate,REGION,billingOf,priceValidation,mappingReview,sumMoney} from './engine.mjs';
+import {calculate,REGION,billingOf,priceValidation,mappingReview,sumMoney,huaweiProductSpecIssue} from './engine.mjs';
 import {billingLabel,translateMessage,reasonLabel,mappingLabel,t} from './i18n.mjs';
 import {TCP_QUOTE_REGION,tcpQuoteRows,tcpQuoteTotals} from './providers.mjs';
 
@@ -49,6 +49,7 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
   return book;
  }
  const output=rows.map(row=>calculate(row,catalog,opts));
+ const includeSpec=rows.some(row=>row.service==='DCS'&&row.huaweiProductMatch);
  add('Input',[
   ['Row','Product','Specification','AWS Region','Resource Count','Usage','Unit','Usage Scope','Usage Period','AWS Billing Method','Source Page','Target Quantity','Huawei Billing Mode','Capacity GB','Source Sheet','Source Row','Original Fields','Source Header Row','Original Headers','Requested Huawei Target Region'],
   ...rows.map((row,i)=>[i+1,row.product,row.specification,row.region,row.quantity,row.usage,row.unit,row.scope,row.period,row.billing,
@@ -57,12 +58,25 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
    row.importSource?.headers?JSON.stringify(row.importSource.headers):null,row.huaweiTargetRegion||null])
  ]);
  add('Service Mapping',[
-  ['Row','AWS Product','Target Service','Target SKU','Target Description','Region','Confirmed','Notes','Huawei Billing Mode','Target Quantity','Mapping Review','Match and Assumptions'],
-  ...rows.map((row,i)=>{const price=catalog.items.find(p=>p.id===row.targetId);return[i+1,row.product,row.service,price?.sku??null,price?.description??null,REGION,row.accepted?'Yes':'No',translateMessage(row.notes,language),billingLabel(billingOf(row),language),row.targetQuantity??row.quantity??row.huaweiQuantity,mappingReview(row,price).map(issue=>mappingLabel(issue,language)).join(' '),[...(row.huaweiAssumptions??[]),row.huaweiUsageAssumption].filter(Boolean).map(reasonCode=>reasonLabel({reasonCode},language)).join(' ')];})
+  ['Row','AWS Product','Target Service','Target SKU','Target Description','Region','Confirmed','Notes','Huawei Billing Mode','Target Quantity','Mapping Review','Match and Assumptions',...(includeSpec?['Product Spec Evidence']:[])],
+  ...rows.map((row,i)=>{
+   const price=catalog.items.find(p=>p.id===row.targetId),match=row.service==='DCS'?row.huaweiProductMatch:null;
+   const selected=match?.selected,candidates=match?.candidates?.slice(0,12);
+   const productEvidence=selected||candidates?.length?JSON.stringify({selected,candidates}):null;
+   return [i+1,row.product,row.service,price?.sku??null,match?null:price?.description??null,REGION,row.accepted?'Yes':'No',translateMessage(row.notes,language),
+    billingLabel(billingOf(row),language),row.targetQuantity??row.quantity??row.huaweiQuantity,mappingReview(row,price).map(issue=>mappingLabel(issue,language)).join(' '),
+    [...(row.huaweiAssumptions??[]),row.huaweiUsageAssumption].filter(Boolean).map(reasonCode=>reasonLabel({reasonCode},language)).join(' '),...(includeSpec?[productEvidence]:[])];
+  })
  ]);
  add('Public Pricing',[
   ['Row','Price Status','Product ID','SKU','Unit Price','Currency','Unit','Verified At','Official Source','Official Evidence','Huawei Billing Mode','Verified Period Type','Verified Period Count'],
-  ...rows.map((row,i)=>{const price=catalog.items.find(p=>p.id===row.targetId),fresh=price&&priceValidation(price,catalog,opts).valid&&(price.billingMode||'ONDEMAND')===billingOf(row);return[i+1,fresh?'Valid':'Pending',price?.productId??null,price?.sku??null,fresh?price.rate:null,price?.currency??null,price?.unit??null,price?.verifiedAt??null,price?.sourceUrl??null,price?JSON.stringify(price.evidence):null,billingLabel(billingOf(row),language),price?.periodType??null,price?.periodNum??null];})
+  ...rows.map((row,i)=>{
+   const price=catalog.items.find(p=>p.id===row.targetId),specIssue=huaweiProductSpecIssue(row,price,opts.now);
+   const fresh=price&&!specIssue&&priceValidation(price,catalog,opts).valid&&(price.billingMode||'ONDEMAND')===billingOf(row);
+   return [i+1,fresh?'Valid':'Pending',price?.productId??null,price?.sku??null,fresh?price.rate:null,price?.currency??null,price?.unit??null,
+    specIssue?null:price?.verifiedAt??null,specIssue?null:price?.sourceUrl??null,price&&!specIssue?JSON.stringify(price.evidence):null,
+    billingLabel(billingOf(row),language),price?.periodType??null,price?.periodNum??null];
+  })
  ]);
  add('Quotation',[
   ['Row','Target Service','Status','Monthly Public or Amortized USD','Discount Fraction','Monthly Scenario or Amortized USD','Annual Scenario USD','Source Period Public USD','Source Period Scenario USD','Reason','Huawei Billing Mode','Contract Term','Term Public USD','Term Scenario USD','Prepaid First Term Scenario USD','Annual Basis'],

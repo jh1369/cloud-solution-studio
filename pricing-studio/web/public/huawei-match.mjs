@@ -1,4 +1,5 @@
-import {REGION,awsShape,billingOf,family,priceValidation} from './engine.mjs';
+import {REGION,awsShape,billingOf,family,priceValidation,productSpecAvailability} from './engine.mjs';
+import {dcsRequirements,dcsSpecSnapshot,matchesDcsSpec} from './huawei-dcs-specs.mjs';
 
 function attributes(item){
  if(typeof item.description!=='string')return {};
@@ -56,8 +57,6 @@ const topologyOptions=[
  [/\bread replica\b|只读副本/i,'read_replica']
 ];
 const topologies=text=>topologyOptions.filter(([pattern])=>pattern.test(text)).map(([,value])=>value);
-const cacheEngineConstraint=/memcached|valkey|keydb|\bredis\s+v\d|\bredis\s+\d+\.\d+(?![\d.]|\s*(?:GiB|GB|G)(?![a-z]))|版本|\bversion\b/i;
-const otherCacheTopology=/高可用|多\s*(?:AZ|可用区)|哨兵|分片|\b(?:HA|standby|replication|replicated|shards?|sentinel)\b/i;
 
 const rules={
  ECS(row,spec){
@@ -98,24 +97,6 @@ const rules={
   if(!sku)return missing('HW_DISK_TYPE');
   if(!(row.capacity>0)&&(billingOf(row)!=='ONDEMAND'||row.usage==null))return missing('HW_DISK_CAPACITY');
   return policy(item=>item.sku===sku,generic?['HW_DEFAULT_SSD']:[]);
- },
- DCS(row,source){
-  if(!/redis|\bdcs\b/i.test(source)||cacheEngineConstraint.test(source))return missing('HW_CACHE_ENGINE');
-  if(/\b(?:flash|SSD|persistent memory)\b|闪存/i.test(source))return missing('HW_NO_MATCH');
-  if(row.huaweiCapacityConflict||!(row.capacity>0))return missing('HW_CACHE_CAPACITY');
-  const modes=topologies(source);
-  const units=observedIntegers(source,/(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*(?:节点|nodes?\b|副本|replicas?\b)/gi);
-  const count=units.values().next().value;
-  if(modes.length>1||modes[0]==='read_replica'||/哨兵|分片|\b(?:shards?|sentinel)\b/i.test(source)||
-     units.size>1||units.size&&(!Number.isInteger(count)||count<=0))return missing('HW_CACHE_MODE');
-  const mode=modes[0];
-  if(!mode&&(!/redis/i.test(source)||otherCacheTopology.test(source)||count>1))return missing('HW_CACHE_MODE');
-  if(mode==='single_node'&&(count>1||otherCacheTopology.test(source)))return missing('HW_CACHE_MODE');
-  const nodeCount=mode?count:1;
-  return policy((item,fields)=>typeof item.sku==='string'&&item.sku.startsWith('redis.')&&fields.cache_mode===(mode??'single_node')&&fields.capacity===row.capacity*1024+'MB'&&
-   (!nodeCount||fields.replica_number===nodeCount+'PCS')&&(!/arm|鲲鹏/i.test(source)||fields.cpu_type==='arm')&&
-   (!/x86/i.test(source)||fields.cpu_type==='x86')&&(!/DRAM/i.test(source)||fields.storage_type==='DRAM'),
-   mode?[]:['HW_DEFAULT_REDIS_SINGLE']);
  },
  RDS(row,spec){
   const shape=computeShape(spec),modes=topologies(spec);
@@ -187,17 +168,49 @@ export function identifyHuaweiRow(row){
  return row;
 }
 
-export function matchHuawei(row,catalog,{now=Date.now()}={}){
+function matchDcs(row,catalog,plans,source,dcsSpecs,now){
+ const manual=row.huaweiSelection==='manual';
+ const chosen=manual?plans.find(plan=>plan.id===row.targetId):null;
+ if(manual&&!chosen)return missing('HW_MANUAL_PLAN');
+ const requirements=dcsRequirements(row,source,manual);
+ if(requirements.code)return requirements;
+ const status=dcsSpecs?.status;
+ const regional=status==='official'&&dcsSpecs.schemaVersion===1&&dcsSpecs.service==='DCS'&&dcsSpecs.region===REGION&&Array.isArray(dcsSpecs.records);
+ const records=regional?dcsSpecs.records:dcsSpecSnapshot('unavailable').records;
+ const scope=records.filter(spec=>spec.service==='DCS'&&(!chosen||spec.specCode===chosen.sku));
+ const matches=scope.filter(spec=>matchesDcsSpec(spec,requirements));
+ const pending=(code,specs=matches)=>({code,specs,candidates:[...new Set(specs.map(spec=>spec.specCode))],assumptions:requirements.assumptions});
+ if(!regional){
+  const code={loading:'HW_DCS_SPEC_LOADING',authentication_required:'HW_DCS_SPEC_AUTH'}[status??'authentication_required'];
+  return pending(code??'HW_DCS_SPEC_UNAVAILABLE');
+ }
+ if(!matches.length){
+  const wrongCapacity=chosen&&requirements.capacityMiB&&scope.length&&scope.every(spec=>spec.capacityMiB!==requirements.capacityMiB);
+  return pending(wrongCapacity?'HW_CACHE_SKU_CAPACITY':'HW_DCS_SPEC_NO_MATCH',scope.filter(spec=>chosen&&wrongCapacity));
+ }
+ const eligible=matches.filter(spec=>!productSpecAvailability(spec,REGION,now)&&(!requirements.zone||spec.availableZones.includes(requirements.zone)));
+ if(!eligible.length)return pending(matches.some(spec=>productSpecAvailability(spec,REGION,now)==='HW_DCS_SPEC_EXPIRED')?'HW_DCS_SPEC_EXPIRED':'HW_DCS_SPEC_AZ_REQUIRED');
+ if(eligible.length!==1)return pending('HW_MULTIPLE',eligible);
+ const [spec]=eligible;
+ const conflicting=matches.filter(other=>other.specCode===spec.specCode&&other.versions.some(version=>spec.versions.includes(version)));
+ if(conflicting.length>1)return pending('HW_MULTIPLE',conflicting);
+ const exact=plans.filter(plan=>plan.sku===spec.specCode&&plan.resourceType===spec.resourceType&&plan.size===false);
+ if(exact.length!==1||chosen&&chosen.id!==exact[0].id)return pending('HW_DCS_SPEC_PRICE_LINK',eligible);
+ const [item]=exact;
+ return {item,spec,code:priceValidation(item,catalog,{now}).valid?'HW_MATCHED':'HW_MATCHED_PRICE',assumptions:requirements.assumptions};
+}
+
+export function matchHuawei(row,catalog,{now=Date.now(),dcsSpecs}={}){
  if(row.huaweiTargetRegion&&row.huaweiTargetRegion!==REGION)return missing('HW_TARGET_REGION');
  const rule=Object.hasOwn(rules,row.service)?rules[row.service]:null;
  const mode=billingOf(row);
  const plans=catalog.items.filter(item=>item?.region===REGION&&item.service===row.service&&item.billingMode===mode);
+ const spec=(row.product+' '+row.specification).normalize('NFKC').trim();
+ if(row.service==='DCS')return matchDcs(row,catalog,plans,spec,dcsSpecs,now);
  if(!plans.length)return missing('HW_NO_PLAN');
  if(!rule)return missing('HW_MANUAL_SERVICE');
- const spec=(row.product+' '+row.specification).normalize('NFKC').trim();
  const contract=rule(row,spec);
  if(contract.code)return contract;
- if(contract.assumptions.includes('HW_DEFAULT_REDIS_SINGLE')&&plans.some(item=>typeof item.description!=='string'||!item.description.trim()))return missing('HW_NO_MATCH');
  const exact=plans.filter(item=>contract.test(item,attributes(item)));
  if(!exact.length)return missing('HW_NO_MATCH');
  if(exact.length!==1)return {code:'HW_MULTIPLE',candidates:exact.map(item=>item.sku)};
@@ -206,26 +219,31 @@ export function matchHuawei(row,catalog,{now=Date.now()}={}){
   assumptions:contract.assumptions};
 }
 
-export function applyHuaweiMatch(row,catalog){
- if(row.huaweiSelection==='manual')return row;
- const match=matchHuawei(row,catalog);
+export function applyHuaweiMatch(row,catalog,options){
+ const manual=row.huaweiSelection==='manual';
+ if(manual&&row.service!=='DCS')return row;
+ const match=matchHuawei(row,catalog,options);
  row.huaweiMatch=match.code;
  row.huaweiCandidates=match.candidates;
  row.huaweiAssumptions=match.assumptions??[];
- row.targetId=match.item?.id??'';
- row.accepted=!!match.item;
+ if(row.service==='DCS'){
+  row.huaweiProductMatch={reasonCode:match.spec?null:match.code,selected:match.spec,candidates:match.specs,
+   specification:row.specification,product:row.product,capacity:row.capacity};
+ }else delete row.huaweiProductMatch;
+ if(!manual){row.targetId=match.item?.id??'';row.accepted=!!match.item;}
  setHuaweiUsageAssumption(row,match.item);
  return row;
 }
 
-export function selectHuaweiBilling(row,mode,catalog){
+export function selectHuaweiBilling(row,mode,catalog,options){
  row.targetBilling=mode;
- if(row.huaweiSelection!=='manual')return applyHuaweiMatch(identifyHuaweiRow(row),catalog);
+ if(row.huaweiSelection!=='manual')return applyHuaweiMatch(identifyHuaweiRow(row),catalog,options);
  row.huaweiPreferredSku??=catalog.items.find(item=>item.id===row.targetId)?.sku;
  const choices=catalog.items.filter(item=>item.region===REGION&&item.service===row.service&&item.billingMode===mode&&item.sku===row.huaweiPreferredSku);
  const chosen=choices.length===1?choices[0]:null;
  row.targetId=chosen?.id??'';
  row.accepted=false;
+ if(row.service==='DCS')return applyHuaweiMatch(identifyHuaweiRow(row),catalog,options);
  row.huaweiMatch=chosen?'HW_MATCHED':'HW_MANUAL_PLAN';
  setHuaweiUsageAssumption(row,chosen);
  return row;
