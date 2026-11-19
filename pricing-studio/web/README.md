@@ -1,6 +1,6 @@
 # Cloud Solution Studio · Pricing Studio Web
 
-Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.14-dev` adds ranked, evidenced AWS migration options for ECS, RDS, DCS, and CSS. [Development status](../../docs/DEVELOPMENT_STATUS.md)
+Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.15-dev` supports ranked migration options and browser-only aggregate acceptance reports. [Development status](../../docs/DEVELOPMENT_STATUS.md)
 
 ## Features
 
@@ -85,6 +85,8 @@ Source billable instance hours remain cumulative hours for the original billing 
 **Review matching estimates** shows the condition and the number of rows sharing the same source configuration and selected Huawei plan. Confirming those rows triggers deterministic revalidation and preserves per-row usage. The webpage and Excel subtotal confirmed charges separately from conditional estimates. The Service Mapping worksheet records AWS evidence, candidate Huawei SKUs and conditions. The Quotation worksheet keeps Pending amounts blank.
 
 **Review matching migration plans** applies a target design to an equivalent source group and reruns matching. Review the resulting priced SKU and billing basis to confirm. ECS keeps compatible architecture and OS and bounds both dimensions at 2×. AWS RDS defaults to MySQL 8.0 primary/standby with separate data disk and backup lines. CSS uses managed OpenSearch data-node prices and separate storage. DCS uses usable cache capacity and distinguishes aggregate source node hours from target whole-instance hours. Pairing and capacity assumptions require evidence before confirmation. [Coverage and price evidence](../../docs/HUAWEI_QUOTE_COVERAGE.md#0314-dev-四类迁移报价复测)
+
+**Export anonymized regression** saves aggregate counts from the current Huawei quotation at import or after design review. The export runs in the browser. It records version, measured day, catalog timestamp, status counts and standard reason codes. Use the validator before adding an owner-supplied report to the release history. [Private acceptance instructions](../../docs/HUAWEI_PRIVATE_ACCEPTANCE_TEMPLATE.md)
 
 ## Commands
 

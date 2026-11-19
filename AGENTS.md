@@ -51,6 +51,12 @@ For a significant architecture change, also update root `README.md` and `docs/RO
 - Record local, synchronized and deployed versions separately. Keep incomplete work local unless the user requests a candidate handoff.
 - No background synchronization, automatic uploads, secret discovery or credential scanning outside the approved development repository.
 
+### Private reference-workbook regression
+
+- Every Huawei Pricing Studio online update carries a real-workbook regression entry in `docs/HUAWEI_REAL_REGRESSION.md`. Record the Web version, GitHub base or release commit, target region and acceptance state. The owner imports the same reference workbook privately and submits the anonymized initial and reviewed statistics. Record pending owner acceptance while either required snapshot is unavailable.
+- Validate the owner-supplied statistics with `pricing-studio/web/scripts/validate_huawei_regression.mjs` before recording results. Compare the same stages, input-row and billing-mode counts, and preserve any change in test scope. Report source profile, candidate, confirmed, conditional and Pending deltas, reason distributions, separately billed components and the resulting priorities. Use the existing authorized GitHub review and publication workflow for the aggregate report.
+- Keep original records, resource names, configurations, SKU combinations, amounts, and workbooks in the owner's isolated environment. Keep verified real aggregates, historic results and synthetic acceptance clearly labeled.
+
 ### Role split and handoff
 
 - ChatGPT: requirements planning, solution design, analysis of publicly documented cloud capabilities and technical review.

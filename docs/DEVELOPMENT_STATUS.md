@@ -7,16 +7,16 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-19，Europe/Berlin |
-| 当前优先目标 / 模式 | Huawei EU-Dublin 的 ECS、RDS、DCS、CSS 迁移报价，单 Agent |
-| 本轮检查基线 | `main` / `2644da6d99d439a0d49a1ccd5b41988f1b7788f7`，含 [PR #20](https://github.com/jh1369/cloud-solution-studio/pull/20) |
+| 当前优先目标 / 模式 | Huawei EU-Dublin 的迁移报价与按版本真实回归，单 Agent |
+| 本轮检查基线 | `main` / `34eb6d302e29333e353d60af380d8b57c308924b`，含 [PR #21](https://github.com/jh1369/cloud-solution-studio/pull/21) |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 在线源码及原私有站第 16 版均为 `0.3.14-dev` |
+| 当前网页版本 | 在线源码及原私有站第 17 版均为 `0.3.15-dev` |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| Sites 部署源码 | `495e939c90135e5ac7610667206d135219be24e0`（私有站第 16 版） |
+| Sites 部署源码 | `46e6451311bb920c633ad50d2688c5b430d5bd95`（私有站第 17 版） |
 | 整体进度 | ECS 受限升配与候选排序，RDS 主备迁移方案及独立存储，DCS 容量与节点小时换算，CSS 托管节点与独立存储 |
-| 本轮同步范围 | Huawei 在线代码、官方规格及 EU-Dublin 公开目录、虚构测试、覆盖率和脱敏反馈模板。 [四类报价复测](HUAWEI_QUOTE_COVERAGE.md#0314-dev-四类迁移报价复测) |
+| 本轮同步范围 | 浏览器内脱敏回归导出、统计校验器、历史实测汇总及每版验收规则。 [真实回归记录](HUAWEI_REAL_REGRESSION.md) |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -125,6 +125,13 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 - 原私有 Sites 的身份和访问配置未放入 GitHub；下载源码不会自动取得该站点的管理或访问权限。
 
 ## 7. 最近一次测试与同步检查
+
+### Web V0.3.15-dev
+
+- 在 `pricing-studio/web/` 使用 Node 24.22.1 和 Python 3.12.14 构建 Worker，沿用既有下载附件。执行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，151 项通过、0 项失败。执行 `PYTHONPATH=tests python3.12 -m unittest test_catalog test_catalog_updates test_tcp_pdf test_schedule test_catalog_publication`，41 项通过、0 项失败，2 项因缺 boto3 跳过。原 CLI 在 `pricing-studio/` 通过 1 项。
+- Chromium 156.0.8078.79 用 24 行虚构 Excel 实际导出两阶段统计。单组复核前后，主费用确认数为 1 和 2，条件估算为 15 和 14，Pending 均为 8。两份 JSON 通过配对校验。导入、复核和导出流程产生 0 个网络 POST。单测覆盖额外字段、未知原因和不一致计数的拒收。
+- 原私有站第 17 版部署成功。复核为所有者访问，5 个线上资源与部署源码逐字节一致。对照既有 TCP 目录及下载归档通过。 [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
+- 历史实测的公开记录仅含脱敏统计。当前版真实回归待接收所有者的两份统计，后续以同一阶段和同一清单口径对比。 [真实回归记录](HUAWEI_REAL_REGRESSION.md)
 
 ### Web V0.3.14-dev
 
@@ -545,3 +552,9 @@ Huawei 欧洲站覆盖率优先补齐 RDS 数据盘和备份，随后为 ELB/EIP
 - **修改** 原报价引擎沿用证据校验，DCS 源节点小时与目标整体实例小时分列。RDS 与 CSS 的实例和存储分开。原始账期用量保留，价格或方案变更使相关确认失效。**删除** ECS 替代方案依赖严格等规格的限制，保留架构、OS 及许可校验。
 - **验证与待确认** 24 行虚构清单有候选从 4 行升至 16 行，分组复核后主费用 8 行确认。Aurora、UltraWarm、部分架构或 OS、RDS 超额备份及 CSS 部分存储计费保留 Pending。真实清单由所有者自行在私有站复验，反馈采用公开脱敏模板。 [验证结果](HUAWEI_QUOTE_COVERAGE.md#0314-dev-四类迁移报价复测) · [脱敏模板](HUAWEI_PRIVATE_ACCEPTANCE_TEMPLATE.md)
 - **同步** 分支 `feat/huawei-migration-coverage`，GitHub 以包含本条记录的主线合并提交为准。在线 `0.3.14-dev` 已发布至原私有站第 16 版。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/) · [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
+
+### 2026-11-19 — Huawei 真实参考清单脱敏回归
+
+- **新增** 浏览器内两阶段统计导出、统计校验器与真实回归记录。**修改** 每次 Huawei 在线更新的仓库验收流程，记录主费用与关联费用的状态和原因计数。**删除** 无。 [真实回归记录](HUAWEI_REAL_REGRESSION.md)
+- **验证与待办** 定向单测、完整在线回归、虚构 Excel 浏览器导入和两次下载通过，见第 7 节。历史真实基线为 `0.3.13-dev` 首次导入的 11 行已确认、27 行条件估算、74 行 Pending。收到最新版的两阶段脱敏统计后，按同一清单比较候选覆盖与剩余原因，优先检查历史阻塞最集中的 RDS、DCS 和 CSS。 [所有者验收](HUAWEI_PRIVATE_ACCEPTANCE_TEMPLATE.md)
+- **同步** 分支 `feat/huawei-regression-report`，GitHub 版本以包含本条记录的主线合并提交为准。在线 `0.3.15-dev` 已发布至原私有站第 17 版。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/) · [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)

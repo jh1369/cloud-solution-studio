@@ -121,11 +121,12 @@ function render({now=Date.now()}={}){
   $('#upfront-row').hidden=true;$('#upfront-money').textContent='—';$('#coverage').textContent='—';$('#breakdown').textContent='—';
   $('#quote-status').textContent=T('status.invalid');$('#quote-status').className='badge pending';
   $('#quote-note').textContent=translateMessage(error.message,language);
-  $('#export').disabled=true;$('#quote-export').disabled=true;report(error);return;
+  $('#export').disabled=true;$('#quote-export').disabled=true;$('#export-regression').disabled=true;report(error);return;
  }
  page=Math.min(page,Math.max(0,Math.ceil(rows.length/10)-1));
  $('#resource-count').textContent=rows.length;
  $('#export').disabled=!rows.length||(isTCP&&tcpQuoteLoading);$('#quote-export').disabled=$('#export').disabled;
+ $('#export-regression').disabled=!rows.length||busy||isTCP||!!offlineBundle;
  $('#confirm-all').disabled=!rows.some(row=>!row.accepted&&!row.huaweiConditionKey&&canConfirm(row));
  $('#refresh-prices').disabled=!!offlineBundle||busy||(isTCP?tcpQuoteLoading:!refreshIds(output).length);
  $('#parse').disabled=busy;$('#file').disabled=busy;
@@ -139,6 +140,7 @@ function render({now=Date.now()}={}){
 function renderProvider(){
  const isTCP=provider==='tcp';
  const onlineHuawei=!isTCP&&!!huaweiMatching;
+ $('#export-regression').hidden=!onlineHuawei;
  $('#inventory-ai-option').hidden=!onlineHuawei||!['127.0.0.1','localhost','[::1]'].includes(location.hostname);
  for(const element of $$('[data-huawei-quote]'))element.hidden=isTCP;
  for(const element of $$('[data-tcp-quote]'))element.hidden=!isTCP;
@@ -447,6 +449,22 @@ function exportExcel(){
  }catch(error){report(error);}
 }
 $('#export').addEventListener('click',exportExcel);$('#quote-export').addEventListener('click',exportExcel);
+const regressionDialog=$('#regression-dialog');
+$('#export-regression').addEventListener('click',()=>regressionDialog.showModal());
+regressionDialog.addEventListener('submit',async event=>{
+ event.preventDefault();
+ const stage=event.submitter?.value;
+ regressionDialog.close();
+ if(!['initial','reviewed'].includes(stage)||offlineBundle||provider!=='huawei'||busy)return;
+ try{
+  const {collectHuaweiRegression}=await import('./huawei-regression.mjs');
+  const now=Date.now(),output=render({now});
+  if(!output||provider!=='huawei'||busy)return;
+  const webVersion=$('.version').textContent.trim().replace(/^V/,'');
+  const data=collectHuaweiRegression(rows,output,catalog,{webVersion,stage,now});
+  download(JSON.stringify(data,null,2),'huawei-regression-'+webVersion+'-'+stage+'.json','application/json');
+ }catch{toast(T('regression.error'),true);}
+});
 $('#catalog-search').addEventListener('input',renderCatalog);$('#catalog-service').addEventListener('change',renderCatalog);$('#catalog-mode').addEventListener('change',renderCatalog);
 $('#export-evidence').addEventListener('click',()=>download(JSON.stringify(catalog,null,2),'huawei-official-price-evidence.json','application/json'));
 $('#refresh-prices').addEventListener('click',async()=>{
