@@ -203,15 +203,16 @@ export function mappingReview(row,item){
  if(!item)return [];
  const issues=[],add=(code,source='',target='')=>issues.push({code,source,target});
  if(['ECS','RDS'].includes(row.service)){
-  const shape=awsShape(row.specification),arch=String(item.arch||'');
+  const verified=row.awsProfile,shape=verified??awsShape(row.specification),arch=String(item.arch||'');
+  const sourceArch=verified?verified.architecture:shape?.arch;
   if(!shape)add('SHAPE_UNKNOWN');
   else{
    if(shape.cpu!==item.cpu||shape.memory!==item.memory)add('SHAPE_DIFFERENT',`${shape.cpu} vCPU / ${shape.memory} GB`,`${item.cpu??'?'} vCPU / ${item.memory??'?'} GB`);
-   if(!/^(x86|arm)$/i.test(arch))add('ARCH_UNKNOWN',shape.arch);
-   else if(arch.toLowerCase()!==shape.arch.toLowerCase())add('ARCH_DIFFERENT',shape.arch,arch);
+   if(!sourceArch||!/^(x86|arm)$/i.test(arch))add('ARCH_UNKNOWN',sourceArch??'');
+   else if(arch.toLowerCase()!==sourceArch.toLowerCase())add('ARCH_DIFFERENT',sourceArch,arch);
   }
   if(row.service==='ECS'){
-   const os=/windows|\.win\b/i.test(row.specification)?'Windows':/linux/i.test(row.specification)?'Linux':'';
+   const os=verified?row.awsOS?.value:/windows|\.win\b/i.test(row.specification)?'Windows':/linux/i.test(row.specification)?'Linux':'';
    if(!os||!item.os)add('OS_UNKNOWN');else if(os!==item.os)add('OS_DIFFERENT',os,item.os);
    add('ECS_REVIEW');
   }else{
@@ -307,7 +308,13 @@ export function huaweiProductSpecIssue(row,item){
  return null;
 }
 export function calculate(row,catalog,options={}){
- try{return calculateValidated(row,catalog,options);}
+ try{
+  const result=calculateValidated(row,catalog,options);
+  if(!['Valid','Period'].includes(result.status)||!row.huaweiConditionKey||row.huaweiConditionApproval===row.huaweiConditionKey)return result;
+  return {...result,...pendingResult('','HW_AWS_CONDITIONAL'),status:'Conditional',conditionalScenario:result.termScenario,
+   conditionalPublic:result.termPublic,conditionalMonthly:result.status==='Valid'?result.scenario:null,
+   conditionalPeriod:result.status==='Period'?'source-period':result.billingMode};
+ }
  catch(error){return pendingResult(error.code==='AMOUNT_PRECISION'?error.message:'Invalid quantity, usage, discount or reference hours.',error.code||'INPUT_INVALID');}
 }
 function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}){
@@ -319,11 +326,12 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
  if(row.service==='DCS'&&row.huaweiCapacityConflict)return pending('', 'HW_CACHE_CAPACITY');
  if(row.service==='EVS'&&mode==='ONDEMAND'&&row.evsUsageConflict)return pending('', 'HW_DISK_USAGE_CONFLICT');
  if(!Object.hasOwn(BILLING_MODES,mode))return pending('华为云目标计费模式仅支持按需、包月、包年。','PRICE_MODE');
+ if(row.awsMatchIssue)return pending('',row.awsMatchIssue);
  const productSpecIssue=huaweiProductSpecIssue(row,item);
  if(productSpecIssue)return pending('',productSpecIssue);
  if(!item)return pending(`请为${BILLING_MODES[mode]}选择已验证的目标规格；未获取价格的服务保持 Pending。`,row.huaweiMatch||'PRICE_MISSING');
  if(item.billingMode!==mode)return pending('所选官方价格与华为云目标计费模式不一致，请重新选择。','PRICE_MODE');
- if(!row.accepted)return pending('请核对并确认目标规格、架构、引擎、计费模式和部署方式。','MAPPING_REVIEW');
+ if(!row.accepted&&(!row.huaweiConditionKey||row.huaweiConditionApproval===row.huaweiConditionKey))return pending('请核对并确认目标规格、架构、引擎、计费模式和部署方式。','MAPPING_REVIEW');
  if(item.service!==row.service)return pending('目标产品族不匹配。','MAPPING_SERVICE');
  if(row.service==='DCS'&&!row.huaweiProductMatch&&row.huaweiSelection==='manual'&&row.capacity>0){
   const skuCapacity=String(item.description??'').match(/(?:^|;)\s*capacity:\s*(\d+)\s*MB\s*(?:;|$)/i)?.[1];

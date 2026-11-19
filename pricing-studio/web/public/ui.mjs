@@ -49,9 +49,11 @@ export function resourceHTML(rows,output,catalog,language='zh',page=0,now=Date.n
   ].filter(Boolean).map(E).join(' · '):'';
   const services=[...new Set([...Object.keys(SERVICES),'EIP',row.service])];
   const field=(label,html)=>`<label><span>${E(label)}</span>${html}</label>`;
-  const badge=result.status==='Valid'?'valid':result.status==='Period'?'period':result.status==='Linked'?'linked':'pending';
+  const badge=result.status==='Valid'?'valid':result.status==='Period'?'period':result.status==='Linked'?'linked':result.status==='Conditional'?'conditional':'pending';
+  const conditional=result.status==='Conditional';
+  const estimate=conditional?result.conditionalScenario:result.termScenario;
   return `<article class="resource-row" data-id="${E(row.id)}">
-   <div class="resource-head"><span class="service-icon">${icon(row.service==='EVS'?'layers':'server')}</span><div class="resource-name">${E(row.product)}<small title="${E(row.specification)}">${E(row.specification.slice(0,120)||T('resource.specMissing'))}${row.region?' · '+E(row.region):''}</small></div><span class="badge ${badge==='pending'?'pending':'valid'}">${T('status.'+badge)}</span><button class="delete-row" data-delete="${E(row.id)}" aria-label="${T('resource.delete')}">×</button></div>
+   <div class="resource-head"><span class="service-icon">${icon(row.service==='EVS'?'layers':'server')}</span><div class="resource-name">${E(row.product)}<small title="${E(row.specification)}">${E(row.specification.slice(0,120)||T('resource.specMissing'))}${row.region?' · '+E(row.region):''}</small></div><span class="badge ${conditional||badge==='pending'?'pending':'valid'}">${T('status.'+badge)}</span><button class="delete-row" data-delete="${E(row.id)}" aria-label="${T('resource.delete')}">×</button></div>
    <div class="field-grid">
     ${field(T('resource.service'),`<select data-field="service">${services.map(s=>`<option value="${E(s)}" ${s===row.service?'selected':''}>${E(serviceLabel(s,language))}</option>`).join('')}</select>`)}
     ${row.huaweiMatch?field(T('resource.hwSpec'),`<input data-field="specification" value="${E(row.specification)}">`):''}
@@ -68,6 +70,10 @@ export function resourceHTML(rows,output,catalog,language='zh',page=0,now=Date.n
    ${row.huaweiMatch?`<div class="row-notes huawei-match">${[...(row.huaweiAssumptions??[]),row.huaweiUsageAssumption].filter(Boolean).map(reasonCode=>E(reasonLabel({reasonCode},language))).join(' ')}
    ${row.huaweiCandidates?.length?E(row.huaweiCandidates.slice(0,12).join(', ')):''}</div>`:''}
    ${spec?`<div class="row-notes huawei-spec-evidence">${specDetails} <a href="${E(spec.evidence.url)}" target="_blank" rel="noopener">${E(T('resource.hwSpecSource'))}</a>${specMatch.selected?' · '+E(T('resource.hwSpecPurchase')):''}</div>`:''}
+   ${row.awsProfile?`<div class="row-notes aws-source-profile">${E([T('inventory.officialAws'),row.awsProfile.type,row.awsProfile.cpu?row.awsProfile.cpu+' vCPU':null,
+    row.awsProfile.memory?row.awsProfile.memory+' GiB':null,row.awsProfile.architecture].filter(Boolean).join(' · '))}
+    <a href="${E(row.awsProfile.evidence.specification.url)}" target="_blank" rel="noopener">${E(T('resource.hwSpecSource'))}</a></div>`:''}
+   ${conditional?`<div class="row-notes huawei-conditional-reasons">${E(row.huaweiConditions.map(reasonCode=>reasonLabel({reasonCode},language)).join(' '))}</div>`:''}
    ${row.huaweiCharge?`<div class="row-notes huawei-charge">${E(T('charge.'+row.huaweiCharge))}</div>`:''}
    ${relatedHuaweiCharges(row,result).map(({charge,row:component,result:line})=>{
     const amount=line.termScenario==null?'':` · ${money(line.termScenario)} · ${E(billingLabel(line.billingMode,language))}`;
@@ -77,7 +83,9 @@ export function resourceHTML(rows,output,catalog,language='zh',page=0,now=Date.n
    }).join('')}
    ${row.importSource?`<div class="row-notes">${E(row.importSource.sheet)} · ${T('inventory.row')} ${row.importSource.row}</div>`:''}
    <div class="row-notes source-notes">${E(T('resource.awsBilling',{billing:translateMessage(row.billing||'未提供',language)}))}<br>${E(translateMessage(row.notes,language))} ${E(reasonLabel(result,language))}</div>
-   <div class="row-bottom"><label class="check-line"><input data-field="accepted" type="checkbox" ${row.accepted?'checked':''} ${row.targetId&&!specIssue?'':'disabled'}><span>${T('resource.accept')}</span></label><div class="row-cost">${money(result.termScenario)} <small>${T(mode==='YEARLY'?'term.year':mode==='MONTHLY'?'term.month':result.status==='Period'?'term.period':'term.monthly')}</small></div></div>
+   <div class="row-bottom">${conditional?`<button class="button secondary" data-review-condition="${E(row.id)}">${T('quote.reviewCondition')}</button>`:
+    `<label class="check-line"><input data-field="accepted" type="checkbox" ${row.accepted?'checked':''} ${row.targetId&&!specIssue&&!row.awsMatchIssue?'':'disabled'}><span>${T('resource.accept')}</span></label>`}
+    <div class="row-cost">${money(estimate)} <small>${T(result.status==='Period'||result.conditionalPeriod==='source-period'?'term.period':mode==='YEARLY'?'term.year':mode==='MONTHLY'?'term.month':'term.monthly')}</small></div></div>
   </article>`;
  }).join('');
 }
@@ -85,7 +93,12 @@ export function summaryModel(rows,output,language='zh'){
  const T=(key,vars)=>t(key,language,vars);
  const lines=huaweiQuoteLines(rows,output),results=lines.map(line=>line.result);
  const valid=results.filter(r=>r.status==='Valid'),period=results.filter(r=>r.status==='Period'),pending=results.filter(r=>r.status==='Pending');
- const pendingCount=pending.length,total=valid.length+period.length+pendingCount;
+ const conditional=results.filter(result=>result.status==='Conditional'),conditionalCount=conditional.length;
+ const estimate=(period,key)=>{
+  const amounts=conditional.filter(result=>(result.conditionalPeriod==='source-period')===period).map(result=>result[key]);
+  return amounts.length?sumMoney(amounts):null;
+ };
+ const pendingCount=pending.length,total=valid.length+period.length+pendingCount+conditionalCount;
  const onlyPeriod=period.length>0&&valid.length===0,quoted=onlyPeriod?period:valid;
  const sum=key=>sumMoney(quoted.map(result=>result[key])),has=quoted.length>0;
  const hasYear=quoted.some(result=>result.billingMode==='YEARLY'),hasPrepaid=quoted.some(result=>result.upfrontScenario!==null);
@@ -95,18 +108,19 @@ export function summaryModel(rows,output,language='zh'){
   if(onlyPeriod)notes.push(T('quote.periodNote'));
   else if(quoted.length)notes.push(T(hasYear?'quote.yearNote':'quote.standardNote'));
   if(period.length&&!onlyPeriod)notes.push(T('quote.mixedNote',{count:period.length}));
-  if(pendingCount)notes.push(T('quote.pendingNote'));
+  if(pendingCount||conditionalCount)notes.push(T('quote.pendingNote'));
  }
  const groups={};for(const {row,result} of lines)if(quoted.includes(result))(groups[row.service]??=[]).push(result.scenario);
  return {
-  ready:valid.length+period.length,total,has,onlyPeriod,hasPrepaid,
+  ready:valid.length+period.length,total,has,onlyPeriod,hasPrepaid,conditionalCount,
+  conditionalMonthly:estimate(false,'conditionalMonthly'),conditionalPeriod:estimate(true,'conditionalScenario'),
   monthly:has?sum('monthly'):null,scenario:has?sum('scenario'):null,annual:has&&!onlyPeriod?sum('annual'):null,upfront:hasPrepaid?sum('upfrontScenario'):null,
-  monthlyLabel:T(onlyPeriod?'quote.period':hasYear?pendingCount||period.length?'quote.partialYear':'quote.yearEquivalent':pendingCount||period.length?'quote.partial':'quote.monthly'),
+  monthlyLabel:T(onlyPeriod?'quote.period':hasYear?pendingCount||conditionalCount||period.length?'quote.partialYear':'quote.yearEquivalent':pendingCount||conditionalCount||period.length?'quote.partial':'quote.monthly'),
   annualLabel:T(onlyPeriod?'quote.annualPeriod':hasYear?'quote.annualYear':'quote.annual'),
   scenarioLabel:T(hasYear?'quote.scenarioYear':'quote.scenario'),
   note:notes.join(' '),
-  status:T(!rows.length?'status.waiting':pendingCount?'status.pendingCount':has?'status.confirmed':'status.review',{count:pendingCount}),
-  statusClass:pendingCount?'pending':has?'valid':'neutral',
+  status:T(!rows.length?'status.waiting':pendingCount?'status.pendingCount':conditionalCount?'quote.conditional':has?'status.confirmed':'status.review',{count:pendingCount||conditionalCount}),
+  statusClass:pendingCount||conditionalCount?'pending':has?'valid':'neutral',
   coverage:T('quote.coverage',{ready:valid.length+period.length,total}),
   groups:Object.entries(groups).map(([service,amounts])=>[service,sumMoney(amounts)]).sort((a,b)=>b[1]-a[1])
  };

@@ -37,7 +37,7 @@ pricing-studio/
 
 The web app uses browser JavaScript and a Cloudflare Worker. Python 3.12 runs the catalog updater with SQLite and can publish the validated TCP catalog through an S3-compatible client. The Worker reads the private bucket binding directly. The original Python CLI declares `Python >=3.10` and uses the standard library.
 
-## Pricing Studio Web V0.2 — private candidate
+## Pricing Studio Web V0.3.13-dev
 
 Implemented:
 
@@ -49,7 +49,8 @@ Implemented:
 - Monthly calculations, independent annual subscription prices, first-term prepayment, explicitly labeled annual amortization, and manual discount scenarios.
 - Five-sheet Excel export includes Input, Service Mapping, Public Pricing, Quotation and Assumptions. Service Mapping retains specification evidence. Quotation records related Pending charges with blank amounts and a reference to the same input row.
 - Browser-local file parsing. Only allowlisted Huawei product IDs go to the server when refreshing prices; original files, AWS account IDs and descriptions are not uploaded by that flow.
-- The local Web + Worker workspace can use a loopback model to propose fields for nonstandard CSV and XLSX. Review source sheet, row and header evidence before confirming. The hosted workspace supports manual review. [Local model configuration](pricing-studio/web/README.md#model-assisted-csv-and-excel-on-the-user-machine)
+- The local Web + Worker workspace uses a loopback model to review nonstandard CSV and multi-sheet XLSX in batches. Standard templates take the existing direct import path. Each source row retains its sheet, row, cells and field evidence. Official AWS EC2, RDS, ElastiCache and OpenSearch instance records supplement model suggestions. The hosted workspace supports manual review with the same source records. [Local model configuration](pricing-studio/web/README.md#model-assisted-csv-and-excel-on-the-user-machine)
+- The same Huawei price engine calculates confirmed charges and conditional estimates separately. A review action can confirm rows with the same source type, target plan and conditions while preserving each row's metered usage. Both statuses and Pending charges are visible in the five-sheet export. [AWS source specification evidence](pricing-studio/web/README.md#aws-source-specifications-and-conditional-quotes)
 
 Build and run tests from the repository root, with Python 3.12 and Node.js 20+:
 

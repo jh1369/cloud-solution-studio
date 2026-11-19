@@ -2,10 +2,12 @@ import {REGION,awsShape,billingOf,family,parseText,priceValidation,calculate,pen
 import {dcsRequirements,documentedDcsSpecs,matchesDcsSpec} from './huawei-dcs-specs.mjs';
 import {infrastructureRules} from './huawei-infrastructure-specs.mjs';
 import {eipName,eipSelection,eipAttachment,eipReference,attachedEipRow} from './huawei-eip.mjs';
+import {awsSourceService,hasAwsSourceType,lookupAwsSpec,awsOperatingSystem} from './aws-specs.mjs';
 
 const productRules={...infrastructureRules,EIP:eipSelection};
 export const usesHuaweiProductSpecs=service=>service==='DCS'||Object.hasOwn(productRules,service);
 const awsUsageServices={amazonec2:'ECS',amazonrds:'RDS',amazonelasticache:'DCS',amazones:'CSS'};
+const awsServiceByKind={EC2:'ECS',RDS:'RDS',ElastiCache:'DCS',OpenSearch:'CSS'};
 
 function attributes(item){
  if(typeof item.description!=='string')return {};
@@ -56,6 +58,14 @@ function computeShape(text){
  return cpu&&memory?{cpu,memory}:known;
 }
 const sameShape=(item,shape)=>item.cpu===shape.cpu&&item.memory===shape.memory;
+function verifiedComputeConflict(text,profile,{memoryCheck}={}){
+ const cpus=observedIntegers(text,/(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*(?:vCPUs?\b|核)/gi);
+ const arm=/\b(?:arm64|aarch64|arm)\b|鲲鹏/i.test(text),x86=/\b(?:x86(?:_64)?|amd64)\b/i.test(text);
+ const memory=memoryCheck?storageDimensions(text):null;
+ return [...cpus].some(cpu=>cpu!==profile.cpu)||arm&&x86||
+  !!profile.architecture&&(arm&&profile.architecture!=='arm'||x86&&profile.architecture!=='x86')||
+  memory&&(memory.conflict||memory.size!==null&&memory.size!==profile.memory);
+}
 const topologyOptions=[
  [/\bsingle(?:[- ]az|[- ]node)?\b|\bstandalone\b|单机|单实例/i,'single_node'],
  [/\b(?:master|primary)[ /_-]*standby\b|\bmulti[- ]az\b|主\s*备/i,'master_standby'],
@@ -105,17 +115,20 @@ const rules={
   return policy(item=>item.sku===sku,generic?['HW_DEFAULT_SSD']:[]);
  },
  RDS(row,spec){
-  const shape=computeShape(spec),modes=topologies(spec);
+  const profile=row.awsProfile?.kind==='RDS'?row.awsProfile:null;
+  const shape=profile??computeShape(spec),modes=topologies(spec);
   const engines=new Set(Array.from(spec.matchAll(/\b(MySQL|PostgreSQL|MariaDB|SQL Server)\b/gi),match=>match[1].toLowerCase()));
   const versions=new Set(Array.from(spec.matchAll(/(?:mysql|postgresql|mariadb|sql server|版本|version)\s*(\d+(?:\.\d+)?)(?![\d.])/gi),match=>match[1]));
   if(!shape||engines.size!==1||versions.size!==1||modes.length!==1||modes[0]==='cluster')return missing('HW_DB_PARAMETERS');
+  if(profile&&verifiedComputeConflict(spec,profile))return missing('HW_AWS_SPEC_CONFLICT');
+  if(profile?.architecture==='arm'||profile&&/\b(?:arm64|aarch64|arm)\b|鲲鹏/i.test(spec))return missing('HW_AWS_DB_ARCH');
   if(engines.has('sql server')||/byol|licen[cs]e|许可/i.test(spec))return missing('HW_DB_LICENSE');
   if(!/instance only|compute only|仅实例|仅计算/i.test(spec)||!/cloud ssd|云ssd/i.test(spec))return missing('HW_DB_STORAGE_SCOPE');
   const type={single_node:'Single',master_standby:'Primary/Standby',read_replica:'Read replica'}[modes[0]];
   const version=versions.values().next().value;
-  return policy((item,fields)=>sameShape(item,shape)&&engines.has(String(item.engine??'').toLowerCase())&&
+  return {...policy((item,fields)=>sameShape(item,shape)&&engines.has(String(item.engine??'').toLowerCase())&&
    fields['db engine version']?.split('|').includes(version)&&fields['db instance type']===type&&fields['storage type']==='Cloud SSD',
-   ['HW_DB_INSTANCE_ONLY']);
+   ['HW_DB_INSTANCE_ONLY']),condition:profile?'HW_AWS_RDS_REVIEW':null};
  }
 };
 
@@ -133,7 +146,7 @@ const servicePatterns=[
 
 export function identifyHuaweiService(product,specification=''){
  const code=String(product).trim().toLowerCase();
- const known=Object.hasOwn(awsUsageServices,code)?awsUsageServices[code]:family(product);
+ const known=awsServiceByKind[awsSourceService(product)]??(Object.hasOwn(awsUsageServices,code)?awsUsageServices[code]:family(product));
  if(known==='VPC / EIP'&&eipName.test(specification)&&specification.search(eipName)===specification.search(/\S/))return 'EIP';
  if(known!=='Unmapped')return known;
  for(const text of [product,specification]){
@@ -167,6 +180,13 @@ export function identifyHuaweiRow(row){
  const infrastructureText=!row.sourceService&&!row.importSource&&row.huaweiUsageFromSpec;
  const text=(row.product+' '+row.specification).normalize('NFKC');
  if(row.service==='Unmapped'||row.service==='VPC / EIP')row.service=identifyHuaweiService(row.product,row.specification);
+ if(row.awsInventory){
+  const profile=lookupAwsSpec(row.product,row.specification);
+  if(row.service==='Unmapped'&&profile)row.service=profile.service;
+  row.awsProfile=profile?.service===row.service?profile:null;
+  row.awsTypedSource=hasAwsSourceType(row.product,row.specification)?awsServiceByKind[awsSourceService(row.product)]:null;
+  row.awsOS=row.awsProfile?.kind==='EC2'?awsOperatingSystem(row.specification):null;
+ }
  if(infrastructureText){
   const attachment=eipAttachment(row);
   if(attachment?.base&&!row.unitExplicit&&row.huaweiEipBase!==attachment.base){
@@ -250,12 +270,37 @@ function matchDocumentedProduct(row,catalog,plans,text,now){
  return price?{...match,...price,specs:undefined}:pending('HW_SPEC_PRICE_LINK');
 }
 
+const isAwsCompute=row=>row.service==='ECS'&&(row.awsProfile?.kind==='EC2'||row.awsTypedSource==='ECS');
+const isAwsDatabase=row=>row.service==='RDS'&&(row.awsProfile?.kind==='RDS'||row.awsTypedSource==='RDS');
+export const revalidateHuaweiSelection=row=>usesHuaweiProductSpecs(row.service)||isAwsCompute(row)||isAwsDatabase(row);
+
+function matchAwsCompute(row,catalog,plans,text,now){
+ const profile=row.awsProfile,os=row.awsOS?.value;
+ if(!os)return missing('HW_AWS_OS_REVIEW');
+ if(!profile.architecture)return missing('HW_AWS_PROFILE_ARCH');
+ if(verifiedComputeConflict(text,profile,{memoryCheck:true}))return missing('HW_AWS_SPEC_CONFLICT');
+ const candidates=plans.filter(plan=>sameShape(plan,profile)&&String(plan.arch).toLowerCase()===profile.architecture&&plan.os===os);
+ const skus=candidates.map(plan=>plan.sku);
+ if(!candidates.length)return missing('HW_AWS_NO_PLAN');
+ const preferredType=profile.category==='memory'?'Memory-optimized':'General Computing';
+ const preferred=candidates.filter(plan=>attributes(plan).type===preferredType);
+ const manual=row.huaweiSelection==='manual';
+ const item=manual?candidates.find(plan=>plan.id===row.targetId):preferred.length===1?preferred[0]:candidates.length===1?candidates[0]:null;
+ if(!item)return {code:manual?'HW_AWS_SPEC_CONFLICT':'HW_MULTIPLE',candidates:skus};
+ const automatic=profile.category==='general'&&attributes(item).type==='General Computing'&&profile.architecture==='x86';
+ const condition=automatic?null:profile.category==='burstable'?'HW_AWS_BURST_REVIEW':
+  profile.architecture==='arm'?'HW_AWS_ARCH_REVIEW':'HW_AWS_CAPACITY_REVIEW';
+ return {item,condition,candidates:skus,code:priceValidation(item,catalog,{now}).valid?'HW_MATCHED':'HW_MATCHED_PRICE'};
+}
+
 export function matchHuawei(row,catalog,{now=Date.now()}={}){
  if(row.huaweiTargetRegion&&row.huaweiTargetRegion!==REGION)return missing('HW_TARGET_REGION');
  const rule=Object.hasOwn(rules,row.service)?rules[row.service]:null;
  const mode=billingOf(row);
  const plans=catalog.items.filter(item=>item?.region===REGION&&item.service===row.service&&item.billingMode===mode);
  const spec=(row.product+' '+(eipAttachment(row)?.base??row.specification)).normalize('NFKC').trim();
+ if((isAwsCompute(row)||isAwsDatabase(row))&&!row.awsProfile)return missing('HW_AWS_SPEC_UNVERIFIED');
+ if(isAwsCompute(row))return matchAwsCompute(row,catalog,plans,spec,now);
  if(row.service==='DCS')return matchDcs(row,catalog,plans,spec,now);
  if(Object.hasOwn(productRules,row.service))return matchDocumentedProduct(row,catalog,plans,spec,now);
  if(!plans.length)return missing('HW_NO_PLAN');
@@ -263,16 +308,21 @@ export function matchHuawei(row,catalog,{now=Date.now()}={}){
  const contract=rule(row,spec);
  if(contract.code)return contract;
  const exact=plans.filter(item=>contract.test(item,attributes(item)));
+ if(isAwsDatabase(row)&&row.huaweiSelection==='manual'){
+  const chosen=exact.find(item=>item.id===row.targetId);
+  return chosen?{item:chosen,code:priceValidation(chosen,catalog,{now}).valid?'HW_MATCHED':'HW_MATCHED_PRICE',
+   condition:contract.condition,assumptions:contract.assumptions}:{code:'HW_AWS_SPEC_CONFLICT',candidates:exact.map(item=>item.sku)};
+ }
  if(!exact.length)return missing('HW_NO_MATCH');
  if(exact.length!==1)return {code:'HW_MULTIPLE',candidates:exact.map(item=>item.sku)};
  const [item]=exact;
  return {item,code:priceValidation(item,catalog,{now}).valid?'HW_MATCHED':'HW_MATCHED_PRICE',
-  assumptions:contract.assumptions};
+  assumptions:contract.assumptions,condition:contract.condition};
 }
 
 export function applyHuaweiMatch(row,catalog,options){
  const manual=row.huaweiSelection==='manual';
- if(manual&&!usesHuaweiProductSpecs(row.service))return row;
+ if(manual&&!revalidateHuaweiSelection(row))return row;
  const match=matchHuawei(row,catalog,options);
  row.huaweiMatch=match.code;
  row.huaweiCandidates=match.candidates;
@@ -287,8 +337,33 @@ export function applyHuaweiMatch(row,catalog,options){
    ...(row.service==='EIP'?{usage:row.usage,unit:row.unit,unitExplicit:row.unitExplicit}:{})};
  }else delete row.huaweiProductMatch;
  if(!manual){row.targetId=match.item?.id??'';row.accepted=!!match.item;}
+ row.awsMatchIssue=(isAwsCompute(row)||isAwsDatabase(row))&&!match.item?match.code:null;
  setHuaweiUsageAssumption(row,match.item);
+ const assumptions=row.semanticInventory?[...row.huaweiAssumptions.filter(code=>
+  /^HW_(?:DEFAULT_|DCS_DOCUMENTED_)/.test(code)||['HW_ELB_ELASTIC_BASE','HW_CCE_STANDARD','HW_EIP_REFERENCE_HOURS'].includes(code)),
+  row.huaweiUsageAssumption].filter(Boolean):[];
+ row.huaweiConditions=[...new Set([match.condition,...assumptions].filter(Boolean))];
+ updateConditionKey(row,match.item);
  return row;
+}
+function updateConditionKey(row,item){
+ const next=item&&row.huaweiConditions?.length?JSON.stringify([
+  row.awsProfile?.type??row.product,row.awsOS?.value??row.specification,item.id,...row.huaweiConditions]):null;
+ if(next!==row.huaweiConditionKey)row.huaweiConditionApproval=null;
+ row.huaweiConditionKey=next;
+}
+
+export function confirmHuaweiConditionGroup(rows,source,catalog,options){
+ const group=source.huaweiConditionKey;
+ if(!group)return 0;
+ let confirmed=0;
+ for(const row of rows){
+  if(row.huaweiConditionKey!==group||row.huaweiImportIssues?.length)continue;
+  applyHuaweiMatch(identifyHuaweiRow(row),catalog,options);
+  if(row.huaweiConditionKey!==group||calculate(row,catalog,options).status!=='Conditional')continue;
+  row.huaweiConditionApproval=group;row.accepted=true;confirmed++;
+ }
+ return confirmed;
 }
 
 export function selectHuaweiBilling(row,mode,catalog,options){
@@ -299,9 +374,10 @@ export function selectHuaweiBilling(row,mode,catalog,options){
  const chosen=choices.length===1?choices[0]:null;
  row.targetId=chosen?.id??'';
  row.accepted=false;
- if(usesHuaweiProductSpecs(row.service))return applyHuaweiMatch(identifyHuaweiRow(row),catalog,options);
+ if(revalidateHuaweiSelection(row))return applyHuaweiMatch(identifyHuaweiRow(row),catalog,options);
  row.huaweiMatch=chosen?'HW_MATCHED':'HW_MANUAL_PLAN';
  setHuaweiUsageAssumption(row,chosen);
+ updateConditionKey(row,chosen);
  return row;
 }
 

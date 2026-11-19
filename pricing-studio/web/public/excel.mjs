@@ -51,23 +51,29 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
  const output=opts.output??rows.map(row=>calculate(row,catalog,opts)),lines=huaweiQuoteLines(rows,output);
  const mapped=lines.filter(line=>line.row),includeSpec=mapped.some(({row})=>row.huaweiProductMatch);
  const includeCharge=lines.some(line=>line.charge),includeEip=mapped.some(({row})=>row.service==='EIP');
+ const includeAnalysis=rows.some(row=>row.awsInventory||row.semanticInventory);
  const chargeLabel=charge=>charge?t('charge.'+charge,language):null;
  add('Input',[
-  ['Row','Product','Specification','AWS Region','Resource Count','Usage','Unit','Usage Scope','Usage Period','AWS Billing Method','Source Page','Target Quantity','Huawei Billing Mode','Capacity GB','Source Sheet','Source Row','Original Fields','Source Header Row','Original Headers','Requested Huawei Target Region',...(includeEip?['eip_ref']:[])],
+  ['Row','Product','Specification','AWS Region','Resource Count','Usage','Unit','Usage Scope','Usage Period','AWS Billing Method','Source Page','Target Quantity','Huawei Billing Mode','Capacity GB','Source Sheet','Source Row','Original Fields','Source Header Row','Original Headers','Requested Huawei Target Region',...(includeEip?['eip_ref']:[]),...(includeAnalysis?['Field Sources','Model Row Classification']:[])],
   ...rows.map((row,i)=>[i+1,row.product,row.specification,row.region,row.quantity,row.usage,row.unit,row.scope,row.period,row.billing,
    row.sourcePage??null,row.targetQuantity??null,billingOf(row),row.capacity??null,row.importSource?.sheet??null,
    row.importSource?.row??null,row.importSource?JSON.stringify(row.importSource.cells):null,row.importSource?.headerRow??null,
-   row.importSource?.headers?JSON.stringify(row.importSource.headers):null,row.huaweiTargetRegion||null,...(includeEip?[row.huaweiEipRef||null]:[])])
+   row.importSource?.headers?JSON.stringify(row.importSource.headers):null,row.huaweiTargetRegion||null,...(includeEip?[row.huaweiEipRef||null]:[]),
+   ...(includeAnalysis?[row.importSource?.fieldSources?JSON.stringify(row.importSource.fieldSources):null,row.importSource?.classification??null]:[])])
  ]);
  add('Service Mapping',[
-  ['Row','AWS Product','Target Service','Target SKU','Target Description','Region','Confirmed','Notes','Huawei Billing Mode','Target Quantity','Mapping Review','Match and Assumptions',...(includeSpec?['Product Spec Evidence']:[]),...(includeEip?['Charge']:[])],
+  ['Row','AWS Product','Target Service','Target SKU','Target Description','Region','Confirmed','Notes','Huawei Billing Mode','Target Quantity','Mapping Review','Match and Assumptions',...(includeSpec?['Product Spec Evidence']:[]),...(includeEip?['Charge']:[]),...(includeAnalysis?['Official AWS Source Type','Source vCPU','Source Memory GiB','Source Architecture','Source Specification Evidence','Huawei Candidate SKUs','Conditions']:[])],
   ...mapped.map(({row,index,charge,result})=>{
    const price=catalog.items.find(p=>p.id===row.targetId),match=row.huaweiProductMatch;
    const selected=match?.selected,candidates=match?.candidates?.slice(0,12);
    const productEvidence=selected||candidates?.length?JSON.stringify({selected,candidates}):null;
-   return [index+1,row.product,row.service,price?.sku??null,match?null:price?.description??null,REGION,row.accepted&&result.status!=='Linked'?'Yes':'No',translateMessage(row.notes,language),
+   const aws=row.awsProfile;
+   return [index+1,row.product,row.service,price?.sku??null,match?null:price?.description??null,REGION,row.accepted&&!['Linked','Conditional'].includes(result.status)?'Yes':'No',translateMessage(row.notes,language),
     billingLabel(billingOf(row),language),row.targetQuantity??row.quantity??row.huaweiQuantity,mappingReview(row,price).map(issue=>mappingLabel(issue,language)).join(' '),
-    [...(row.huaweiAssumptions??[]),row.huaweiUsageAssumption].filter(Boolean).map(reasonCode=>reasonLabel({reasonCode},language)).join(' '),...(includeSpec?[productEvidence]:[]),...(includeEip?[chargeLabel(charge)]:[])];
+    [...(row.huaweiAssumptions??[]),row.huaweiUsageAssumption].filter(Boolean).map(reasonCode=>reasonLabel({reasonCode},language)).join(' '),...(includeSpec?[productEvidence]:[]),...(includeEip?[chargeLabel(charge)]:[]),
+    ...(includeAnalysis?[aws?.type??null,aws?.cpu??null,aws?.memory??null,aws?.architecture??null,
+     aws?JSON.stringify({...aws.evidence,operatingSystem:row.awsOS}):null,row.huaweiCandidates?.join(', ')??null,
+     row.huaweiConditions?.map(reasonCode=>reasonLabel({reasonCode},language)).join(' ')??null]:[])];
   })
  ]);
  add('Public Pricing',[
@@ -81,7 +87,7 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
   })
  ]);
  add('Quotation',[
-  ['Row','Target Service','Status','Monthly Public or Amortized USD','Discount Fraction','Monthly Scenario or Amortized USD','Annual Scenario USD','Source Period Public USD','Source Period Scenario USD','Reason','Huawei Billing Mode','Contract Term','Term Public USD','Term Scenario USD','Prepaid First Term Scenario USD','Annual Basis',...(includeCharge?['Charge']:[]),...(includeEip?['Bandwidth Mbit/s','Billable Usage','Billed Quantity','Rate Unit','Linked Row']:[])],
+  ['Row','Target Service','Status','Monthly Public or Amortized USD','Discount Fraction','Monthly Scenario or Amortized USD','Annual Scenario USD','Source Period Public USD','Source Period Scenario USD','Reason','Huawei Billing Mode','Contract Term','Term Public USD','Term Scenario USD','Prepaid First Term Scenario USD','Annual Basis',...(includeCharge?['Charge']:[]),...(includeEip?['Bandwidth Mbit/s','Billable Usage','Billed Quantity','Rate Unit','Linked Row']:[]),...(includeAnalysis?['Conditional Scenario USD','Conditional Basis']:[])],
   ...lines.map(({row,index,charge,result})=>{
    const mode=row?billingOf(row):null;
    const priced=['Valid','Period'].includes(result.status);
@@ -91,10 +97,14 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
     result.termLabel?translateMessage(result.termLabel,language):null,result.termPublic,result.termScenario,result.upfrontScenario,
     mode==='YEARLY'?'Independent official 1-year price; monthly figure is amortized':mode==='MONTHLY'?'12 repeated monthly contracts; not a yearly subscription price':mode?'12 repeated months of usage; not a yearly subscription price':null,
     ...(includeCharge?[chargeLabel(charge)]:[]),...(includeEip?[row?.huaweiEip?.mbps??null,priced?result.effectiveUsage??null:null,
-     priced?result.quantity??null:null,priced?result.item?.unit??null:null,result.linkedRow??null]:[])];
+     priced?result.quantity??null:null,priced?result.item?.unit??null:null,result.linkedRow??null]:[]),
+    ...(includeAnalysis?[result.conditionalScenario??null,result.conditionalPeriod??null]:[])];
   })
  ]);
  const results=lines.map(line=>line.result),monthly=results.filter(result=>result.status==='Valid'),period=results.filter(result=>result.status==='Period'),prepaid=results.filter(result=>result.upfrontScenario!==null);
+ const estimates=results.filter(result=>result.status==='Conditional');
+ const monthlyEstimates=estimates.filter(result=>result.conditionalPeriod!=='source-period');
+ const periodEstimates=estimates.filter(result=>result.conditionalPeriod==='source-period');
  add('Assumptions',[
   ['Item','Value'],['Project',projectName],['Exported At',new Date().toISOString()],['Region',REGION],['Currency','USD'],['Discount',opts.discount],['Reference hours / month',opts.hours],
   ['Delivery',opts.delivery==='offline'?'Offline single HTML; embedded official snapshot, original expiry enforced, no live refresh.':'Web + Worker'],
@@ -112,6 +122,9 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
   ['Storage conversion','Only pay-per-use uses GB-month × reference hours => GB-hour. Monthly/yearly EVS uses explicit per-disk GB capacity × verified subscription rate.'],
   ['Mapping','User-confirmed proposed target design, not guaranteed AWS/Huawei feature equivalence.'],
   ['Coverage',`${monthly.length} monthly-reference, ${period.length} source-period, ${results.filter(result=>result.status==='Pending').length} Pending`],
+  ...(includeAnalysis?[['Conditional estimates',estimates.length],
+   ['Conditional monthly equivalent USD',monthlyEstimates.length?sumMoney(monthlyEstimates.map(result=>result.conditionalMonthly)):null],
+   ['Conditional source-period subtotal USD',periodEstimates.length?sumMoney(periodEstimates.map(result=>result.conditionalScenario)):null]]:[]),
   ['Monthly equivalent partial subtotal USD',monthly.length?sumMoney(monthly.map(result=>result.scenario)):null],
   ['Annual scenario partial subtotal USD',monthly.length?sumMoney(monthly.map(result=>result.annual)):null],
   ['Source period partial subtotal USD',period.length?sumMoney(period.map(result=>result.scenario)):null],

@@ -7,16 +7,16 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-19，Europe/Berlin |
-| 当前优先目标 / 模式 | Huawei 欧站 EIP 公开报价及 AWS 账期用量表导入，单 Agent |
-| 本轮检查基线 | `main` / `978ddd4cbfeed72bc90fc6ae6a6e0870f33f6462`，含 [PR #17](https://github.com/jh1369/cloud-solution-studio/pull/17) |
+| 当前优先目标 / 模式 | Huawei EU-Dublin 本机智能导入与 AWS 来源官方规格转换，单 Agent |
+| 本轮检查基线 | `main` / `5c4fd6e722b2d2e525efcf37506b405da1c3dc8a`，含 [PR #18](https://github.com/jh1369/cloud-solution-studio/pull/18) |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 在线源码及原私有站第 14 版均为 `0.3.12-dev` |
+| 当前网页版本 | 在线源码及原私有站第 15 版均为 `0.3.13-dev` |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| Sites 部署源码 | `d8e96eefb44675648bced2b0dc2d6b1fbe4b39de`（私有站第 14 版） |
-| 整体进度 | EU-Dublin 动态 BGP EIP 固定带宽、出网流量和闲置地址计入既有报价引擎。支持 AWS 账期用量表直接导入。本机真实模型复验待运行环境 |
-| 本轮同步范围 | Huawei 在线源码、公开 EIP 计费证据、虚构导入和报价回归、技术文档 |
+| Sites 部署源码 | `6cb31070d9bc68b163c1bd421e4ac601a5bf9a6f`（私有站第 15 版） |
+| 整体进度 | Huawei 在线版加入分批本机模型、AWS 官方来源规格、条件估算及同配置批量复核。保留标准表直通导入与报价引擎 |
+| 本轮同步范围 | Huawei 在线源码、AWS 公开规格及来源、虚构测试与技术文档 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -27,12 +27,13 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 | --- | --- | --- |
 | 安全及协作规则 | 禁止敏感资料进入仓库；任务结束更新状态；重大架构变更联动 README/路线图；Push 需明确授权 | `AGENTS.md`、`SECURITY.md` |
 | Python CLI 基础映射 | CSV→JSON，8 条产品族映射；SKU/价格待复核，没有费用计算 | `pricing-studio/src/pricing_studio/cli.py` |
-| 网页输入 | 文字、标准 CSV/XLSX、特定 AWS 账期用量表及文字版 AWS 账单 PDF。非标准 CSV/XLSX 支持编辑式预览及配置后的本机模型分析 | `pricing-studio/web/public/app.mjs`、`inventory-import.mjs`、`scripts/local_inventory_api.mjs` |
+| 网页输入 | 文字、标准 CSV/XLSX、特定 AWS 账期用量表及文字版 AWS 账单 PDF。非标准表支持同源本机模型分批、校验、带来源的编辑式预览 | `pricing-studio/web/public/app.mjs`、`inventory-batches.mjs`、`inventory-import.mjs`、`scripts/local_inventory_api.mjs` |
+| AWS 官方来源规格 | EC2、RDS、ElastiCache、OpenSearch 精确型号查询。版本化公开记录保存来源日期、URL 和摘要，供标准化、模型上下文和导出共同使用 | `aws-specs.mjs`、`aws-spec-data.mjs`、`scripts/build_aws_specs.py` |
 | 产品及规格候选 | Huawei ECS、EVS、限实例费 RDS、Redis DCS、专享弹性 ELB、CCE、公网/私网 NAT 和动态 BGP EIP 支持限定的自动选型及价格匹配。保留人工选型及规格复核 | `huawei-match.mjs`、`huawei-dcs-specs.mjs`、`huawei-infrastructure-specs.mjs`、`huawei-eip.mjs`、`engine.mjs` |
 | 计费模式分离 | AWS 原计费仅作来源记录；华为云目标仅有按需、包月、包年；支持逐项及批量切换，切换后需重新确认 | `engine.mjs`、`app.mjs` |
 | 官方公开价格 | `eu-west-101` / USD；快照有 448 个按需、401 个包月、401 个包年计划。EIP 固定带宽和流量分别核验带宽单位及完整阶梯样本。保存 SKU、单位、请求/响应、来源和核验时间 | `public/catalog.json`、`scripts/build_catalog.py` |
 | 价格刷新 | 固定官方端点、服务端产品白名单；按目标计费模式分组请求；验证失败不生成价格 | `worker.mjs` |
-| 费用与情景 | 支持范围内的按需用量、独立月/年订阅价、手动折扣、首期预付、包年月均摊销；年度情景含义明确 | `engine.mjs` |
+| 费用与情景 | 支持范围内的按需用量、独立月/年订阅价、手动折扣、首期预付、包年月均摊销。已确认报价、条件估算、Pending 独立展示，用户可按同配置和目标方案批量复核 | `engine.mjs`、`huawei-match.mjs`、`ui.mjs` |
 | 账单用量边界 | 累计实例小时不反推台数；来源账期不自动外推全年；订阅需明确目标数量/每盘容量 | `engine.mjs` |
 | Excel 导出 | Input、Service Mapping、Public Pricing、Quotation、Assumptions。保留非标准导入的来源和官方规格证据。实例与关联费用分行，Pending 金额空白 | `public/excel.mjs` |
 | 构建与测试 | Python 标准库构建 Worker，浏览器依赖随包提供。在线候选的自动测试及 CLI 结果见本轮记录 | `web/scripts/`、`web/tests/`、`pricing-studio/tests/` |
@@ -84,7 +85,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 | 优先级 | 任务 | 完成标准 |
 | --- | --- | --- |
 | DCS 采购边界 | 指定可用区的供货确认 | 区域公开价格用于估算。指定可用区或跨可用区要求须有独立的放置证据 |
-| P0 / 模型复验 | 使用真实本机模型重复两类非标准导入 | 在获准的本机运行时复验 `0.3.8-dev` 字段分类、表头映射、人工纠正和报价导出。记录模型及版本 |
+| P1 / 模型质量 | 提升陌生表头和混合描述的识别 | 独立追踪模型行分类、字段命中和确定性恢复，保留模型超时、错误和人工复核路径 |
 | P1 / 报价覆盖建议 | RDS 数据盘和超额备份 | 独立核验实例、盘型与备份计费证据，按相应计量口径导出分项费用。[覆盖率分析](HUAWEI_QUOTE_COVERAGE.md) |
 | P2 / 独立任务 | Python CSV starter 数值与单位问题 | 不进入当前报价 MVP；继续保留原逻辑，独立修复 NaN/Infinity 与数量/单位，不重复开发 Python 报价系统 |
 | P1 | SKU/能力复核 | 补充 ARM/x86、OS/许可、引擎/版本、AZ 主备及关联资源差异；不将 CPU/内存接近视为完全等价 |
@@ -104,7 +105,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 4. 服务族映射、SKU 复核、价格证据、计费计算和导出按职责分离。映射必须人工确认，缺失或不可信价格不生成有效金额。
 5. AWS 源计费与华为云目标模式独立。包月/包年使用独立官方订阅价，不以按需小时价乘算；包年月均仅为摊销，不是月付选项。
 6. 快照有效期 7 天；刷新固定到官方欧洲站端点，币种/产品身份验证失败则 Pending。价格依据包含模式、周期、区域、单位、时间。
-7. 用户文件在浏览器内存解析；刷新只发送白名单 Huawei 产品 ID，不发送原 AWS 账号、清单或原文件。不得将真实账单、导出报价或日志带入源码仓库。
+7. 用户文件在浏览器内存解析。核价刷新仅传递批准的 Huawei 产品 ID。本机模型适配器由同源回环服务提供，真实清单及报价保留在获准隔离环境。OpenAI API 适配器仅提供服务端虚构数据测试入口。
 8. ChatGPT 负责规划、设计、公开云能力分析及评审；Codex 负责实现、测试与状态更新。共同依据本文件同一分支/提交版本，不假定会话自动同步。
 9. 历史 GitHub 授权不自动延续；本轮用户明确授权 V0.3 GitHub 同步，并授权后续检查通过的版本自动部署原私有 Sites，访问范围不变。默认单主 Agent。金额逐行 HALF_UP 到分，小计按行分值汇总；年度/摊销舍入口径明确写入 Excel Assumptions。
 
@@ -112,10 +113,11 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 
 - **Python starter 已知问题未改动：** `float()` 配合 `< 0` 不能拒绝 NaN/Infinity；原样例存储数量与 `usage_hours` 语义不充分，不能直接用于财务计价。
 - 网页只支持有限的规则式描述、规格族和账单 PDF 布局；扫描 PDF、任意格式和自由自然语言不保证识别。未知字段需补充。
+- 模型建议需对照来源，陌生表头和复杂描述可能留待用户补充。OpenSearch 有来源型号记录，CSS 暂无可验证目标价格；RDS 和缓存需补齐引擎、版本、拓扑和独立存储计费证据。
 - 441/400/400 是验证过的计价计划记录数，不代表服务功能覆盖全部 AWS，也不代表每个服务都有三种模式。未覆盖项目保持 Pending。
 - 公开计算器接口可能变化、限流或不可用；官方单价有效不等于映射、可售性或客户折扣得到承诺。
 - 正向财务测试已改用虚构有效夹具；生产公开快照仍严格到期 Pending。本次只实测核心 3 服务 × 3 模式，不能外推整个目录的实时可售性。
-- **P0 剩余浏览器验收：** 本地 Chromium 已验证文件选择、实际点击和下载。Sites 中继仍超时，私有生产站认证及本机离线文件打开待完成。详见 [浏览器验收记录](PRICING_BROWSER_ACCEPTANCE.md)。
+- 本机 Chromium 已复验模型导入、批量确认及下载。私有生产用站点授权核对发布内容和公开 EIP 计划。本轮离线验证范围为既有下载附件的字节比对。 [历史浏览器中继记录](PRICING_BROWSER_ACCEPTANCE.md)
 - 当前代理环境下 Node 24 在线核价需启用已有环境代理支持（`NODE_USE_ENV_PROXY=1`）；初测 502，启用后 9/9 成功。未修改生产 Worker 的网络/安全逻辑。
 - RDS 架构常标 Review Required；版本、主备、存储/备份需人工复核与单列。EBS gp2/gp3→GPSSD 不保证性能等价；IOPS/快照不可用容量价替代。
 - 第三方浏览器依赖为已部署版本的既有分发文件，保留许可头及 SHA-256；其升级和安全更新需单独评审。见 `web/THIRD_PARTY_NOTICES.md`。
@@ -123,6 +125,15 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 - 原私有 Sites 的身份和访问配置未放入 GitHub；下载源码不会自动取得该站点的管理或访问权限。
 
 ## 7. 最近一次测试与同步检查
+
+### Web V0.3.13-dev
+
+- 在 `pricing-studio/web/` 构建 Worker 成功。Node 24.22.1 下执行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，执行 141 项，通过 141 项，失败 0 项。覆盖标准表直通、长表完整性、模型结构与数值、超时和重试、来源规格、条件金额、批量确认和三种计费模式。离线附件独立用既有 ZIP 字节核对。
+- 在 `pricing-studio/web/` 以 Python 3.12.14 执行 `PYTHONPATH=tests python3.12 -m unittest test_catalog test_catalog_updates test_tcp_pdf test_schedule test_catalog_publication`，通过 41 项，失败 0 项，缺少 boto3 的 2 项跳过。在 `pricing-studio/` 以 `PYTHONPATH=src python3.12 -m unittest discover -s tests` 验证原 CLI，1 项通过。
+- Chromium 156.0.8078.79 用两工作表、69 条虚构资源验证分批、错误响应后重试、跨批沿用模型表头、人工修正及标准 CSV 直通。openpyxl 3.1.5 重开下载的五表，核验物理行号、累计用量、字段出处、条件金额及 Pending 空白。
+- 实际本机模型为 llama.cpp b12521、Qwen2.5-1.5B-Instruct Q4_K_M。两工作表虚构测试中完成结构化回包、人工补齐用量及导出，得到 1 项确认、2 项条件估算和 1 项 Pending。陌生表头下模型只识别部分资源，列映射仍需人工。获准隔离回归验证所有来源行和用量可追溯、同规格批量重匹配、页面与五表小计一致。客户数据、报价和回包留在隔离环境。
+- OpenAI API 适配器通过虚构请求的替代传输测试。本机模型端点只在同源回环工作台启用。
+- 生产站第 15 版核对 16 个线上资产、5 个公开 EIP 计划、原 TCP 快照的核验时间和摘要、既有下载附件及托管模型端点的 HTTP 404。访问范围仍为原所有者。 [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
 
 ### V0.3.1 最新候选
 
@@ -506,3 +517,10 @@ Huawei 欧洲站覆盖率优先补齐 RDS 数据盘和备份，随后为 ELB/EIP
 - **浏览器验收** Chromium 156.0.8078.79 验证标准 CSV、ECS/ELB/NAT 关联 EIP、五个真实计划的三模式公开刷新、超阶梯及过期价格。隔离环境用实际附件复现通用导入上限报错及修复后的完整导入、账期部分报价和下载。openpyxl 重开四份虚构报价及隔离区内的实际报价，核对五表、行号、计费证据和 Pending 空白。公开回归使用 73 行虚构用量表。 [虚构回归](../pricing-studio/web/tests/huawei-eip.test.mjs)
 - **交付** 开发分支 `feat/huawei-eip-quoting`，GitHub 以包含本记录的 `main` 合并提交为准。原私有站第 14 版已发布，所有者访问范围复核通过。13 个线上资产与源码逐字节一致。生产端 5 / 5 个 EIP 计划及其询价样本通过核验，原 TCP 快照和下载附件均通过比对。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/) · [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
 - **覆盖边界** 动态 BGP 以外的 EIP、共享带宽、流量包，以及超过核验上限或欠缺单地址月度口径的流量仍需复核。AWS 用量表中的陌生规格、RDS 架构和版本、缓存引擎与容量、CSS 无价格等条目保留 Pending。目录后续优先覆盖 RDS 数据盘和超额备份。 [后续优先级](HUAWEI_QUOTE_COVERAGE.md#后续优先级)
+
+### 2026-11-19 — Huawei 本机智能导入与 AWS 来源规格
+
+- **新增** 按工作表分批识别非标准 CSV/XLSX，校验每批行身份及合并完整性，保留原始单元格和字段证据。公开知识库收录 EC2 1,096 个、RDS 435 个、ElastiCache 107 个、OpenSearch 234 个精确型号。模型上下文只附此批匹配的 AWS 记录。 [公开规格和来源](../pricing-studio/web/README.md#aws-source-specifications-and-conditional-quotes)
+- **修改** 直接导入 AWS 账期表复用官方来源记录。目标只使用现有 EU-Dublin 价格引擎，保留累计账期用量，按来源配置和目标报价方案批量复核条件估算。页面和五表分别汇总确认金额及条件金额。**删除** 单次模型预览 60 行上限，由分批和完整性约束替代。
+- **验收与边界** 自动计价需要同时核验 AWS 来源规格与适用的 Huawei 价格。RDS 仍需引擎、版本和部署参数，数据盘及备份需独立报价。ElastiCache 节点内存不能确定 DCS 缓存容量或拓扑。CSS 暂缺核验过的目标计划。测试记录见第 7 节。
+- **同步与部署** 开发分支 `feat/aws-ai-inventory`，GitHub 主线以包含本条记录的合并提交为准。在线 `0.3.13-dev` 已部署到原私有站第 15 版，下载附件沿用既有归档。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/) · [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)

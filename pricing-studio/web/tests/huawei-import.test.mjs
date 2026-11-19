@@ -403,8 +403,8 @@ test('local model route enforces origin and exposes structured output without a 
   const packet=JSON.parse(params.body);
   assert.equal(packet.response_format.json_schema.strict,true);
   assert.equal(packet.temperature,0);
-  assert.deepEqual(JSON.parse(packet.messages[1].content),[{id:1,sheet:'Fictional',cells:source[0].cells}]);
-  return Response.json({choices:[{message:{content:'{"rows":[{"id":1,"kind":"resource","quantity":3}]}'}}]});
+  assert.deepEqual(JSON.parse(packet.messages[1].content),{rows:[{id:1,cells:source[0].cells}]});
+  return Response.json({choices:[{message:{content:'{"rows":{"r1":{"kind":"resource","fields":[{"name":"quantity","column":0,"value":3}]}}}'}}]});
  }});
  assert.equal((await route(post({Origin:'https://elsewhere.example'}))).status,403);
  assert.equal((await route(post({'Sec-Fetch-Site':'cross-site'}))).status,403);
@@ -436,10 +436,10 @@ test('model timeout and malformed responses return stable errors',async()=>{
 
 test('inventory endpoint accepts an injected model adapter with bounded input and schema',async()=>{
  const route=createLocalInventoryEndpoint({modelAdapter:async({rows,schema,signal})=>{
-  assert.deepEqual(rows,[{id:1,sheet:'Fictional',cells:source[0].cells}]);
-  assert.equal(schema.properties.rows.items.properties.quantity.maximum,1e9);
+  assert.deepEqual(rows,[{id:1,cells:source[0].cells}]);
+  assert.deepEqual(schema.properties.rows.required,['r1']);
   assert.ok(signal instanceof AbortSignal);
-  return {rows:[{id:1,kind:'resource',quantity:3}]};
+  return {rows:{r1:{kind:'resource',fields:[{name:'quantity',column:0,value:3}]}}};
  }});
  assert.equal((await route(post())).status,200);
  assert.equal((await route(post({'Content-Type':'application/json-seq'}))).status,403);

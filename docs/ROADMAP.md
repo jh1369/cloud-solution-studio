@@ -5,15 +5,16 @@ The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, t
 ## Pricing Studio V0.3 — Huawei inventory and quotation
 
 - [x] Use service-specific dimensions and exact catalog matching for ECS, EVS, DCS and scoped RDS instance estimates.
-- [x] Review bounded nonstandard CSV and multi-sheet Excel imports with structured output from a configured local model. Preserve source evidence through export.
+- [x] Review nonstandard CSV and multi-sheet Excel with a configured loopback model. Batch by sheet, validate complete row coverage, retry failed batches and preserve source evidence through export.
+- [x] Enrich AWS EC2, RDS, ElastiCache and OpenSearch instance types from versioned public specification records. Preserve aggregate AWS hours and show Huawei estimates requiring approval separately from confirmed prices. [AWS source evidence and quote conditions](../pricing-studio/web/README.md#aws-source-specifications-and-conditional-quotes)
 - [x] Verify imported counts, capacity and usage against their source columns or explicit units. Retain header evidence and require review of uncertain pricing inputs.
 - [x] Match explicit ECS series and public or private NAT gateway sizes. Use billed days for public pay-per-use and hours for private pay-per-use. Keep manually chosen SKUs through billing changes when an equivalent plan exists.
 - [x] Quote DCS without a Huawei Cloud account using the European product specifications and independently verified EU-Dublin public prices. Keep exact flavor evidence and Pending reasons in the five-sheet export. [Metadata and matching rules](../pricing-studio/web/README.md#official-dcs-product-specifications)
 - [x] Match documented dedicated elastic ELB and CCE management specs. Show unpriced LCU, worker and network costs as separate Pending charges. [Coverage results](HUAWEI_QUOTE_COVERAGE.md#0311-dev-覆盖率复测)
 - [x] Price EU-Dublin EIP fixed bandwidth, outbound internet traffic and idle address reservation. Link the same independently listed EIP fee to one billed row. [EIP verification](HUAWEI_QUOTE_COVERAGE.md#0312-dev-eip-覆盖率复测)
 - [ ] Extend verified EU-Dublin coverage for RDS disks and backups, ELB LCU and OBS. [Coverage priorities](HUAWEI_QUOTE_COVERAGE.md#后续优先级)
-- [ ] Revalidate the updated import schema with a local language model in the release environment.
-- [ ] Expand supported vendor layouts, service-specific dimensions and verified ancillary price coverage using fictional fixtures and public evidence.
+- [ ] Improve model field recognition on unfamiliar headers and dense mixed descriptions. Track classification and field accuracy independently from deterministic recovery, using fictional fixtures and approved local tests.
+- [ ] Extend verified target options for burstable/compute-optimized ECS, RDS engine/topology combinations and ElastiCache-to-DCS throughput and topology. Keep missing target plans Pending.
 
 ## Pricing Studio V0.3 — TCP catalog automation
 

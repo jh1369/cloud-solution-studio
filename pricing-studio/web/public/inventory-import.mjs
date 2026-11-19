@@ -1,28 +1,12 @@
 import {finite,normalizeRows} from './engine.mjs';
 import {identifyHuaweiService} from './huawei-match.mjs';
+import {awsSourceService,awsUsageSemantics,lookupAwsSpec} from './aws-specs.mjs';
 
 export const INVENTORY_FIELDS=['product','specification','region','quantity','usage','unit','billing_method','capacity_gb','usage_scope','usage_period','huawei_target_region'];
 export const INVENTORY_NUMBERS=new Set(['quantity','usage','capacity_gb']);
-const kinds=['resource','header','note','unknown'];
-const string={type:'string',maxLength:1024};
-const number={type:['number','null'],minimum:0,maximum:1e12};
+export const INVENTORY_KINDS=['resource','header','note','unknown'];
 const scopes=['resource','aggregate'],periods=['monthly','source-period'];
-export const INVENTORY_SCHEMA={
- type:'object',additionalProperties:false,required:['rows'],properties:{
-  rows:{type:'array',maxItems:60,items:{
-   type:'object',additionalProperties:false,required:['id','kind'],properties:{
-    id:{type:'integer',minimum:1,maximum:60},kind:{enum:kinds},
-    product:string,specification:string,region:string,
-    quantity:{type:['integer','null'],minimum:1,maximum:1e9},usage:number,unit:string,billing_method:string,
-    capacity_gb:{...number,exclusiveMinimum:0},usage_scope:{enum:scopes},
-    usage_period:{enum:periods},huawei_target_region:string,
-    columns:{type:'object',additionalProperties:false,properties:Object.fromEntries(INVENTORY_FIELDS.map(key=>[key,{type:'integer',minimum:0,maximum:19}]))}
-   }
-  }}
- }
-};
-
-export const INVENTORY_LIMIT=12000;
+export const INVENTORY_ROWS=2000,INVENTORY_COLUMNS=64;
 const productHeaders=new Set(['product','service','aws service','产品','服务','product/productname']);
 const standardData=new Set(['specification','instance_type','instancetype','规格','description','描述','usage','monthly_usage','用量','period aggregate usage','lineitem/usageamount','explicit instance specification']);
 const standardFields=new Set([...productHeaders,...standardData,'region','aws region label','区域','regioncode','quantity','count','数量','billing_method','billing method','aws billing method','unit','original unit','单位','计费方式','usage_scope','usage period','usage_period','capacity_gb','target_quantity','huawei_billing_mode','huawei_target_region','eip_ref']);
@@ -30,11 +14,6 @@ const clean=value=>String(value).normalize('NFKC').trim();
 const comparable=value=>clean(value).toLowerCase().replace(/\s+/g,' ');
 const headerLabel=value=>comparable(value).replaceAll('_',' ');
 const blank=value=>value==null||clean(value)==='';
-const awsHourMeters=new Map([
- ['amazonec2',/(?:^|-)\b(?:BoxUsage|SpotUsage):[\w.]+$/i],
- ['amazonrds',/(?:^|-)\bInstanceUsage:[\w.]+$/i],
- ['amazonelasticache',/(?:^|-)\bNodeUsage:[\w.]+$/i]
-]);
 
 function awsUsageRows(sheet,name,originalHeaders,XLSX){
  const headers=originalHeaders.map(cell=>clean(cell).replace(/^\uFEFF/,''));
@@ -48,17 +27,20 @@ function awsUsageRows(sheet,name,originalHeaders,XLSX){
   const sourceProduct=clean(cells[product]??''),sku=clean(cells[spec]??''),op=clean(cells[operation]??'');
   let amount=null;
   try{amount=finite(cells[usage],'使用量',true);}catch{/* Preserve the original cell for manual review. */}
-  const meter=awsHourMeters.get(sourceProduct.toLowerCase())?.test(sku);
+  const meter=awsUsageSemantics(awsSourceService(sourceProduct),sku);
   const ecs=sourceProduct.toLowerCase()==='amazonec2',licenseReview=ecs&&!/^RunInstances(?::0002)?$/i.test(op);
   const [row]=normalizeRows([{product:sourceProduct||'Unknown',specification:[sku,op,ecs&&/^RunInstances:0002$/i.test(op)?'Windows':''].filter(Boolean).join(' '),
    usage:amount,unit:meter?'hour':'',usage_scope:'aggregate',usage_period:'source-period',billing_method:/\bSpotUsage:/i.test(sku)?'spot':''}]);
   row.huaweiImportIssues=[...(!sourceProduct?['product']:[]),...(amount===null?['usage']:[]),...(licenseReview?['specification']:[])];
-  row.importSource={sheet:name,row:index+2,cells,headerRow:1,headers:originalHeaders};
+  row.awsInventory=true;
+  const fieldSources={product,specification:spec,usage,operation,source_quantity:headers.indexOf('数量')};
+  row.importSource={sheet:name,row:index+2,cells,headerRow:1,headers:originalHeaders,
+   fieldSources:Object.fromEntries(Object.entries(fieldSources).map(([field,column])=>[field,{origin:'excel',columns:[column+1]}]))};
   return [row];
  });
 }
 
-export function readInventory(book,XLSX){
+export function readInventory(book,XLSX,{reviewAws=false}={}){
  const name=book.SheetNames.includes('Input')?'Input':book.SheetNames[0];
  const sheet=book.Sheets[name];
  const range=sheet?.['!ref']&&XLSX.utils.decode_range(sheet['!ref']);
@@ -67,7 +49,7 @@ export function readInventory(book,XLSX){
   const header=(first??[]).map(cell=>String(cell).replace(/^\uFEFF/,'').trim().toLowerCase()).filter(Boolean);
   const quoteSheets=new Set(['Input','Service Mapping','Public Pricing','Quotation','Assumptions','Notes','Readme','说明']);
   const standardTemplate=book.SheetNames.length===1||name==='Input'&&book.SheetNames.every(name=>quoteSheets.has(name));
-  if(standardTemplate){
+  if(standardTemplate&&!reviewAws){
    const aws=awsUsageRows(sheet,name,first??[],XLSX);
    if(aws?.length)return {standard:aws};
   }
@@ -82,11 +64,11 @@ export function readInventory(book,XLSX){
   const sheet=book.Sheets[name];
   if(!sheet['!ref'])continue;
   const range=XLSX.utils.decode_range(sheet['!ref']);
-  if(range.e.r>2000||range.e.c>=20)throw Error('inventory.limit');
+  if(range.e.r>INVENTORY_ROWS||range.e.c>=INVENTORY_COLUMNS)throw Error('inventory.limit');
   const matrix=XLSX.utils.sheet_to_json(sheet,{header:1,range:0,defval:'',blankrows:true});
   for(const [index,cells] of matrix.entries()){
    if(cells.every(blank))continue;
-   if(source.length===60)throw Error('inventory.limit');
+   if(source.length===INVENTORY_ROWS)throw Error('inventory.limit');
    source.push({id:source.length+1,sheet:name,row:index+1,cells});
   }
  }
@@ -96,23 +78,25 @@ export function readInventory(book,XLSX){
 }
 
 export function validateInventorySource(source){
- if(!Array.isArray(source)||!source.length||source.length>60||JSON.stringify(source).length>INVENTORY_LIMIT)throw Error('inventory.limit');
- for(const [index,row] of source.entries()){
-  if(!row||row.id!==index+1||typeof row.sheet!=='string'||!row.sheet.trim()||row.sheet.length>128||
-     !Number.isInteger(row.row)||row.row<1||row.row>2001||!Array.isArray(row.cells)||!row.cells.length||row.cells.length>20||
+ if(!Array.isArray(source)||!source.length||source.length>INVENTORY_ROWS)throw Error('inventory.limit');
+ let last=0;
+ for(const row of source){
+  if(!row||!Number.isInteger(row.id)||row.id<=last||row.id>INVENTORY_ROWS||typeof row.sheet!=='string'||!row.sheet.trim()||row.sheet.length>128||
+     !Number.isInteger(row.row)||row.row<1||row.row>INVENTORY_ROWS+1||!Array.isArray(row.cells)||!row.cells.length||row.cells.length>INVENTORY_COLUMNS||
      row.cells.some(value=>typeof value!=='string'&&typeof value!=='boolean'&&!(typeof value==='number'&&Number.isFinite(value))))throw Error('inventory.invalid');
+  last=row.id;
  }
  return source;
 }
 
 const sourceFields={
- product:/^(?:product|resource|resource type|service|service name|category|产品|服务|资源类别|资源类型|条目)$/,
- specification:/^(?:configuration|requirements?|specification|specs?|description|instance type|设备要求|规格|配置|资源描述)$/,
+ product:/^(?:product|resource|resource type|service|service name|category|产品(?:类型)?|服务|资源类别|资源类型|条目)$/,
+ specification:/^(?:configuration|requirements?|specification|specs?|description|instance type|usage type|设备要求|规格(?:类型)?|配置|资源描述)$/,
  quantity:/^(?:quantity|count|units|qty|台套|数量|台数|套数|盘数)$/,
  region:/^(?:region|location|source region|区域|地区|来源区域)$/,
  huawei_target_region:/^(?:huawei(?: cloud)? (?:target )?region|target region|华为云(?:目标)?区域|目标区域)$/,
  unit:/^(?:unit|usage unit|billing unit|单位|用量单位)$/,
- usage:/^(?:usage|monthly usage|billable hours|用量|月用量)$/,
+ usage:/^(?:usage|monthly usage|billable hours|(?:使用量|用量)(?:\s*\(\s*小时(?:数)?\s*\))?|月用量)$/,
  capacity_gb:/^(?:capacity(?: per (?:disk|volume))?[\s_(]*g(?:i)?b\)?|容量[\s_(]*g(?:i)?b\)?)$/,
  billing_method:/^(?:billing method|billing|计费方式)$/,
  usage_scope:/^(?:usage scope|用量范围)$/,
@@ -130,6 +114,13 @@ function knownColumns(cells){
   const column=labels.findIndex(label=>pattern.test(label));
   return column<0?[]:[[key,column]];
  }));
+}
+export function knownInventoryHeader(row){
+ return Object.keys(knownColumns(row.cells)).length+row.cells.filter(dimensionOf).length>=2;
+}
+export function completeInventoryHeader(row){
+ const fields=knownColumns(row.cells);
+ return 'product' in fields&&'specification' in fields&&('usage' in fields||'quantity' in fields);
 }
 const dimensionOf=label=>dimensions.find(([pattern])=>pattern.test(headerLabel(label)));
 function dimensionText(cells,headers){
@@ -172,6 +163,11 @@ const columnSuffix={
  capacity_gb:/\s*(?:GiB|GB|G)$/i,
  usage:/\s*(?:Gi?B[-/· ](?:months?|hours?)|hours?|hrs?|小时)$/i
 };
+function cellField(field,raw){
+ const value=INVENTORY_NUMBERS.has(field)&&typeof raw==='string'?clean(raw).replace(columnSuffix[field],''):raw;
+ return fieldValue(field,value);
+}
+const sourceColumns=(cells,test)=>cells.flatMap((cell,index)=>!blank(cell)&&test(clean(cell),index)?[index+1]:[]);
 
 function explicitField(cells,field,pattern){
  const values=new Set();
@@ -185,22 +181,43 @@ function observedFields(draft,header){
  const cells=draft.cells;
  const textCells=cells.filter(value=>typeof value==='string'&&!blank(value)).map(clean);
  const text=textCells.join(' ');
- const values={},invalid=new Set();
+ const values={},invalid=new Set(),fieldSources={};
  for(const [field,column] of Object.entries(header?.known??{})){
   const raw=cells[column];
   if(blank(raw))continue;
-  const value=INVENTORY_NUMBERS.has(field)&&typeof raw==='string'?clean(raw).replace(columnSuffix[field],''):raw;
-  try{values[field]=fieldValue(field,value);}
+  try{values[field]=cellField(field,raw);fieldSources[field]={origin:'excel',columns:[column+1],headerRow:header.row.row};}
   catch{invalid.add(field);}
  }
  const mapped=new Set(Object.values(header?.known??{}));
- const unmappedText=cells.filter((value,index)=>typeof value==='string'&&!blank(value)&&
-  !mapped.has(index)&&!dimensionOf(header?.row.cells[index])).map(clean);
+ const unmapped=(value,index)=>typeof cells[index]==='string'&&!mapped.has(index)&&!dimensionOf(header?.row.cells[index]);
+ const unmappedText=sourceColumns(cells,unmapped).map(column=>clean(cells[column-1]));
  const specParts=[values.specification,dimensionText(cells,header?.row.cells),...unmappedText].filter(Boolean);
  const spec=specParts.join(' ');
+ if(values.product===undefined){
+  const tagged=cells.flatMap((value,index)=>typeof value==='string'&&awsSourceService(value)?[index]:[]);
+  if(tagged.length===1){
+   const column=tagged[0];
+   values.product=clean(cells[column]);fieldSources.product={origin:'excel',columns:[column+1]};
+  }
+ }
+ const awsKind=awsSourceService(values.product??'')??lookupAwsSpec(values.product??'',spec||text)?.kind;
+ const meter=awsUsageSemantics(awsKind,spec||text);
+ if(meter){
+  if(values.unit&&usageUnit(values.unit)!=='hour')invalid.add('unit');
+  values.unit??=meter.unit;
+  values.usage_scope=meter.scope;values.usage_period=meter.period;
+  if(meter.billing)values.billing_method??=meter.billing;
+  delete values.quantity;invalid.delete('quantity');
+  const sourceCount=header?.known?.quantity;
+  if(Number.isInteger(sourceCount)&&!blank(cells[sourceCount]))fieldSources.source_quantity={origin:'excel',columns:[sourceCount+1],headerRow:header.row.row};
+  delete fieldSources.quantity;
+  const meterColumns=cells.flatMap((cell,i)=>typeof cell==='string'&&awsUsageSemantics(awsKind,cell)?[i+1]:[]);
+  for(const key of ['unit','usage_scope','usage_period'])fieldSources[key]??={origin:'excel',columns:meterColumns};
+ }
  const inferred=identifyHuaweiService(values.product??'',spec||text);
  let capacityFromSpec=false,usageFromSpec=false;
  for(const [field,pattern] of [['quantity',quantityToken],['capacity_gb',capacityToken],['usage',usageToken]]){
+  if(field==='quantity'&&meter)continue;
   if(field==='capacity_gb'&&!['EVS','DCS'].includes(inferred)&&values[field]===undefined)continue;
   const evidence=field==='capacity_gb'&&specParts.length?specParts:textCells;
   try{
@@ -208,6 +225,8 @@ function observedFields(draft,header){
    if(amount!==undefined&&values[field]!==undefined&&values[field]!==amount)invalid.add(field);
    if(amount!==undefined&&values[field]===undefined){
     values[field]=amount;
+    const columns=cells.flatMap((cell,i)=>typeof cell==='string'&&Array.from(clean(cell).matchAll(pattern)).length?[i+1]:[]);
+    fieldSources[field]={origin:'excel',columns};
     if(field==='capacity_gb')capacityFromSpec=true;
     if(field==='usage'&&inferred==='EVS'&&values.unit===undefined){
      const specification=specParts.length?[values.product,...specParts].filter(Boolean):textCells;
@@ -218,40 +237,64 @@ function observedFields(draft,header){
  }
  if(values.usage!==undefined&&values.unit===undefined){
   const observedUnits=new Set(textCells.flatMap(cell=>Array.from(cell.matchAll(usageToken),match=>usageUnit(match[2]))));
-  if(observedUnits.size===1)values.unit=observedUnits.values().next().value;
+  if(observedUnits.size===1){
+   values.unit=observedUnits.values().next().value;
+   fieldSources.unit={origin:'excel',columns:sourceColumns(cells,cell=>Array.from(cell.matchAll(usageToken)).length)};
+  }
  }
- if(usageScope.test(text))values.usage_scope??='aggregate';
- if(sourcePeriod.test(text)||values.usage_scope==='aggregate')values.usage_period??='source-period';
+ if(usageScope.test(text)&&!values.usage_scope){
+  values.usage_scope='aggregate';fieldSources.usage_scope={origin:'excel',columns:sourceColumns(cells,cell=>usageScope.test(cell))};
+ }
+ if(!values.usage_period&&(sourcePeriod.test(text)||values.usage_scope==='aggregate')){
+  values.usage_period='source-period';
+  fieldSources.usage_period={origin:'excel',columns:sourcePeriod.test(text)?sourceColumns(cells,cell=>sourcePeriod.test(cell)):fieldSources.usage_scope?.columns??[]};
+ }
  if(values.unit)values.unit=usageUnit(values.unit);
- if(spec)values.specification=spec.slice(0,1024);
- return {values,inferred,text,invalid,capacityFromSpec,usageFromSpec};
+ if(spec){
+  values.specification=spec.slice(0,1024);
+  const columns=sourceColumns(cells,(value,index)=>index===header?.known?.specification||unmapped(value,index)||dimensionOf(header?.row.cells[index]));
+  fieldSources.specification={origin:'excel',columns,...(header?{headerRow:header.row.row}:{})};
+ }
+ if(!fieldSources.product&&inferred!=='Unmapped'){
+  const columns=sourceColumns(cells,cell=>identifyHuaweiService(cell,cell)===inferred);
+  if(columns.length)fieldSources.product={origin:'excel',columns};
+ }
+ return {values,inferred,text,invalid,capacityFromSpec,usageFromSpec,fieldSources,meter};
 }
 
 const record=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
 function indexOutput(source,output){
  if(!record(output)||Object.keys(output).length!==1||!Array.isArray(output.rows)||output.rows.length>source.length)throw Error('inventory.modelSyntax');
- const byId=new Map();
+ const byId=new Map(),known=new Map(source.map(row=>[row.id,row]));
  for(const entry of output.rows){
-  if(!record(entry)||!Number.isInteger(entry.id)||!source[entry.id-1]||byId.has(entry.id)||
-     !kinds.includes(entry.kind)||Object.keys(entry).some(key=>!['id','kind','columns',...INVENTORY_FIELDS].includes(key)))throw Error('inventory.modelSyntax');
+  if(!record(entry)||!Number.isInteger(entry.id)||!known.has(entry.id)||byId.has(entry.id)||
+     !INVENTORY_KINDS.includes(entry.kind)||Object.keys(entry).some(key=>!['id','kind','columns','fieldColumns',...INVENTORY_FIELDS].includes(key)))throw Error('inventory.modelSyntax');
   if(entry.columns!==undefined&&(entry.kind!=='header'||!record(entry.columns)||Object.entries(entry.columns).some(([key,column])=>
-   !INVENTORY_FIELDS.includes(key)||!Number.isInteger(column)||column<0||column>=source[entry.id-1].cells.length||
-   typeof source[entry.id-1].cells[column]!=='string'||blank(source[entry.id-1].cells[column]))))throw Error('inventory.modelSyntax');
+   !INVENTORY_FIELDS.includes(key)||!Number.isInteger(column)||column<0||column>=known.get(entry.id).cells.length||
+   typeof known.get(entry.id).cells[column]!=='string'||blank(known.get(entry.id).cells[column]))))throw Error('inventory.modelSyntax');
+  if(entry.fieldColumns!==undefined&&(!record(entry.fieldColumns)||Object.entries(entry.fieldColumns).some(([key,column])=>
+   !INVENTORY_FIELDS.includes(key)||!Number.isInteger(column)||column<0||column>=known.get(entry.id).cells.length)))throw Error('inventory.modelSyntax');
   byId.set(entry.id,entry);
  }
  return byId;
 }
 
 function applyModelFields(draft,entry,header,observed){
- const {values,inferred,text,invalid,capacityFromSpec,usageFromSpec}=observed;
+ const {values,inferred,text,invalid,capacityFromSpec,usageFromSpec,fieldSources,meter}=observed;
  const source=comparable(text);
  const needsReview=new Set(invalid);
  const warnings=new Set([...draft.warnings,...invalid]);
  for(const key of INVENTORY_FIELDS){
+  if(key==='quantity'&&meter)continue;
   const proposal=entry?.[key];
   const known=values[key];
-  let proposed;
-  try{proposed=fieldValue(key,proposal,true);}
+  const headerColumn=header?.suggested?.[key],column=entry?.fieldColumns?.[key]??headerColumn;
+  const raw=draft.cells[column];
+  let proposed,cited;
+  try{
+   cited=cellField(key,raw);
+   proposed=proposal===undefined&&known===undefined&&column===headerColumn?cited:fieldValue(key,proposal,true);
+  }
   catch{warnings.add(key);if(known===undefined)needsReview.add(key);}
   if(known!==undefined){
    draft[key]=known;
@@ -270,14 +313,15 @@ function applyModelFields(draft,entry,header,observed){
    continue;
   }
   if(key==='product'&&/^unknown$/i.test(proposed))continue;
-  if(['product','region','billing_method'].includes(key)&&source.includes(comparable(proposed))){
-   draft[key]=proposed;
-   continue;
-  }
   if(['usage_scope','usage_period'].includes(key)&&proposed===({usage_scope:'resource',usage_period:'monthly'})[key])continue;
-  const column=header?.suggested?.[key];
-  const raw=draft.cells[column];
-  if(!blank(raw)&&comparable(proposed)===comparable(raw))draft[key]=proposed;
+  const evidence={origin:'inferred',columns:Number.isInteger(column)?[column+1]:[],
+   ...(column===headerColumn&&Number.isInteger(headerColumn)?{headerRow:header.row.row}:{})};
+  if(cited!==undefined&&comparable(proposed)===comparable(cited)||
+    ['region','billing_method'].includes(key)&&source.includes(comparable(proposed))){
+   draft[key]=proposed;
+   fieldSources[key]=evidence;
+  }
+  (draft.proposals??={})[key]={...evidence,value:proposed};
   warnings.add(key);
   // Source region and billing method are traceability fields.
   if(!['region','billing_method'].includes(key))needsReview.add(key);
@@ -290,6 +334,7 @@ function applyModelFields(draft,entry,header,observed){
  draft.warnings=[...warnings];
  draft.capacityFromSpec=capacityFromSpec;
  draft.usageFromSpec=usageFromSpec;
+ draft.fieldSources=fieldSources;
 }
 
 export function reviewInventory(source,output){
@@ -304,9 +349,13 @@ export function reviewInventory(source,output){
   const kind=entry?.kind??'unknown';
   const looksLikeResource=observed.inferred!=='Unmapped'&&
    (Object.keys(observed.values).length>0||/\d\s*(?:vcpus?|GiB|GB|G|核|套|台|块)/i.test(observed.text));
-  const isHeader=Object.keys(known).length+visibleDimensions>=2||kind==='header'&&!looksLikeResource;
+  const modelHeader=kind==='header'&&!looksLikeResource&&Object.keys(entry?.columns??{}).length>=2&&
+   original.cells.filter(value=>!blank(value)).every(value=>typeof value==='string');
+  const isHeader=Object.keys(known).length+visibleDimensions>=2||modelHeader;
   if(isHeader)headers.set(original.sheet,{row:original,known,suggested:entry?.columns});
-  const include=!isHeader&&(kind!=='note'||looksLikeResource);
+  const clearNote=kind==='note'&&!looksLikeResource&&original.cells.filter(value=>!blank(value)).length===1&&
+   /^(?:notes?(?:\b|:)|fictional notes?\b|说明[:：]|备注[:：])/i.test(observed.text);
+  const include=!isHeader&&!clearNote;
   const draft={...original,header:isHeader?null:header?.row??null,include,kind:isHeader?'header':kind,
    warnings:include&&['note','header'].includes(kind)?['kind']:[],needsReview:[]};
   if(include)applyModelFields(draft,entry,header,observed);
@@ -314,7 +363,7 @@ export function reviewInventory(source,output){
  });
 }
 
-export function confirmInventory(review){
+export function confirmInventory(review,{semantic=false}={}){
  const active=review.filter(row=>row.include);
  if(!active.length)throw Error('inventory.empty');
  return active.map(draft=>{
@@ -330,7 +379,14 @@ export function confirmInventory(review){
   if(draft.edited?.some(key=>key==='usage'||key==='unit'))row.huaweiUsageFromSpec=false;
   else if(draft.usageFromSpec)row.huaweiUsageFromSpec=true;
   row.huaweiImportIssues=[...issues];
-  row.importSource={sheet:draft.sheet,row:draft.row,cells:draft.cells,headerRow:draft.header?.row,headers:draft.header?.cells};
+  row.awsInventory=true;
+  row.semanticInventory=semantic;
+  const fieldSources=Object.fromEntries(INVENTORY_FIELDS.map(field=>[field,draft.edited?.includes(field)?{origin:'confirmed'}:
+   draft.fieldSources?.[field]??draft.proposals?.[field]??{origin:'unknown'}]));
+  if(draft.fieldSources?.source_quantity)fieldSources.source_quantity=draft.fieldSources.source_quantity;
+  for(const field of draft.needsReview)if(draft.reviewed&&fieldSources[field]?.origin==='inferred')fieldSources[field]={...fieldSources[field],confirmed:true};
+  row.importSource={sheet:draft.sheet,row:draft.row,cells:draft.cells,headerRow:draft.header?.row,headers:draft.header?.cells,
+   fieldSources,classification:draft.kind};
   return row;
  });
 }
