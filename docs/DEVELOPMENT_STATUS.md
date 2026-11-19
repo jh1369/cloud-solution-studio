@@ -7,16 +7,15 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-19，Europe/Berlin |
-| 当前优先目标 / 模式 | Huawei DCS 官方产品规格证据，单 Agent |
-| 本轮检查基线 | `main` / `2590c374a5557fdd960807ba396f33f3696fdbce` |
-| 前轮 `main` 规格匹配合并基线 | `0dbd72463b21e3f85d9ac879fd4de897d5241237`。[合并提交](https://github.com/jh1369/cloud-solution-studio/commit/0dbd72463b21e3f85d9ac879fd4de897d5241237) · [当前 `main` HEAD](https://github.com/jh1369/cloud-solution-studio/commits/main/) |
+| 当前优先目标 / 模式 | Huawei DCS 欧站公开报价，单 Agent |
+| 本轮检查基线 | `main` / `3a169bada40e372cc68cedf00a8eccd011487167`。[PR #15](https://github.com/jh1369/cloud-solution-studio/pull/15) |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 本轮在线源码 `0.3.9-dev`。上次记录的私有站第 11 版为 `0.3.7-dev` |
+| 当前网页版本 | 本轮在线源码和私有站第 12 版均为 `0.3.10-dev` |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| 上次记录的 Sites 部署源码 | `4741d6a2b4044f7afee16e3a4ef208c370c804c9`（私有站第 11 版，见 PR #13 记录） |
-| 整体进度 | DCS 区域规格适配、三种公开价格及浏览器导出已回归。生产接入待认证规格复验。本机真实模型复验待运行环境 |
+| Sites 部署源码 | `eeab3eabf489bbc5c020b109e47e9ba198304273`（私有站第 12 版） |
+| 整体进度 | DCS 采用欧站公开规格与已核验的 EU-Dublin 价格，符合条件的规格可直接计价。本机真实模型复验待运行环境 |
 | 本轮同步范围 | Huawei DCS 在线源码、虚构测试夹具及技术和验收记录。源码同步与私有站发布分别记录 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
@@ -29,7 +28,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 | 安全及协作规则 | 禁止敏感资料进入仓库；任务结束更新状态；重大架构变更联动 README/路线图；Push 需明确授权 | `AGENTS.md`、`SECURITY.md` |
 | Python CLI 基础映射 | CSV→JSON，8 条产品族映射；SKU/价格待复核，没有费用计算 | `pricing-studio/src/pricing_studio/cli.py` |
 | 网页输入 | 文字、标准 CSV/XLSX、受支持的文字版 AWS 账单 PDF。非标准 CSV/XLSX 支持编辑式预览及配置后的本机模型分析 | `pricing-studio/web/public/app.mjs`、`inventory-import.mjs`、`scripts/local_inventory_api.mjs` |
-| 产品及规格候选 | Huawei ECS、EVS、限实例费 RDS 和私网 NAT 匹配现有目录。Redis DCS 使用区域规格 API 和独立价格证据，官方文档提供待核验候选。支持人工选型 | `huawei-match.mjs`、`huawei-dcs-specs.mjs`、`huawei-dcs-spec-api.mjs`、`engine.mjs` |
+| 产品及规格候选 | Huawei ECS、EVS、限实例费 RDS 和私网 NAT 匹配现有目录。Redis DCS 将欧站文档精确规格关联到已核验公开价格。支持人工选型 | `huawei-match.mjs`、`huawei-dcs-specs.mjs`、`huawei-dcs-spec-data.mjs`、`engine.mjs` |
 | 计费模式分离 | AWS 原计费仅作来源记录；华为云目标仅有按需、包月、包年；支持逐项及批量切换，切换后需重新确认 | `engine.mjs`、`app.mjs` |
 | 官方公开价格 | `eu-west-101` / USD；快照有 441 个按需、400 个包月、400 个包年计划，分别独立询价；含官方产品编码、请求/响应、来源和时间 | `public/catalog.json`、`scripts/build_catalog.py` |
 | 价格刷新 | 固定官方端点、服务端产品白名单；按目标计费模式分组请求；验证失败不生成价格 | `worker.mjs` |
@@ -84,7 +83,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 
 | 优先级 | 任务 | 完成标准 |
 | --- | --- | --- |
-| P0 / DCS 上线复验 | 认证的 EU-Dublin ListFlavors 与私有站部署 | 通过受控运行时注入只读区域项目及短期令牌，核验真实规格记录和可用区，复测浏览器报价与导出后发布 |
+| DCS 采购边界 | 指定可用区的供货确认 | 区域公开价格用于估算。指定可用区或跨可用区要求须有独立的放置证据 |
 | P0 / 模型复验 | 使用真实本机模型重复两类非标准导入 | 在获准的本机运行时复验 `0.3.8-dev` 字段分类、表头映射、人工纠正和报价导出。记录模型及版本 |
 | P1 / 报价覆盖建议 | RDS 数据盘和超额备份 | 独立核验实例、盘型与备份计费证据，按相应计量口径导出分项费用。[覆盖率分析](HUAWEI_QUOTE_COVERAGE.md) |
 | P2 / 独立任务 | Python CSV starter 数值与单位问题 | 不进入当前报价 MVP；继续保留原逻辑，独立修复 NaN/Infinity 与数量/单位，不重复开发 Python 报价系统 |
@@ -180,6 +179,8 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - GitHub 同步由本次明确授权触发；已通过 GitHub API 核实 `main` 的源码同步提交 `73baa615e800598255f1ba0ecf5f89ca4a49ef42`，文件树 `e5131af7d2dedbc607793e74a0ce0f74e19cc2cf` 与本地一致，工作树干净。生成的 Worker 和本地验证输出仍被忽略。未执行站点重部署、工作流触发或自动发布配置变更。
 
 ## 8. 下一步开发计划
+
+Huawei 欧洲站覆盖率优先补齐 RDS 数据盘和备份，随后为 ELB/EIP 分项和 OBS。每项建设以可验证的官方价格和独立计费单位为依据。[覆盖率分析](HUAWEI_QUOTE_COVERAGE.md)
 
 1. 在有持久磁盘的托管 Linux 启用 Python 定时任务，核对官方当前 PDF，自动发布不可变目录与状态。将 Worker 接入对象存储读取和时效校验。
 2. 为合并、跨页、阶梯和 ELB 等复杂条款增加确定性校验。证据不足的条目继续 Pending。
@@ -476,3 +477,12 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **浏览器与 Excel** Chromium 156.0.8078.79 跑通实际页面、Worker 和下载。模拟 ListFlavors 验证三种规格、容量和拓扑编辑、三模式报价、三副本手选及重回自动匹配。混合清单 5 行计价、3 行 Pending，月均小计 USD 302.50。禁用服务端认证后由标准 CSV 导入同三个规格，3 行均显示文档候选和认证原因。openpyxl 3.1.5 重开两份下载，确认五表、三种计费单位和款项、两类来源及 Pending 金额空白。
 - **边界** 模拟响应检验 Arm 缺价格关联、版本或分片不匹配、可用区缺失、区域不符、认证失败、API 超时、重复候选及证据过期。当前重点是 EU-Dublin 的 Redis DRAM 普通实例。跨可用区部署承诺、QPS、计费阶梯及没有确切单位的带宽要求仍要复核。真实区域可售结果待获准的认证复验，私有站当前以最近发布记录为准。
 - **同步与后续** 本轮源码分支 `feat/huawei-dcs-product-specs`，`main` 同步以包含本条记录的提交为准。本轮使用存档离线附件做在线构建。ECS、RDS、ELB 的后续接入复用产品证据结构，各自补充官方维度和 SKU 关联。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/) · [服务扩展点](../pricing-studio/web/README.md#official-dcs-product-specifications)
+
+### 2026-11-19 — Huawei DCS 无账号公开报价
+
+- **新增** 将 2025-11-03 版欧站规格表 1、2、3、5、7 的 90 条记录及两个三副本示例纳入文档快照。当前可精确关联 71 个按需、92 个包月和 92 个包年方案。**修改** 唯一文档规格关联 `eu-west-101` / `USD` 的独立报价证据，保留规格编辑、手选、显式假设和五表导出。**删除** ListFlavors 路由、IAM 配置与规格证据刷新计时器。 [规格与匹配规则](../pricing-studio/web/README.md#official-dcs-product-specifications)
+- **自动测试** 在 `pricing-studio/web` 用 Node 24.22.1、Python 3.12.14，指定现有 `0.3.1-dev` 离线附件执行 `npm run build`。`node --test tests/dcs-specs.test.mjs tests/huawei-import.test.mjs` 通过 26 项。`node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs` 通过 122 项。`PYTHONPATH=tests python3.12 -m unittest test_catalog test_catalog_updates test_tcp_pdf test_schedule test_catalog_publication` 通过 40 项，2 项缺 `boto3` 跳过。父级 `pricing-studio` 的 CLI 测试通过 1 项。以上 0 失败。
+- **公开询价** 无账号、Token 或 Cookie 的真实公开请求覆盖 2 GB 单机 `redis.single.xu1.large.2`、2 GB 主备 `redis.ha.xu1.large.r2.2` 和 4 GB 双副本三分片 `redis.cluster.xu1.large.r2.4`。每个 SKU 三种模式各一次，9 / 9 验证通过。单位、地区、币种和来源与随包快照一致。 [欧站公开询价](https://portal.eu.huaweicloud.com/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource)
+- **浏览器与 Excel** Chromium 156.0.8078.79 加载构建的 Web + Worker，未配置华为云账号及 IAM Token。通过容量、拓扑编辑、8 GB 主备手选、三模式公开刷新和过期价格回归。混合清单含 ECS、EVS、RDS 与 DCS，6 行计价、4 行 Pending，月均小计 USD 402.51。非标准 CSV 与多表 Excel 使用注入的模拟本机模型完成导入。openpyxl 3.1.5 重开 4 份实际下载，验证五张表、规格及价格证据、原始行号和 Pending 空白。真实本机模型复验沿用独立待办。
+- **版本与部署** 在线源码 `0.3.10-dev` 由 `fix/huawei-dcs-public-quotes` 交付。原私有站第 12 版发布 `succeeded`，生产资产与发布源码逐字节核对，生产公开询价 9 / 9。所有者访问范围复查通过。原生产下载附件逐字节核对通过，TCP 目录保留原校验时间与 SHA-256。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/) · [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
+- **剩余边界** 区域公开报价提供 EU-Dublin 估算。需确认带指定 AZ、跨 AZ、无匹配 Arm 或多副本规格，以及无有效价格的条目。优先扩展 RDS 数据盘和备份、ELB/EIP 与 OBS 的独立计费覆盖。 [覆盖率分析](HUAWEI_QUOTE_COVERAGE.md)

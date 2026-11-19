@@ -43,7 +43,7 @@ Implemented:
 
 - Rule-based Chinese and English resource descriptions, CSV/XLSX inventory import, and the supported text-based AWS billing PDF layout.
 - Editable target SKU suggestions and explicit human confirmation. Product-family similarity does not guarantee architecture, OS/licensing, engine, topology or feature equivalence.
-- Huawei online estimates match ECS, EVS, Redis DCS, scoped RDS and scoped private NAT. For DCS, the Worker reads regional product flavor metadata and the browser joins its `spec_code` to the existing official price plan. Documented flavors remain Pending until regional availability is verified. [DCS configuration and evidence](pricing-studio/web/README.md#official-dcs-product-specifications)
+- Huawei online estimates match ECS, EVS, Redis DCS, scoped RDS and scoped private NAT. DCS matches the European product specification in the browser and joins its `spec_code` to a verified public EU-Dublin price plan. The Worker refreshes prices through the public calculator without a Huawei Cloud account. [DCS sources and matching rules](pricing-studio/web/README.md#official-dcs-product-specifications)
 - AWS source billing retained separately from Huawei target **按需 / 包月 / 包年**. Source reserved/spot does not become a target billing choice.
 - Independently verified public price plans: 441 pay-per-use, 400 one-month and 400 one-year records in the checked-in snapshot. Unsupported services/modes and missing/expired prices remain Pending.
 - Monthly calculations, independent annual subscription prices, first-term prepayment, explicitly labeled annual amortization, and manual discount scenarios.
