@@ -1,6 +1,6 @@
 # Cloud Solution Studio · Pricing Studio Web
 
-Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.5-dev` includes deterministic Huawei SKU matching and a local model-assisted review workflow. [Browser acceptance](../../docs/PRICING_BROWSER_ACCEPTANCE.md)
+Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.8-dev` includes catalog-based Huawei SKU matching and a local model-assisted review workflow. [Browser acceptance](../../docs/PRICING_BROWSER_ACCEPTANCE.md)
 
 ## Features
 
@@ -19,13 +19,14 @@ The bundled public catalog has 441 pay-per-use and 400 plans each for one month 
 
 | Component | Exact match and review conditions |
 | --- | --- |
-| ECS | Match vCPU and memory exactly. Check architecture, OS and compute class. For generic requests, x86, Linux and General Computing are visible estimate assumptions. Specialized hosts, licenses and accelerators require review. |
-| EVS | Match cloud-disk class. Generic SSD uses a disclosed GPSSD scenario. Confirm disk capacity and usage. Performance, snapshot and unsupported tiers stay under review. |
-| DCS | Match Redis cache capacity and verified topology. When topology is unspecified and the catalog gives one compatible single-node SKU, use a disclosed single-node estimate. A quantity is required to price the estimate. An explicit shared topology with multiple matching node counts needs a more specific request or manual selection. |
-| RDS | Match engine, version, shape, topology and explicit Cloud SSD for instance-only estimates. Check storage and backup fees separately. |
-| ELB, NAT Gateway, CCE and other services | Manual candidate selection where a catalog plan exists. Unknown dimensions or missing plans stay Pending. OBS has no usable price rows. |
+| ECS | Match vCPU, memory, architecture, OS, compute class and explicit series. Generic requests use visible x86, Linux and General Computing assumptions. Specialized hosts, licenses and accelerators require review. |
+| EVS | Match the disk class and keep per-disk capacity separate from metered usage. Generic SSD uses a disclosed GPSSD estimate. Performance, snapshots and inconsistent capacities require review. |
+| DCS | Match Redis capacity and a compatible topology. With unspecified topology and one compatible single-node SKU, disclose the single-node assumption. Pricing requires a resource count. Multiple node counts, version constraints and conflicting capacities require review. A manual SKU with a different capacity remains Pending. |
+| RDS | Match engine, version, shape, topology and explicit Cloud SSD for instance-only estimates. Storage, backups and database licensing require review. |
+| NAT Gateway | Match a declared private NAT size (`small`, `medium`, `large`, `xlarge`) for an explicitly scoped instance-only estimate. |
+| ELB, CCE and other services | Manual candidate selection where a catalog plan exists. ELB has one hourly SKU. OBS has no usable price rows. |
 
-Each eligible service checks the requested target billing mode and the verified rate before pricing. A known count with omitted usage can use a disclosed full-month estimate for supported per-resource rows. Aggregate usage keeps its source period. Manual choices require confirmation and take precedence. Pending lines have blank quote amounts and are excluded from subtotals.
+Each eligible service checks the requested target region, billing mode and verified rate before pricing. A known count with omitted usage can use a disclosed full-month estimate for supported per-resource rows. Aggregate usage keeps its source period. When billing changes after manual selection, the same SKU requires fresh confirmation. If the plan is unavailable, choose another SKU or select **Match automatically**. Pending lines have blank quote amounts and are excluded from subtotals.
 
 ## Model-assisted CSV and Excel on the user machine
 
@@ -41,11 +42,13 @@ PRICING_OFFLINE_ARCHIVE=/path/to/existing.zip python3.12 scripts/build_worker.py
 INVENTORY_MODEL_PORT=4813 INVENTORY_MODEL=inventory-local PORT=4814 node scripts/dev-server.mjs
 ```
 
-Open `http://127.0.0.1:4814`, select Huawei Cloud and upload a file. In the preview, run the local model, inspect the original cells and proposed fields, adjust the included rows, and click **Confirm and quote**. A repeated import of the last successful dataset in the same page reuses the result. The preview keeps sheet and physical row numbers and the original cells for the Input worksheet.
+Open `http://127.0.0.1:4814`, select Huawei Cloud and upload a file. In the preview, run the local model, inspect the original cells and proposed fields, adjust the included rows, and click **Confirm and quote**. Verify highlighted pricing fields or correct them in the preview. Rows with unverified fields can be exported as Pending alongside priced rows. The page keeps up to four successful analyses in memory for repeated imports. The Input worksheet retains source sheet, row, original cells and any applicable header.
 
-The model receives at most 10 sheets, 60 nonempty rows, 20 columns and 12,000 serialized characters. It proposes source fields only. Pricing and target SKU selection happen after review using the same deterministic rules as the standard path. Invalid fields are flagged, omitted rows stay visible, and timeouts preserve editable source cells. Untyped files, unsupported encodings, complex ranges and unknown fields may need manual cleanup or a standard template.
+The model receives sheet names and a cell preview bounded to 10 sheets, 60 nonempty rows, 20 columns and 12,000 serialized characters. It proposes source fields and header mappings in a JSON Schema. Known column names and explicit units ground counts, capacity and metered usage. Other proposed field assignments require review. Omitted rows stay visible, and timeouts preserve editable source cells. Complex ranges, unsupported encodings and unfamiliar fields may need manual cleanup or a standard template. After confirmation, both import paths use the same deterministic matching and price validation.
 
 With the model enabled, the local Web server and model listen on the user's machine. The same-origin Node adapter forwards only to a configured `127.0.0.1` port via direct HTTP. It does not use a proxy or follow redirects. Use a trusted local runtime with telemetry disabled. Before handling sensitive data, require authentication at the model server and restrict its browser origins. Supply the matching credential through the local process environment as `INVENTORY_MODEL_TOKEN`. The hosted app has no external model configuration, upload endpoint or model credential. Any external integration would require explicit approval for the allowed columns, purpose, data residency, retention, credentials and audit controls.
+
+The server adapter receives `{rows, schema, signal}` and returns the structured proposal. The shipped adapter uses local OpenAI-compatible chat completions. Alternate approved local adapters can implement the same interface and share the same request limits, preview validation and quote engine.
 
 ## Commands
 

@@ -31,15 +31,8 @@ function selectHuawei(row){
  huaweiMatching.applyHuaweiMatch(huaweiMatching.identifyHuaweiRow(row),catalog);
 }
 function setBilling(row,mode){
- if(provider==='huawei'&&huaweiMatching&&row.huaweiSelection!=='manual'){
-  row.targetBilling=mode;selectHuawei(row);
- }else{
-  switchBilling(row,mode,catalog);
-  if(provider==='huawei'&&huaweiMatching){
-   row.huaweiAssumptions=[];
-   huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
-  }
- }
+ if(provider==='huawei'&&huaweiMatching)huaweiMatching.selectHuaweiBilling(row,mode,catalog);
+ else switchBilling(row,mode,catalog);
 }
 function settings(){
  const hours=Number($('#hours').value),discount=Number($('#discount').value)/100;
@@ -128,11 +121,14 @@ function render({now=Date.now()}={}){
 }
 function renderProvider(){
  const isTCP=provider==='tcp';
+ const onlineHuawei=!isTCP&&!!huaweiMatching;
  for(const element of $$('[data-huawei-quote]'))element.hidden=isTCP;
  for(const element of $$('[data-tcp-quote]'))element.hidden=!isTCP;
  $('#target-provider-control').hidden=!!offlineBundle;
  $('#refresh-prices span').textContent=T(isTCP?'tcp.quote.reload':offlineBundle?'offline.refresh':'quote.refresh');
- $('#mapping-notice').textContent=T(isTCP?'tcp.quote.notice':'mapping.notice');
+ $('#mapping-notice').textContent=T(isTCP?'tcp.quote.notice':onlineHuawei?'mapping.hwNotice':'mapping.notice');
+ $('[data-i18n="input.file"]').textContent=T(onlineHuawei?'input.hwFile':'input.file');
+ $('[data-i18n="input.schema"]').textContent=T(onlineHuawei?'input.hwSchema':'input.schema');
  $('#quote-evidence').textContent=T(isTCP?'tcp.quote.evidence':'evidence.text');
  $('#metric-plans-hint').textContent=T(isTCP?'tcp.quote.hint':'metric.plansHint');
  $('.migration-hero').setAttribute('aria-label',isTCP?'AWS to T-Cloud Public':'AWS to Huawei Cloud Public');
@@ -261,23 +257,34 @@ $('#resources').addEventListener('change',event=>{
  const input=event.target;
  row[field]=field==='accepted'?input.checked:['quantity','targetQuantity','capacity','usage'].includes(field)?input.value===''?null:Number(input.value):input.value;
  if(field==='unit')row.unitExplicit=!!input.value;
- if(field==='usage'&&row.evsUsageFromCapacity)row.evsUsageFromCapacity=false;
  if(field==='specification'&&provider==='tcp'){row.targetId=recommend(row,catalog);row.accepted=false;}
  if(field==='targetBilling')setBilling(row,input.value);
  if(provider==='huawei'&&huaweiMatching){
-  if(field==='capacity'&&row.service==='EVS')row.evsCapacitySource=row.capacity===null?'specification':'explicit';
+  const importFields={targetQuantity:'quantity',capacity:'capacity_gb',unit:'unit',period:'usage_period',usage:'usage',
+   service:'product',specification:'specification',huaweiTargetRegion:'huawei_target_region'};
+  if(row.huaweiImportIssues?.length&&importFields[field])row.huaweiImportIssues=row.huaweiImportIssues.filter(key=>key!==importFields[field]);
+  if(field==='huaweiTargetRegion')row.huaweiRegionFromSpec=false;
+  if(field==='capacity'&&['EVS','DCS'].includes(row.service))row.huaweiCapacityExplicit=row.capacity!==null;
+  if(row.service==='EVS'){
+   if(field==='usage'){
+    row.huaweiUsageFromSpec=false;row.evsUsageConflict=false;
+   }else if(field==='unit'&&!row.evsUsageConflict)row.huaweiUsageFromSpec=false;
+  }
   if(field==='targetId'||field==='accepted'){
-   row.huaweiSelection='manual';row.huaweiCandidates=null;
-   if(field==='targetId'){
-    row.accepted=false;row.huaweiAssumptions=[];row.huaweiMatch=row.targetId?'HW_MATCHED':null;
+   if(row.targetId==='__auto__'){
+    row.huaweiSelection=null;row.huaweiPreferredSku=null;selectHuawei(row);
+   }else{
+    row.huaweiSelection='manual';row.huaweiCandidates=null;
+    row.huaweiPreferredSku=catalog.items.find(item=>item.id===row.targetId)?.sku;
+    if(field==='targetId'){row.accepted=false;row.huaweiAssumptions=[];row.huaweiMatch=row.targetId?'HW_MATCHED':'HW_MANUAL_SERVICE';}
     huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
    }
   }else if(['service','targetQuantity','capacity','usage','unit','period','specification','huaweiTargetRegion'].includes(field)){
-   if(field==='service'){row.targetId='';row.huaweiSelection=null;}
+   if(field==='service'){row.targetId='';row.huaweiSelection=null;row.huaweiPreferredSku=null;}
    row.accepted=false;
    if(row.huaweiSelection!=='manual')selectHuawei(row);
    else{
-    if(row.service==='EVS'&&['specification','capacity'].includes(field))huaweiMatching.identifyHuaweiRow(row);
+    if(['specification','capacity'].includes(field))huaweiMatching.identifyHuaweiRow(row);
     huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
    }
   }
@@ -331,7 +338,7 @@ async function importFile(file){
     try{input=new TextDecoder('utf-8',{fatal:true}).decode(bytes);}
     catch{throw Error('inventory.encoding');}
    }
-   const book=window.XLSX.read(input,{type:huaweiCSV?'string':'array',cellFormula:false,cellHTML:false});
+   const book=window.XLSX.read(input,{type:huaweiCSV?'string':'array',cellFormula:false,cellHTML:false,...(huaweiCSV?{raw:true}:{})});
    if(provider==='huawei'&&inventoryReview)parsed=inventoryReview.read(book,window.XLSX);
    else{
     const worksheet=book.Sheets[book.SheetNames.includes('Input')?'Input':book.SheetNames[0]];

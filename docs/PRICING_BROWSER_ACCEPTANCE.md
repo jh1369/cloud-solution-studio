@@ -150,3 +150,33 @@ CSV 下载 SHA-256 `74d5d8fc73d3481663f27bf64e2b7c55efb31604bd1c61e83eba0a53c338
 | 核对 | 初次小计 USD 355.80，4 行计价、6 行 Pending。手动选择 2 节点主备并确认，Redis 行变为 USD 24.82，小计 USD 368.21，原单机估算假设移除。模拟超过目录有效期后，所有行和小计金额为空。 |
 
 两种环境的三份下载均重开 `Input`、`Service Mapping`、`Public Pricing`、`Quotation`、`Assumptions`，核查 SKU、数量、假设、计费金额、官方价格证据和 Pending 空值。混合、手动及过期文件的 SHA-256 依次为 `29a890098a9799e3c85f209e51f6a042042b2ade174b257b971a0c17306dbad0`、`557735b65d2155984dd47d60ad9007e815483a7024f30ad64908f51d81df170d`、`bed4dd000b66a79efce471b8e5ca2436923cb48322f93942e1acac94995919fa`。初次本地浏览器脚本的部分 SKU 选择器匹配两条选项，改用完整 SKU 后全部通过。
+
+## 2026-11-19 — Huawei 在线规格和本机导入复核
+
+从 `8f8ff839309f79e7223d9edaa5af770dd3c5f4da` 开发的 `0.3.7-dev` 在线候选。执行人 Codex。共享 Chromium 和 Playwright 驱动的 Chromium 156.0.8078.79 访问本机 Node + Worker，使用虚构 CSV/XLSX。下载由 openpyxl 3.1.5 重开并独立核对。固定目录验收使用原始公开价格证据和固定时间，实时询价使用实际时钟。
+
+| 流程 | 页面及下载结果 |
+| --- | --- |
+| 标准 CSV 和含 Notes 的标准 XLSX | 各直接导入 4 行，模型 POST 0 次。两个导出入口各下载一份，2 项计价、2 项 Pending，USD 497.21。 |
+| 非标准 CSV | 预览保留前置说明、表头和原始单元格。本机模拟模型把内存数值填入用量，预览丢弃并提示核对。补充 730 小时后确认，4 项计价、1 项 Pending，USD 231.41。 |
+| 三工作表、表头偏移 XLSX | Compute 第 3 行表头、Storage 第 4 行表头、Cache 第 1 行表头。模型建议的数量列须手动核实。ECS、EVS、DCS 三行合计 USD 281.05。未覆盖的华为云区域及把缓存容量误填为数量的两行 Pending。 |
+| SKU 与三模式 | ECS 手选 `c9.xlarge.4.linux`。按需小计 USD 310.84。切换后保留 SKU 并逐次确认，包月小计 USD 340.85，包年月均小计 USD 283.98、首期预付 USD 3407.77。 |
+| 实时官方核价 | 按需、包月、包年各发送一次白名单 SKU 查询。三个请求均返回 HTTP 200，各 3 项确认。实时 Excel 月度参考、包月、包年月均金额分别为 USD 206.59、150.35、125.96，包年首期 USD 1511.59。 |
+| 模型故障与复用 | 非标准 CSV → XLSX → 原 CSV，首次成功分析各发送一次，第三次复用。模拟服务实际返回坏 JSON，浏览器另注入 HTTP 504。原始字段仍可编辑，取消保留上一份报价。 |
+
+10 份浏览器下载均包含 Input、Service Mapping、Public Pricing、Quotation 和 Assumptions。复核计费模式、来源行和表头、SKU、官方询价证据、合计和 Pending 金额空白。固定目录的非标准 CSV、XLSX 下载 SHA-256 分别为 `0d3714c204e8435284b046e3d20ce5ed30548cf3cf7bf2153bc247a57e1ed17e`、`060347794c44c4bf63e7a1415ca8e482a69c71967d1392f105ed66ea1f17c911`。共享浏览器另核对裸 `2G Redis`、带数量的 ECS 和 EVS 混合输入，后两项合计 USD 132.13。
+
+本轮模型链路覆盖同源 API、环回模型协议、结构与数值验证、用户确认及报价导出。语言模型实测待配置获准的本机运行时和权重。历史 `0.3.4-dev` 的实模记录见上节。候选版生产站及离线版未验收。[虚构 CSV](../pricing-studio/web/tests/fixtures/huawei-fictional-nonstandard.csv) · [运行配置](../pricing-studio/web/README.md#model-assisted-csv-and-excel-on-the-user-machine)
+
+## 2026-11-19 — Huawei 主线整合验收
+
+用 Chromium 156.0.8078.79 测试 PR #13 和 #14 的 `0.3.8-dev` 整合版，全部使用虚构输入。实际下载 15 份工作簿，用 openpyxl 3.1.5 重开五张表。逐行核对源字段、SKU、计费模式、价格证据、金额和 Pending 空值。
+
+| 场景 | 观察结果 |
+| --- | --- |
+| Redis 容量和拓扑 | 2 GB 缺数量时推荐单机 SKU 并保留 Pending。填一套并改至 4 GB 后为 USD 49.64/月。改主备 2 节点后匹配 `redis.ha.xu1.large.r2.4`，为 USD 99.28/月。手选 2 GB SKU 并确认后金额留空。 |
+| EVS 与混合报价 | 两块盘、每盘 100→200 GB、用量 80 GB-month，按需金额仍为 USD 16.70。用量范围输入使金额留空，手工重填用量与单位恢复报价。ECS 与 RDS 规格继续自动匹配。Redis 主备重匹配后混合清单小计 USD 327.24，共 4 项计价、1 项 Pending。 |
+| 标准及智能导入 | 标准 CSV/XLSX 直接导入。非标准 CSV 和三表 XLSX 使用环回模拟模型，核对表头、拒绝错列用量和错误数量，经用户修正或确认后分别得到 USD 231.41 和 USD 281.05。重复导入复用成功响应，模型异常及超时后可取消，原报价保持可用。 |
+| 手动 SKU 与实时价格 | 手选 ECS SKU 后切换按需、包月和包年，确认流程与导出通过。三种模式分别通过华为云欧站实时核验 3 个 SKU，共 9 项。 |
+
+本次验证范围为浏览器、环回模型协议和报价流程。环境缺可用的真实本机运行时与权重，PR #13 中记录的真实 Qwen 测试属于此前版本。生产部署和离线发布属于独立验收。

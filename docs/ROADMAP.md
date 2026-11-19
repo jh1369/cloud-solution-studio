@@ -6,6 +6,9 @@ The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, t
 
 - [x] Use service-specific dimensions and exact catalog matching for ECS, EVS, DCS and scoped RDS instance estimates.
 - [x] Review bounded nonstandard CSV and multi-sheet Excel imports with structured output from a configured local model. Preserve source evidence through export.
+- [x] Verify imported counts, capacity and usage against their source columns or explicit units. Retain header evidence and require review of uncertain pricing inputs.
+- [x] Match explicit ECS series and private NAT instance sizes from the catalog. Keep manually chosen SKUs through billing changes when an equivalent plan exists.
+- [ ] Revalidate the updated import schema with a local language model in the release environment.
 - [ ] Expand supported vendor layouts, service-specific dimensions and verified ancillary price coverage using fictional fixtures and public evidence.
 
 ## Pricing Studio V0.3 — TCP catalog automation

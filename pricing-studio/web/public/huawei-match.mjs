@@ -1,134 +1,200 @@
 import {REGION,awsShape,billingOf,family,priceValidation} from './engine.mjs';
 
 function attributes(item){
- return Object.fromEntries(item.description.split(';').map(part=>{
+ if(typeof item.description!=='string')return {};
+ return Object.fromEntries(item.description.split(';').flatMap(part=>{
   const split=part.indexOf(':');
-  return [part.slice(0,split).trim().toLowerCase(),part.slice(split+1).trim()];
+  return split<0?[]:[[part.slice(0,split).trim().toLowerCase(),part.slice(split+1).trim()]];
  }));
 }
-const capacityToken=/(?:^|[^\w.])(\d+(?:\.\d+)?)\s*(?:GiB|GB|G)(?![a-z])/gi;
-const capacity=(text)=>Number(text.matchAll(capacityToken).next().value?.[1])||null;
-function updateEvsCapacity(row){
- const spec=row.specification;
- const sizes=new Set([...spec.matchAll(capacityToken)].filter(match=>
-  !/^\s*(?:[-/·]\s*)?(?:(?:months?|hours?|mo|h)\b|月|小时)/i.test(spec.slice(match.index+match[0].length))
- ).map(match=>Number(match[1])));
- const detected=sizes.size===1?sizes.values().next().value:null;
- // A copy made by the text parser is not independent billable usage.
- if(row.evsUsageFromCapacity){row.usage=null;row.evsUsageFromCapacity=false;}
- const explicit=row.evsCapacitySource==='explicit';
- row.evsCapacityConflict=sizes.size>1||(explicit&&detected!==null&&detected!==row.capacity);
- if(!explicit){
-  row.capacity=detected;row.evsCapacitySource='specification';
+
+const amountPattern='[+-]?(?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d+)?';
+const capacityUnits='\\s*(?:GiB|GB|G)(?![a-z])';
+const capacityToken=new RegExp('(?<![\\w.])(?<!\\d,)('+amountPattern+')'+capacityUnits,'gi');
+const capacityRange=new RegExp(amountPattern+'\\s*[-–~至/]\\s*'+amountPattern+capacityUnits,'gi');
+const meterSuffix=/^\s*(?:[-/·]\s*)?(?:(months?\b|mo\b|月)|hours?\b|h\b|小时)/i;
+function storageDimensions(text){
+ const sizes=new Set(),metered=new Map();
+ for(const match of text.matchAll(capacityToken)){
+  const amount=Number(match[1].replaceAll(',',''));
+  const suffix=text.slice(match.index+match[0].length).match(meterSuffix);
+  if(!suffix){sizes.add(amount);continue;}
+  const unit=(/GiB$/i.test(match[0])?'GiB':'GB')+(suffix[1]?'-month':'-hour');
+  metered.set(unit+':'+amount,{amount,unit});
  }
+ let sizeRange=false,meteredRange=false;
+ for(const match of text.matchAll(capacityRange)){
+  if(meterSuffix.test(text.slice(match.index+match[0].length)))meteredRange=true;
+  else sizeRange=true;
+ }
+ const size=sizes.values().next().value;
+ const conflict=sizes.size>1||sizeRange||size<=0;
+ const usageConflict=metered.size>1||meteredRange;
+ return {size:conflict?null:size??null,conflict,metered:usageConflict?null:metered.values().next().value,usageConflict};
 }
+
 const policy=(test,assumptions=[])=>({test,assumptions});
-const missing=(code)=>({code});
-const computeShape=text=>{
- const explicitCPU=Number(text.match(/(\d+)\s*(?:vCPU|核)/i)?.[1])||null;
- const memory=capacity(text);
- const known=/\b(?:db\.)?(?:m5|m6i)\.(?:large|xlarge|2xlarge)\b/i.test(text)?awsShape(text):null;
- if(known&&(explicitCPU&&explicitCPU!==known.cpu||memory&&memory!==known.memory))return null;
- return explicitCPU&&memory?{cpu:explicitCPU,memory}:known;
-};
+const missing=code=>({code});
+function observedIntegers(text,pattern){
+ return new Set(Array.from(text.matchAll(pattern),match=>Number(match[1])));
+}
+function computeShape(text){
+ const cpus=observedIntegers(text,/(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*(?:vCPUs?\b|核)/gi);
+ const awsTypes=new Set(Array.from(text.matchAll(/\b(?:db\.)?(?:m5|m6i)\.(?:large|xlarge|2xlarge)\b/gi),match=>match[0].toLowerCase()));
+ const {size:memory,conflict}=storageDimensions(text);
+ const cpu=cpus.values().next().value;
+ if(cpus.size>1||awsTypes.size>1||conflict||cpu!==undefined&&(!Number.isInteger(cpu)||cpu<=0))return null;
+ const known=awsTypes.size===1?awsShape(awsTypes.values().next().value):null;
+ if(known&&(cpu&&cpu!==known.cpu||memory&&memory!==known.memory))return null;
+ return cpu&&memory?{cpu,memory}:known;
+}
 const sameShape=(item,shape)=>item.cpu===shape.cpu&&item.memory===shape.memory;
-const topologyOptions=[[/single(?:[- ]az|[- ]node)?|单机|单实例/i,'single_node'],[/master[ /_-]*standby|primary[ /_-]*standby|multi[- ]az|主备/i,'master_standby'],[/cluster|集群/i,'cluster'],[/read replica|只读副本/i,'read_replica']];
-const topology=text=>{
- const matched=topologyOptions.filter(([pattern])=>pattern.test(text));
- return matched.length===1?matched[0][1]:null;
-};
+const topologyOptions=[
+ [/\bsingle(?:[- ]az|[- ]node)?\b|\bstandalone\b|单机|单实例/i,'single_node'],
+ [/\b(?:master|primary)[ /_-]*standby\b|\bmulti[- ]az\b|主\s*备/i,'master_standby'],
+ [/\bcluster\b|集群/i,'cluster'],
+ [/\bread replica\b|只读副本/i,'read_replica']
+];
+const topologies=text=>topologyOptions.filter(([pattern])=>pattern.test(text)).map(([,value])=>value);
+const cacheEngineConstraint=/memcached|valkey|keydb|\bredis\s+v\d|\bredis\s+\d+\.\d+(?![\d.]|\s*(?:GiB|GB|G)(?![a-z]))|版本|\bversion\b/i;
+const otherCacheTopology=/高可用|多\s*(?:AZ|可用区)|哨兵|分片|\b(?:HA|standby|replication|replicated|shards?|sentinel)\b/i;
+
 const rules={
  ECS(row,spec){
   const shape=computeShape(spec);
   if(!shape)return missing('HW_SHAPE_REQUIRED');
-  const linux=/\blinux\b/i.test(spec),windows=/\bwindows\b/i.test(spec);
-  const arm=/arm64|aarch64|鲲鹏|\barm\b|\b(?:m|c|r)\d+g\./i.test(spec),x86=/\bx86(?:_64)?\b|\b(?:m5|m6i)\./i.test(spec);
-  if(linux&&windows||arm&&x86||/rhel|red hat|suse|byol|licen[cs]e|gpu|accelerator|dedicated|burst|risc-v|compute[- ]optimized|本地盘/i.test(spec))return missing('HW_ECS_CONFLICT');
-  const type=/general[- ]computing[- ]plus|通用计算增强/i.test(spec)?'General Computing-plus':/memory[- ]optimized|内存优化/i.test(spec)?'Memory-optimized':'General Computing';
+  const linux=/\b(?:linux|ubuntu|debian|centos|openeuler)\b/i.test(spec),windows=/\bwindows\b/i.test(spec);
+  const architectures=[/\b(?:arm64|aarch64|arm)\b|鲲鹏|\b(?:m|c|r)\d+g\./i,/\b(?:x86(?:_64)?|amd64)\b|\b(?:m5|m6i)\./i].map(test=>test.test(spec));
+  const [arm,x86]=architectures;
+  const classes=[
+   [/general[- ]computing[- ]plus|通用计算增强/i,'General Computing-plus'],
+   [/memory[- ]optimized|内存优化/i,'Memory-optimized'],
+   [/general[- ]computing(?![- ]plus)|通用计算(?!增强)/i,'General Computing']
+  ].filter(([pattern])=>pattern.test(spec)).map(([,value])=>value);
+  const series=new Set(Array.from(spec.matchAll(/(?:\bseries\s*[:=]?\s*|系列\s*[:=：]?\s*)([a-z]\d+[a-z]*)\b/gi),match=>match[1].toLowerCase()));
+  if(linux&&windows||arm&&x86||classes.length>1||series.size>1||
+     /rhel|red hat|suse|byol|licen[cs]e|macos|freebsd|\baix\b|gpu|accelerator|dedicated|burst|risc-v|compute[- ]optimized|本地盘/i.test(spec))return missing('HW_ECS_CONFLICT');
+  const type=classes[0]??(series.size?null:'General Computing');
   const assumptions=[];
   if(!linux&&!windows)assumptions.push('HW_DEFAULT_LINUX');
   if(!arm&&!x86)assumptions.push('HW_DEFAULT_X86');
-  if(type==='General Computing'&&!/general[- ]computing|通用计算/i.test(spec))assumptions.push('HW_DEFAULT_GENERAL');
+  if(!classes.length&&!series.size)assumptions.push('HW_DEFAULT_GENERAL');
   return policy((item,fields)=>sameShape(item,shape)&&item.os===(windows?'Windows':'Linux')&&
-   item.arch.toLowerCase()===(arm?'arm':'x86')&&fields.type===type,assumptions);
+   String(item.arch??'').toLowerCase()===(arm?'arm':'x86')&&(!type||fields.type===type)&&
+   (!series.size||series.has(fields.series?.toLowerCase())),assumptions);
  },
  EVS(row,spec){
+  if(row.huaweiCapacityConflict)return missing('HW_DISK_CAPACITY_CONFLICT');
   if(/snapshot|快照|iops|throughput|吞吐|mbps|premium|\b(?:io[12]|gp4)\b/i.test(spec))return missing('HW_DISK_PERFORMANCE');
-  const types=[[/\bESSD\b|Extreme SSD|极速型/i,'ESSD'],[/\bSAS\b|^high i\/o$|高IO型/i,'SAS'],[/\b(?:GPSSD|gp[23])\b|General Purpose SSD|通用型SSD/i,'GPSSD'],[/Ultra[- ]high I\/O|超高IO/i,'SSD']];
+  const types=[
+   [/\bESSD\b|Extreme SSD|极速型/i,'ESSD'],
+   [/\bSAS\b|(?<!ultra[- ])\bhigh i\/o\b|高IO型/i,'SAS'],
+   [/\b(?:GPSSD|gp[23])\b|General Purpose SSD|通用型SSD/i,'GPSSD'],
+   [/Ultra[- ]high I\/O|超高IO/i,'SSD']
+  ];
   const explicit=types.filter(([pattern])=>pattern.test(spec));
   if(explicit.length>1)return missing('HW_DISK_TYPE');
   const generic=!explicit.length&&/\bSSD\b/i.test(spec),sku=explicit[0]?.[1]??(generic?'GPSSD':null);
   if(!sku)return missing('HW_DISK_TYPE');
-  if(billingOf(row)!=='ONDEMAND'&&!(row.capacity>0))return missing('HW_DISK_CAPACITY');
+  if(!(row.capacity>0)&&(billingOf(row)!=='ONDEMAND'||row.usage==null))return missing('HW_DISK_CAPACITY');
   return policy(item=>item.sku===sku,generic?['HW_DEFAULT_SSD']:[]);
  },
- DCS(row,spec){
-  const source=row.product+' '+spec;
-  if(!/redis|\bdcs\b/i.test(source)||/memcached|valkey|keydb|\bredis\s+v?\d+\.\d+|版本|\bversion\b/i.test(spec))return missing('HW_CACHE_ENGINE');
-  const specSize=capacity(spec),size=row.capacity??specSize,mode=topology(spec);
-  if(row.capacity&&specSize&&row.capacity!==specSize)return missing('HW_CACHE_CAPACITY');
-  if(!(size>0))return missing('HW_CACHE_CAPACITY');
-  const units=Number(spec.match(/(\d+)\s*(?:节点|nodes?|副本|replicas?)/i)?.[1])||null;
-  if(mode==='read_replica')return missing('HW_CACHE_MODE');
-  if(!mode){
-   const capacities=Array.from(source.matchAll(capacityToken),match=>Number(match[1]));
-   if(capacities.some(capacity=>capacity!==size)||/\d\s*[-–~至/]\s*\d+(?:\.\d+)?\s*(?:GiB|GB|G)\b/i.test(source))return missing('HW_CACHE_CAPACITY');
-   if(/\bredis\s+v\d/i.test(source)||/memcached|valkey|keydb|\bredis\s+\d+\.\d+|版本|\bversion\b/i.test(row.product))return missing('HW_CACHE_ENGINE');
-   // Unknown or conflicting topology hints must not take the missing-topology default.
-   const nodeConstraints=Array.from(source.matchAll(/(\d+)\s*(?:节点|nodes?|副本|replicas?)/gi),match=>Number(match[1]));
-   if(!/redis/i.test(source)||topologyOptions.some(([pattern])=>pattern.test(source))||
-      /主\s*备|高可用|多\s*(?:AZ|可用区)|哨兵|分片|\b(?:HA|standby|standalone|replication|replicated|shards?|sentinel)\b/i.test(source)||
-      nodeConstraints.some(count=>count!==1))return missing('HW_CACHE_MODE');
-  }
-  const nodeCount=mode?units:1;
-  const constraints=mode?spec:source;
-  return policy((item,fields)=>typeof item.sku==='string'&&item.sku.startsWith('redis.')&&fields.cache_mode===(mode??'single_node')&&fields.capacity===`${size*1024}MB`&&
-   (!nodeCount||fields.replica_number===`${nodeCount}PCS`)&&(!/arm|鲲鹏/i.test(constraints)||fields.cpu_type==='arm')&&
-   (!/x86/i.test(constraints)||fields.cpu_type==='x86')&&(!/DRAM/i.test(constraints)||fields.storage_type==='DRAM'),mode?[]:['HW_DEFAULT_REDIS_SINGLE']);
+ DCS(row,source){
+  if(!/redis|\bdcs\b/i.test(source)||cacheEngineConstraint.test(source))return missing('HW_CACHE_ENGINE');
+  if(/\b(?:flash|SSD|persistent memory)\b|闪存/i.test(source))return missing('HW_NO_MATCH');
+  if(row.huaweiCapacityConflict||!(row.capacity>0))return missing('HW_CACHE_CAPACITY');
+  const modes=topologies(source);
+  const units=observedIntegers(source,/(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*(?:节点|nodes?\b|副本|replicas?\b)/gi);
+  const count=units.values().next().value;
+  if(modes.length>1||modes[0]==='read_replica'||/哨兵|分片|\b(?:shards?|sentinel)\b/i.test(source)||
+     units.size>1||units.size&&(!Number.isInteger(count)||count<=0))return missing('HW_CACHE_MODE');
+  const mode=modes[0];
+  if(!mode&&(!/redis/i.test(source)||otherCacheTopology.test(source)||count>1))return missing('HW_CACHE_MODE');
+  if(mode==='single_node'&&(count>1||otherCacheTopology.test(source)))return missing('HW_CACHE_MODE');
+  const nodeCount=mode?count:1;
+  return policy((item,fields)=>typeof item.sku==='string'&&item.sku.startsWith('redis.')&&fields.cache_mode===(mode??'single_node')&&fields.capacity===row.capacity*1024+'MB'&&
+   (!nodeCount||fields.replica_number===nodeCount+'PCS')&&(!/arm|鲲鹏/i.test(source)||fields.cpu_type==='arm')&&
+   (!/x86/i.test(source)||fields.cpu_type==='x86')&&(!/DRAM/i.test(source)||fields.storage_type==='DRAM'),
+   mode?[]:['HW_DEFAULT_REDIS_SINGLE']);
  },
  RDS(row,spec){
-  const shape=computeShape(spec),mode=topology(spec);
-  const engine=spec.match(/\b(MySQL|PostgreSQL|MariaDB|SQL Server)\b/i)?.[1];
-  const version=spec.match(/(?:mysql|postgresql|mariadb|sql server|版本|version)\s*(\d+(?:\.\d+)?)(?![\d.])/i)?.[1];
-  if(!shape||!engine||!version||!mode||mode==='cluster')return missing('HW_DB_PARAMETERS');
+  const shape=computeShape(spec),modes=topologies(spec);
+  const engines=new Set(Array.from(spec.matchAll(/\b(MySQL|PostgreSQL|MariaDB|SQL Server)\b/gi),match=>match[1].toLowerCase()));
+  const versions=new Set(Array.from(spec.matchAll(/(?:mysql|postgresql|mariadb|sql server|版本|version)\s*(\d+(?:\.\d+)?)(?![\d.])/gi),match=>match[1]));
+  if(!shape||engines.size!==1||versions.size!==1||modes.length!==1||modes[0]==='cluster')return missing('HW_DB_PARAMETERS');
+  if(engines.has('sql server')||/byol|licen[cs]e|许可/i.test(spec))return missing('HW_DB_LICENSE');
   if(!/instance only|compute only|仅实例|仅计算/i.test(spec)||!/cloud ssd|云ssd/i.test(spec))return missing('HW_DB_STORAGE_SCOPE');
-  const type={single_node:'Single',master_standby:'Primary/Standby',read_replica:'Read replica'}[mode];
-  return policy((item,fields)=>sameShape(item,shape)&&item.engine.toLowerCase()===engine.toLowerCase()&&
+  const type={single_node:'Single',master_standby:'Primary/Standby',read_replica:'Read replica'}[modes[0]];
+  const version=versions.values().next().value;
+  return policy((item,fields)=>sameShape(item,shape)&&engines.has(String(item.engine??'').toLowerCase())&&
    fields['db engine version']?.split('|').includes(version)&&fields['db instance type']===type&&fields['storage type']==='Cloud SSD',
    ['HW_DB_INSTANCE_ONLY']);
+ },
+ 'NAT Gateway'(row,spec){
+  const sizes=new Set(Array.from(spec.matchAll(/\b(small|medium|large|xlarge)\b/gi),match=>match[1].toLowerCase()));
+  if(!/\bprivate\s+nat\b|私网\s*NAT/i.test(spec)||!/\binstance only\b|仅实例/i.test(spec)||
+     /\b(?:public|aws|azure)\b|公网|流量|traffic|bandwidth/i.test(spec)||sizes.size!==1)return missing('HW_NAT_PARAMETERS');
+  return policy((item,fields)=>item.resourceType==='hws.resource.type.privatenat'&&sizes.has(fields.specification),['HW_NAT_INSTANCE_ONLY']);
  }
 };
 
+const servicePatterns=[
+ ['ECS',/云主机|云服务器|虚拟机|\b(?:VMs?|virtual machines?|virtual server|EC2|ECS)\b/i],
+ ['EVS',/云盘|云硬盘|硬盘|磁盘|\d\s*块\s*盘|\b(?:EBS|EVS|managed disks?|block storage)\b/i],
+ ['DCS',/redis|缓存|\b(?:ElastiCache|DCS|memcached|valkey)\b/i],
+ ['RDS',/数据库|\b(?:RDS|MySQL|PostgreSQL|MariaDB|SQL Server)\b/i],
+ ['ELB',/负载均衡|\b(?:ELB|load balancers?|load balancing)\b/i],
+ ['OBS',/对象存储|\b(?:OBS|S3|object storage)\b/i],
+ ['NAT Gateway',/\b(?:private\s+nat|nat gateway)\b|私网\s*NAT/i]
+];
+
+export function identifyHuaweiService(product,specification=''){
+ const known=family(product);
+ if(known!=='Unmapped')return known;
+ for(const text of [product,specification]){
+  const candidates=servicePatterns.filter(([,pattern])=>pattern.test(text));
+  if(candidates.length===1)return candidates[0][0];
+  if(candidates.length>1)break;
+ }
+ return 'Unmapped';
+}
+
+const targetRegion=/(?:华为云区域|华为云目标区域|目标区域|(?:huawei\s+)?target\s+region)\s*[:=：]\s*([a-z]{2}(?:-[a-z]+)+-\d+)\b/i;
 export function identifyHuaweiRow(row){
- const text=row.product+' '+row.specification;
- const inferred=row.service==='Unmapped';
- if(row.service==='Unmapped'){
-  const mapped=family(row.product);
-  if(mapped!=='Unmapped')row.service=mapped;
-  else if(/云主机|虚拟机|\b(?:VM|EC2|ECS)\b/i.test(text))row.service='ECS';
-  else if(/云盘|硬盘|\b(?:EBS|EVS)\b/i.test(text))row.service='EVS';
-  else if(/redis|\bdcs\b/i.test(text))row.service='DCS';
+ const text=(row.product+' '+row.specification).normalize('NFKC');
+ if(row.service==='Unmapped')row.service=identifyHuaweiService(row.product,row.specification);
+ if(!row.huaweiTargetRegion||row.huaweiRegionFromSpec){
+  row.huaweiTargetRegion=text.match(targetRegion)?.[1].toLowerCase()??'';
+  row.huaweiRegionFromSpec=!!row.huaweiTargetRegion;
  }
- if(row.service==='DCS'){
-  row.capacity??=capacity(row.specification);
-  if(!row.unit)row.unit='hour';
+ row.huaweiTargetRegion=row.huaweiTargetRegion.toLowerCase();
+ if(row.service==='DCS'||row.service==='EVS'){
+  const {size,conflict,metered,usageConflict}=storageDimensions(text);
+  row.huaweiCapacityConflict=conflict||!!(row.huaweiCapacityExplicit&&size!==null&&size!==row.capacity);
+  if(!row.huaweiCapacityExplicit)row.capacity=size;
+  if(row.service==='DCS'&&!row.unit)row.unit='hour';
+  if(row.service==='EVS'&&row.huaweiUsageFromSpec){
+   row.evsUsageConflict=usageConflict;
+   row.usage=metered?.amount??null;
+   row.unit=metered?.unit??'';
+  }
  }
- if(row.service==='EVS'){
-  updateEvsCapacity(row);
-  if(inferred&&!row.unitExplicit&&row.usage==null)row.unit='';
+ if(row.scope==='resource'&&row.quantity==null&&!row.importSource){
+  const quantities=observedIntegers(text,/(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*(?:套|台|块|instances?\b)/gi);
+  const quantity=quantities.values().next().value;
+  row.huaweiQuantity=quantities.size===1&&Number.isInteger(quantity)&&quantity>0?quantity:null;
  }
- if(row.scope==='resource'&&row.quantity==null)row.huaweiQuantity=Number(text.match(/(\d+)\s*(?:套|台|块|instances?\b)/i)?.[1])||null;
  return row;
 }
 
 export function matchHuawei(row,catalog,{now=Date.now()}={}){
  if(row.huaweiTargetRegion&&row.huaweiTargetRegion!==REGION)return missing('HW_TARGET_REGION');
- const rule=rules[row.service];
+ const rule=Object.hasOwn(rules,row.service)?rules[row.service]:null;
  const mode=billingOf(row);
- const plans=catalog.items.filter(item=>item.region===REGION&&item.service===row.service&&item.billingMode===mode);
+ const plans=catalog.items.filter(item=>item?.region===REGION&&item.service===row.service&&item.billingMode===mode);
  if(!plans.length)return missing('HW_NO_PLAN');
  if(!rule)return missing('HW_MANUAL_SERVICE');
- const spec=row.specification.trim();
+ const spec=(row.product+' '+row.specification).normalize('NFKC').trim();
  const contract=rule(row,spec);
  if(contract.code)return contract;
  if(contract.assumptions.includes('HW_DEFAULT_REDIS_SINGLE')&&plans.some(item=>typeof item.description!=='string'||!item.description.trim()))return missing('HW_NO_MATCH');
@@ -152,10 +218,23 @@ export function applyHuaweiMatch(row,catalog){
  return row;
 }
 
+export function selectHuaweiBilling(row,mode,catalog){
+ row.targetBilling=mode;
+ if(row.huaweiSelection!=='manual')return applyHuaweiMatch(identifyHuaweiRow(row),catalog);
+ row.huaweiPreferredSku??=catalog.items.find(item=>item.id===row.targetId)?.sku;
+ const choices=catalog.items.filter(item=>item.region===REGION&&item.service===row.service&&item.billingMode===mode&&item.sku===row.huaweiPreferredSku);
+ const chosen=choices.length===1?choices[0]:null;
+ row.targetId=chosen?.id??'';
+ row.accepted=false;
+ row.huaweiMatch=chosen?'HW_MATCHED':'HW_MANUAL_PLAN';
+ setHuaweiUsageAssumption(row,chosen);
+ return row;
+}
+
 export function setHuaweiUsageAssumption(row,item){
  row.huaweiUsageAssumption=null;
  if(item&&row.scope==='resource'&&row.period==='monthly'&&row.usage==null&&billingOf(row)==='ONDEMAND'){
-  if(row.service==='EVS'&&row.capacity>0&&(!row.unit||['GB-month','GiB-month','GB','GiB'].includes(row.unit))){
+  if(row.service==='EVS'&&!row.evsUsageConflict&&row.capacity>0&&(!row.unit||['GB-month','GiB-month','GB','GiB'].includes(row.unit))){
    row.huaweiUsageAssumption='HW_STORAGE_MONTH';
   }else if(item.unit==='hour'&&(!row.unit||/^(?:hour|hours|hr|hrs)$/i.test(row.unit))){
    row.huaweiUsageAssumption='HW_MONTH_HOURS';
