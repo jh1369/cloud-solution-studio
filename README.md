@@ -41,13 +41,15 @@ The web app uses browser JavaScript and a Cloudflare Worker. Python 3.12 runs th
 
 Implemented:
 
-- Rule-based Chinese/English resource descriptions, CSV/XLSX inventory import, and the supported text-based AWS billing PDF layout; no OCR or general-purpose LLM parsing.
+- Rule-based Chinese and English resource descriptions, CSV/XLSX inventory import, and the supported text-based AWS billing PDF layout.
 - Editable target SKU suggestions and explicit human confirmation. Product-family similarity does not guarantee architecture, OS/licensing, engine, topology or feature equivalence.
+- Huawei online estimates match ECS, EVS, Redis DCS, scoped RDS and scoped private NAT to the catalog. A verified unique SKU can be priced with disclosed assumptions. Ambiguous or unsupported requirements stay Pending and manual choices take precedence.
 - AWS source billing retained separately from Huawei target **按需 / 包月 / 包年**. Source reserved/spot does not become a target billing choice.
 - Independently verified public price plans: 441 pay-per-use, 400 one-month and 400 one-year records in the checked-in snapshot. Unsupported services/modes and missing/expired prices remain Pending.
 - Monthly calculations, independent annual subscription prices, first-term prepayment, explicitly labeled annual amortization, and manual discount scenarios.
 - Five-sheet Excel export: Input, Service Mapping, Public Pricing, Quotation, Assumptions. Pending amounts stay blank; incomplete totals are partial subtotals.
 - Browser-local file parsing. Only allowlisted Huawei product IDs go to the server when refreshing prices; original files, AWS account IDs and descriptions are not uploaded by that flow.
+- The local Web + Worker workspace can use a loopback model to propose fields for nonstandard CSV and XLSX. Review source sheet, row and header evidence before confirming. The hosted workspace supports manual review. [Local model configuration](pricing-studio/web/README.md#model-assisted-csv-and-excel-on-the-user-machine)
 
 Build and run tests from the repository root, with Python 3.12 and Node.js 20+:
 
@@ -58,7 +60,7 @@ npm test
 
 No dependency installation or cloud credentials are needed. `npm test` builds the ignored `dist/server/index.js` and runs the relevant JavaScript and Python catalog/packaging regressions. Positive financial tests use fictional rates/resources; Worker tests mock the upstream API. This command does not refresh prices or deploy. See the [MVP acceptance record](docs/PRICING_MVP_ACCEPTANCE.md) for the separate official-API check and outstanding browser acceptance.
 
-Download the `0.3.1-dev` candidate ZIP, extract it and open the HTML in your browser. The ZIP includes a fictional inventory CSV. The candidate supports Huawei quotations and shows TCP catalog status. Two checks are open, covering native offline file use and the authenticated production site. The private site currently runs `0.3.0-dev`. [Download the offline ZIP](https://raw.githubusercontent.com/jh1369/cloud-solution-studio/main/releases/pricing-studio/v0.3.1-dev/Pricing-Studio-0.3.1-dev-Offline.zip) · [Browser checklist and sample files](docs/PRICING_BROWSER_ACCEPTANCE.md) · [Version archive](releases/pricing-studio/README.md)
+The `0.3.1-dev` offline candidate ZIP includes a standalone HTML file and a fictional CSV. The development status records the current private Site version and its acceptance results. [Download the offline ZIP](https://raw.githubusercontent.com/jh1369/cloud-solution-studio/main/releases/pricing-studio/v0.3.1-dev/Pricing-Studio-0.3.1-dev-Offline.zip) · [Development status](docs/DEVELOPMENT_STATUS.md) · [Version archive](releases/pricing-studio/README.md)
 
 Each delivery keeps the original per-price verification times. To archive a new version, update `pricing-studio/web/package.json` and run `npm run release:offline` in that directory. The command tests, builds and creates an immutable HTML and ZIP archive.
 

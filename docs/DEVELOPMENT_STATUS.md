@@ -6,17 +6,17 @@
 
 | 项目 | 当前状态 |
 | --- | --- |
-| 更新日期 | 2026-11-18，Europe/Berlin |
-| 当前优先目标 / 模式 | Huawei EVS 每盘容量编辑与报价一致性，单主 Agent |
-| 本轮检查基线 | `main` / `e8ff1ec697eafb7466c336156c9d752610e749fc`，起始私有站版 0.3.5-dev |
+| 更新日期 | 2026-11-19，Europe/Berlin |
+| 当前优先目标 / 模式 | Huawei 在线规格匹配与本机模型导入复核，单 Agent |
+| 本轮检查基线 | `main` / `8f8ff839309f79e7223d9edaa5af770dd3c5f4da`，起始私有站版 0.3.6-dev |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 私有站第 10 版已部署 `0.3.6-dev`。生产浏览器 EVS 容量编辑、三种计费模式及五表下载核查通过 |
+| 当前网页版本 | `0.3.7-dev` 在线候选在 `feat/huawei-pricing-import`。私有站第 10 版运行 `0.3.6-dev` |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
 | 当前 Sites 部署源码 | `ed6a912814e8089c4c7c1d015be73b4e74809e7a`，第 10 版私有部署 succeeded（2026-11-18，Europe/Berlin）。上一版为 `02c2aea` |
-| 整体进度 | Huawei 精确规格匹配及本机模型标准化已通过验收。TCP EU-DE 生产目录有独立有效期 |
-| 本轮同步范围 | Huawei EVS 在线容量更新和相关回归，TCP 和离线工作暂停 |
+| 整体进度 | 候选版在线目录匹配、模型协议、三种计费核价和浏览器导出已验证。当前候选仍需真实本机模型验收。TCP EU-DE 生产目录有独立有效期 |
+| 本轮同步范围 | Huawei 在线报价候选及验收记录。TCP 和离线工作暂停 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -27,15 +27,15 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 | --- | --- | --- |
 | 安全及协作规则 | 禁止敏感资料进入仓库；任务结束更新状态；重大架构变更联动 README/路线图；Push 需明确授权 | `AGENTS.md`、`SECURITY.md` |
 | Python CLI 基础映射 | CSV→JSON，8 条产品族映射；SKU/价格待复核，没有费用计算 | `pricing-studio/src/pricing_studio/cli.py` |
-| 网页输入 | 逐行规则解析文字、CSV/XLSX、已支持的文字版 AWS 账单 PDF；无 OCR，不是通用大模型解析 | `pricing-studio/web/public/app.mjs`、`engine.mjs` |
-| 产品及规格候选 | 服务族映射、部分 CPU/内存候选推荐、人工选择及确认；不保证跨云架构/功能完全等价 | `engine.mjs` |
+| 网页输入 | 文字、标准 CSV/XLSX、受支持的文字版 AWS 账单 PDF。非标准 CSV/XLSX 支持编辑式预览及配置后的本机模型分析 | `pricing-studio/web/public/app.mjs`、`inventory-import.mjs`、`scripts/local_inventory_api.mjs` |
+| 产品及规格候选 | Huawei ECS、EVS、Redis DCS、限实例费 RDS 和私网 NAT 由明确规则匹配当前目录。人工选型优先 | `huawei-match.mjs`、`engine.mjs` |
 | 计费模式分离 | AWS 原计费仅作来源记录；华为云目标仅有按需、包月、包年；支持逐项及批量切换，切换后需重新确认 | `engine.mjs`、`app.mjs` |
 | 官方公开价格 | `eu-west-101` / USD；快照有 441 个按需、400 个包月、400 个包年计划，分别独立询价；含官方产品编码、请求/响应、来源和时间 | `public/catalog.json`、`scripts/build_catalog.py` |
 | 价格刷新 | 固定官方端点、服务端产品白名单；按目标计费模式分组请求；验证失败不生成价格 | `worker.mjs` |
 | 费用与情景 | 支持范围内的按需用量、独立月/年订阅价、手动折扣、首期预付、包年月均摊销；年度情景含义明确 | `engine.mjs` |
 | 账单用量边界 | 累计实例小时不反推台数；来源账期不自动外推全年；订阅需明确目标数量/每盘容量 | `engine.mjs` |
-| Excel 导出 | Input、Service Mapping、Public Pricing、Quotation、Assumptions；Pending 金额空白；源/目标模式、周期及预付单列 | `public/excel.mjs` |
-| 构建与测试 | Python 标准库构建 Worker；浏览器依赖本地提供；新增 TCP 回归后以本轮最终日志为准；此前 V0.2 为 73 JS + 11 Python；原 CLI 未重跑 | `web/scripts/`、`web/tests/`、`pricing-studio/tests/` |
+| Excel 导出 | Input、Service Mapping、Public Pricing、Quotation、Assumptions。保留非标准导入的工作表、行号、表头和原始单元格。Pending 金额空白 | `public/excel.mjs` |
+| 构建与测试 | Python 标准库构建 Worker，浏览器依赖随包提供。在线候选的自动测试及 CLI 结果见本轮记录 | `web/scripts/`、`web/tests/`、`pricing-studio/tests/` |
 | 源码可追溯 | 记录原部署源码提交和运行文件 SHA-256；不上传构建产物或部署身份 | `web/SOURCE_PROVENANCE.json` |
 
 公开价格快照不是客户报价。没有覆盖的服务、计费模式、单位、映射或过期价格必须继续 Pending，不得按零合并成完整报价。
@@ -83,7 +83,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 
 | 优先级 | 任务 | 完成标准 |
 | --- | --- | --- |
-| P0 | 真实浏览器网页端到端验证 | 留存导入→确认→三模式切换→在线核价→Excel 下载证据；不得用自动单元测试冒充浏览器验收 |
+| P0 / 候选验收 | 使用真实本机模型重复两类非标准导入 | 在获准的本机运行时复验字段分类、表头映射、人工纠正和报价导出。记录模型及版本 |
 | P2 / 独立任务 | Python CSV starter 数值与单位问题 | 不进入当前报价 MVP；继续保留原逻辑，独立修复 NaN/Infinity 与数量/单位，不重复开发 Python 报价系统 |
 | P1 | SKU/能力复核 | 补充 ARM/x86、OS/许可、引擎/版本、AZ 主备及关联资源差异；不将 CPU/内存接近视为完全等价 |
 | P1 | 官方 BSS 适配与接口治理 | 明确受支持官方端点/字段、注入认证客户端；不自动发现凭证；当前使用公开计算器询价适配 |
@@ -424,3 +424,11 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **自动测试** 在 `pricing-studio/web` 运行 `node --test tests/huawei-import.test.mjs`，11 通过、0 失败。Node 24.22.1 运行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，107 通过、0 失败，含 DCS、ECS、EVS、RDS、Excel 和 Worker。Python 3.12.14 运行 `python3.12 -m unittest discover -s tests -p <suite>.py`，`test_catalog`、`test_catalog_updates`、`test_tcp_pdf`、`test_schedule`、`test_catalog_publication` 共 42 通过、0 失败。离线构建和专用测试暂停。
 - **浏览器验收** Codex 用 Chromium 156.0.8078.79 和虚构输入在本地与生产站分别实际编辑、下载，每处 5 份工作簿均以 openpyxl 3.1.5 重开核对五张表。单盘 100→200 GiB，按需月参考金额 USD 10.44→20.88。混合清单中两块各 200 GiB 的报价为按需 USD 41.76/月、包月 USD 40.00、包年 USD 416.00，包年月均 USD 34.67。另一行按需计费使用独立导入的 80 GB-month。三模式的页面与 Excel 月均小计分别为 USD 50.11、60.00、52.00，包年首期合计 USD 624.00。显式容量冲突在三个模式均留空，填写为 200 GiB 后恢复。两处工作簿逐字节一致，混合包年工作簿 SHA-256 为 `01e619b550dc31c9009f1c73ad42f8e954813bb9b615a73439142a0d8d335b68`。验收使用固定公开目录和固定时间，未调用实时核价。
 - **同步与实际部署** 源码、回归及本文通过 `fix/huawei-evs-capacity` 交付。私有站第 10 版 `0.3.6-dev` 已实际生效，生产 Chromium 使用 Sites 服务访问验收，所有者访问范围复查通过。TCP 和离线版本继续暂停。
+
+### 2026-11-19 — Huawei 在线规格和本机导入复核
+
+- **新增** ECS 显式系列匹配、私网 NAT 限实例费匹配。非标准输入支持模型建议表头映射、目标区域、原表头追溯和逐行字段核实。未经核实的计价字段随报价作为 Pending。
+- **修改** DCS 和 EVS 容量编辑区分规格派生值与独立填写值。ECS、DCS、RDS 对冲突参数保留复核。手动 SKU 切换计费模式时保留同一 SKU，缺独立方案则留待确认。标准模板绕过模型，非标准路径校验字段来源并复用同页最近四次成功分析。**删除** 无。
+- **自动测试** 在 `pricing-studio/web` 使用 Node 24.22.1 构建在线 Worker，`PRICING_OFFLINE_ARCHIVE` 指向仓库旧 ZIP。`node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs` 共 114 通过、0 失败，含 Huawei 专项 18 项。Python 3.12.14 运行 `python3.12 -m unittest discover -s tests -p '<suite>.py'` 的 `test_catalog`、`test_catalog_updates`、`test_tcp_pdf`、`test_schedule` 和 `test_catalog_publication`，40 通过、0 失败、2 项因缺 `boto3` 跳过。父级 `pricing-studio` 运行 `PYTHONPATH=src python3.12 -m unittest discover -s tests`，1 项通过。离线发布和专项测试暂停。
+- **浏览器验收** Chromium 156.0.8078.79、Playwright、openpyxl 3.1.5。标准与非标准导入、纠正错列、同页复用、多计费模式、页面部分小计、实际下载和五表重开通过。华为云官方核价 9 项通过。超时用浏览器注入，异常结构由本机模拟服务实际返回。[验收记录](PRICING_BROWSER_ACCEPTANCE.md#2026-11-19--huawei-在线规格和本机导入复核)
+- **待办与同步** `0.3.7-dev` 作为在线候选经 `feat/huawei-pricing-import` 提交 GitHub 草稿 PR。P0 在获准的本机模型运行时验证更新后的 schema 与两类导入。P1 保持复杂部署、许可、附属费用和目录缺项 Pending，后续按官方证据扩展。生产站继续运行 `0.3.6-dev`。验收仅用虚构清单，模型权重、验收下载件及凭证留在仓库外。

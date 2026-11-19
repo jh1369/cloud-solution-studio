@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {normalizeRows,parseText,calculate} from '../public/engine.mjs';
-import {identifyHuaweiRow,applyHuaweiMatch} from '../public/huawei-match.mjs';
+import {identifyHuaweiRow,applyHuaweiMatch,selectHuaweiBilling} from '../public/huawei-match.mjs';
 import {readInventory,reviewInventory,confirmInventory} from '../public/inventory-import.mjs';
 import {createLocalInventoryEndpoint} from '../scripts/local_inventory_api.mjs';
 
@@ -23,9 +23,24 @@ test('match ECS and generic SSD without using rate to choose, with visible defau
  assert.equal(selection(evs),'GPSSD');
  assert.equal(evs.capacity,100);
  assert.equal(calculate(evs,catalog,{now}).monthly,20.88);
+ assert.equal(calculate(resource('1 块 1,024 GiB SSD 云盘'),catalog,{now}).monthly,106.9);
  assert.equal(resource('1 台 4 vCPU / 16 GiB ARM x86 云主机').huaweiMatch,'HW_ECS_CONFLICT');
  assert.equal(resource('1 台 256 vCPU / 999 GiB 云主机').huaweiMatch,'HW_NO_MATCH');
  assert.equal(resource('1 块 100 GiB Premium SSD 云盘').huaweiMatch,'HW_DISK_PERFORMANCE');
+});
+
+test('ECS requires consistent dimensions and honors explicit series and target region',()=>{
+ const candidates=resource('1 台 4 vCPU 16 GiB General Computing-plus Linux 云主机');
+ assert.equal(candidates.huaweiMatch,'HW_MULTIPLE');
+ assert.deepEqual(new Set(candidates.huaweiCandidates),new Set(['c6.xlarge.4.linux','c9.xlarge.4.linux']));
+ assert.equal(selection(resource('1 台 4 vCPU 16 GiB 云主机 Ubuntu Series: C9')),'c9.xlarge.4.linux');
+ assert.equal(resource('1 台 4 vCPU 16 GiB / 32 GiB 云主机').huaweiMatch,'HW_SHAPE_REQUIRED');
+ assert.equal(resource('1 台 4 vCPU 或 8 vCPU 16 GiB 云主机').huaweiMatch,'HW_SHAPE_REQUIRED');
+ assert.equal(resource('1 台 4 vCPU 16 GiB FreeBSD 云主机').huaweiMatch,'HW_ECS_CONFLICT');
+ const outside=resource('1 台 4 vCPU 16 GiB 云主机，Huawei target region: cn-east-3');
+ assert.equal(calculate(outside,catalog,{now}).reasonCode,'HW_TARGET_REGION');
+ outside.specification='1 台 4 vCPU 16 GiB 云主机';
+ assert.equal(selection(match(outside)),'s6.xlarge.4.linux');
 });
 
 test('EVS edits replace text-derived capacity and calculate each disk in every billing mode',()=>{
@@ -69,6 +84,8 @@ test('EVS explicit capacity conflicts cannot be confirmed into a quote',()=>{
  }
  const ambiguous=resource('1 块 100 GiB 或 200 GiB SSD 云盘');
  assert.equal(calculate(ambiguous,catalog,{now}).reasonCode,'HW_DISK_CAPACITY_CONFLICT');
+ assert.equal(calculate(resource('1 块 100–200 GiB SSD 云盘'),catalog,{now}).reasonCode,'HW_DISK_CAPACITY_CONFLICT');
+ assert.equal(selection(resource('1 块 100 GiB Ultra-high I/O 云盘')),'SSD');
 });
 
 test('EVS sizing leaves imported usage independent of per-disk capacity',()=>{
@@ -132,10 +149,26 @@ test('Redis default rejects conflicts and ambiguous or invalid catalog records',
  assert.equal(manual.accepted,false);
  const monthly=match({...parseText('1个1g的redis')[0],targetBilling:'MONTHLY'});
  assert.equal(catalog.items.find(item=>item.id===monthly.targetId)?.billingMode,'MONTHLY');
- for(const [product,code] of [['Redis Cluster','HW_CACHE_MODE'],['Redis 7.0','HW_CACHE_ENGINE'],['Redis 2G','HW_CACHE_CAPACITY'],['Redis ARM','HW_NO_MATCH']]){
+ for(const [product,code] of [['Redis Cluster','HW_NO_MATCH'],['Redis 7.0','HW_CACHE_ENGINE'],['Redis 2G','HW_CACHE_CAPACITY'],['Redis ARM','HW_NO_MATCH']]){
   const [row]=normalizeRows([{product,specification:'1g',quantity:1}]);
   assert.equal(match({...row,service:'DCS'}).huaweiMatch,code);
  }
+});
+
+test('Redis size edits rematch the SKU and keep explicit conflicts Pending',()=>{
+ const row=resource('Redis 2GB 单机 3套');
+ row.specification='Redis 4GB 单机 3套';
+ assert.equal(selection(match(row)),'redis.single.xu1.large.4');
+ assert.equal(row.capacity,4);
+ assert.equal(calculate(row,catalog,{now}).monthly,148.92);
+ row.specification='Redis 单机 3套';
+ assert.equal(calculate(match(row),catalog,{now}).reasonCode,'HW_CACHE_CAPACITY');
+ assert.equal(row.capacity,null);
+ assert.equal(resource('Redis 2.5 GiB 3套').huaweiMatch,'HW_NO_MATCH');
+ assert.equal(resource('Redis 2GB 单机 1GB 或 3GB 3套').huaweiMatch,'HW_CACHE_CAPACITY');
+ assert.equal(resource('Redis 2GB 单机 2节点 3套').huaweiMatch,'HW_CACHE_MODE');
+ const [explicit]=normalizeRows([{product:'Redis',specification:'Redis 4GB 单机',capacity_gb:2,quantity:3}]);
+ assert.equal(calculate(match(explicit),catalog,{now}).reasonCode,'HW_CACHE_CAPACITY');
 });
 
 test('RDS compute-only scope, region, unmatched service and manual selection',()=>{
@@ -149,6 +182,32 @@ test('RDS compute-only scope, region, unmatched service and manual selection',()
  assert.equal(match(manually).targetId,'manual');
  assert.equal(resource('ELB dedicated bandwidth').huaweiMatch,'HW_MANUAL_SERVICE');
  assert.equal(resource('OBS S3 requests').huaweiMatch,'HW_NO_PLAN');
+ assert.equal(resource('RDS SQL Server 2019 2 vCPU 8 GiB Single-AZ Cloud SSD instance only').huaweiMatch,'HW_DB_LICENSE');
+});
+
+test('catalog-backed private NAT matching requires a clear instance-only scope',()=>{
+ const nat=resource('1 个 Private NAT Gateway small instance only');
+ assert.equal(selection(nat),'privatenat_small');
+ assert.deepEqual(nat.huaweiAssumptions,['HW_NAT_INSTANCE_ONLY']);
+ assert.equal(calculate(nat,catalog,{now}).monthly,74.46);
+ assert.equal(resource('1 个 AWS NAT Gateway small instance only').huaweiMatch,'HW_NAT_PARAMETERS');
+ assert.equal(resource('1 个 Private NAT Gateway medium').huaweiMatch,'HW_NAT_PARAMETERS');
+});
+
+test('manual SKU is carried through billing changes without substituting another SKU',()=>{
+ const row=resource('1 台 4 vCPU 16 GiB 云主机');
+ const manual=catalog.items.find(item=>item.sku==='c9.xlarge.4.linux'&&item.billingMode==='ONDEMAND');
+ Object.assign(row,{targetId:manual.id,huaweiSelection:'manual'});
+ selectHuaweiBilling(row,'MONTHLY',catalog);
+ assert.equal(selection(row),manual.sku);
+ assert.equal(row.accepted,false);
+ assert.equal(calculate(row,catalog,{now}).reasonCode,'MAPPING_REVIEW');
+ const withoutManualYear={...catalog,items:catalog.items.filter(item=>!(item.sku===manual.sku&&item.billingMode==='YEARLY'))};
+ selectHuaweiBilling(row,'YEARLY',withoutManualYear);
+ assert.equal(row.targetId,'');
+ assert.equal(calculate(row,withoutManualYear,{now}).reasonCode,'HW_MANUAL_PLAN');
+ selectHuaweiBilling(row,'ONDEMAND',withoutManualYear);
+ assert.equal(selection(row),manual.sku);
 });
 
 const sandbox={};
@@ -174,9 +233,75 @@ test('standard sheets bypass the model and nonstandard workbooks retain physical
   {id:4,kind:'resource',product:'DCS',quantity:3,capacity_gb:2}]});
  const [compute,cache]=confirmInventory(review);
  assert.equal(compute.importSource.row,4);
+ assert.deepEqual(Array.from(compute.importSource.headers),['台套','配置']);
+ assert.equal(compute.importSource.headerRow,3);
  assert.equal(compute.quantity,1);
  assert.equal(cache.importSource.sheet,'Cache');
  assert.equal(selection(match(cache)),'redis.single.xu1.large.2');
+ cache.specification='Redis 4GB 单机 3套';
+ assert.equal(selection(match(cache)),'redis.single.xu1.large.4');
+});
+
+test('numeric model guesses cannot repurpose capacity, CPU or replica counts',()=>{
+ const source=[
+  {id:1,sheet:'Fictional',row:2,cells:['Redis 2GB 单机']},
+  {id:2,sheet:'Fictional',row:3,cells:['4 vCPU 16 GiB VM 2台']},
+  {id:3,sheet:'Fictional',row:4,cells:['Redis 2GB 主备 2节点 3套']}
+ ];
+ const review=reviewInventory(source,{rows:[
+  {id:1,kind:'resource',product:'DCS',capacity_gb:2,quantity:2},
+  {id:2,kind:'resource',product:'ECS',quantity:4,usage:16},
+  {id:3,kind:'note'}
+ ]});
+ assert.equal(review[0].capacity_gb,2);
+ assert.equal(review[0].quantity,undefined);
+ assert.equal(review[1].quantity,2);
+ assert.equal(review[1].usage,undefined);
+ assert.equal(review[2].include,true);
+ assert.equal(review[2].quantity,3);
+ const results=confirmInventory(review).map(row=>calculate(match(row),catalog,{now}));
+ assert.equal(results[0].reasonCode,'HW_IMPORT_REVIEW');
+ assert.equal(results[1].reasonCode,'HW_IMPORT_REVIEW');
+ assert.equal(results[2].monthly,148.92);
+ review[1].reviewed=true;
+ assert.equal(calculate(match(confirmInventory(review)[1]),catalog,{now}).monthly,222.5);
+ const separate=[
+  {id:1,sheet:'Compute',row:2,cells:['Service','Specs','Quantity','Billing unit']},
+  {id:2,sheet:'Compute',row:3,cells:['ECS','4 vCPU 16 GiB Linux','2','hour']}
+ ];
+ const [row]=confirmInventory(reviewInventory(separate,{rows:[]}));
+ assert.equal(row.usage,null);
+ assert.equal(calculate(match(row),catalog,{now}).monthly,222.5);
+});
+
+test('nonstandard model header mappings and invalid user values are reviewed per row',()=>{
+ const source=[
+  {id:1,sheet:'Compute',row:3,cells:['Asset class','vCPU','RAM (GiB)','OS','Seats requested']},
+  {id:2,sheet:'Compute',row:4,cells:['Virtual machine',4,16,'Linux',2]},
+  {id:3,sheet:'Storage',row:7,cells:['Category','Disk type','Capacity GB','Count','Target region']},
+  {id:4,sheet:'Storage',row:8,cells:['Managed disk','100 GiB GPSSD','100 GiB',2,'cn-east-3']},
+  {id:5,sheet:'Cache',row:9,cells:['Redis 2GB 单机 3套']}
+ ];
+ const output={rows:[
+  {id:1,kind:'header',columns:{quantity:4}},
+  {id:2,kind:'resource',product:'ECS',quantity:2},
+  {id:5,kind:'resource',product:'DCS'}
+ ]};
+ const review=reviewInventory(source,output);
+ assert.equal(review[1].quantity,2);
+ assert.deepEqual(review[1].needsReview,['quantity']);
+ assert.equal(review[3].capacity_gb,100);
+ assert.equal(review[3].huawei_target_region,'cn-east-3');
+ assert.equal(review[3].header.row,7);
+ const result=()=>confirmInventory(review).map(row=>calculate(match(row),catalog,{now}));
+ assert.deepEqual(result().map(row=>row.reasonCode),['HW_IMPORT_REVIEW','HW_TARGET_REGION',undefined]);
+ review[1].reviewed=true;
+ review[4].quantity='3.5';
+ assert.deepEqual(result().map(row=>row.monthly),[222.5,null,null]);
+ assert.deepEqual(result()[2].fields,['quantity']);
+ for(const columns of [{quantity:5},{quantity:-1},{quantity:1.5},{price:0}]){
+  assert.throws(()=>reviewInventory(source,{rows:[{id:1,kind:'header',columns}]}),/modelSyntax/);
+ }
 });
 
 test('invalid or fabricated structured values are flagged and missing rows survive review',()=>{
@@ -234,4 +359,19 @@ test('model timeout and malformed responses return stable errors',async()=>{
  }),5)(post());
  assert.equal(timeout.status,504);
  assert.deepEqual(await timeout.json(),{error:'inventory.timeout'});
+ const unavailable=await get(async()=>{throw Error('connection rejected');})(post());
+ assert.deepEqual(await unavailable.json(),{error:'inventory.unavailable'});
+ const length=await get(async()=>Response.json({choices:[{finish_reason:'length'}]}))(post());
+ assert.deepEqual(await length.json(),{error:'inventory.modelLength'});
+});
+
+test('inventory endpoint accepts an injected model adapter with bounded input and schema',async()=>{
+ const route=createLocalInventoryEndpoint({modelAdapter:async({rows,schema,signal})=>{
+  assert.deepEqual(rows,[{id:1,sheet:'Fictional',cells:source[0].cells}]);
+  assert.equal(schema.properties.rows.items.properties.quantity.maximum,1e9);
+  assert.ok(signal instanceof AbortSignal);
+  return {rows:[{id:1,kind:'resource',quantity:3}]};
+ }});
+ assert.equal((await route(post())).status,200);
+ assert.equal((await route(post({'Content-Type':'application/json-seq'}))).status,403);
 });

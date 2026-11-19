@@ -50,8 +50,11 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
  }
  const output=rows.map(row=>calculate(row,catalog,opts));
  add('Input',[
-  ['Row','Product','Specification','AWS Region','Resource Count','Usage','Unit','Usage Scope','Usage Period','AWS Billing Method','Source Page','Target Quantity','Huawei Billing Mode','Capacity GB','Source Sheet','Source Row','Original Fields'],
-  ...rows.map((row,i)=>[i+1,row.product,row.specification,row.region,row.quantity,row.usage,row.unit,row.scope,row.period,row.billing,row.sourcePage??null,row.targetQuantity??null,billingOf(row),row.capacity??null,row.importSource?.sheet??null,row.importSource?.row??null,row.importSource?JSON.stringify(row.importSource.cells):null])
+  ['Row','Product','Specification','AWS Region','Resource Count','Usage','Unit','Usage Scope','Usage Period','AWS Billing Method','Source Page','Target Quantity','Huawei Billing Mode','Capacity GB','Source Sheet','Source Row','Original Fields','Source Header Row','Original Headers','Requested Huawei Target Region'],
+  ...rows.map((row,i)=>[i+1,row.product,row.specification,row.region,row.quantity,row.usage,row.unit,row.scope,row.period,row.billing,
+   row.sourcePage??null,row.targetQuantity??null,billingOf(row),row.capacity??null,row.importSource?.sheet??null,
+   row.importSource?.row??null,row.importSource?JSON.stringify(row.importSource.cells):null,row.importSource?.headerRow??null,
+   row.importSource?.headers?JSON.stringify(row.importSource.headers):null,row.huaweiTargetRegion||null])
  ]);
  add('Service Mapping',[
   ['Row','AWS Product','Target Service','Target SKU','Target Description','Region','Confirmed','Notes','Huawei Billing Mode','Target Quantity','Mapping Review','Match and Assumptions'],

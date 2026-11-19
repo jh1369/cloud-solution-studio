@@ -216,8 +216,10 @@ export function calculate(row,catalog,options={}){
 function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}){
  const pending=pendingResult;
  const mode=billingOf(row),item=catalog.items.find(price=>price.id===row.targetId);
+ if(row.huaweiImportIssues?.length)return {...pending('', 'HW_IMPORT_REVIEW'),fields:row.huaweiImportIssues};
  if(row.huaweiTargetRegion&&row.huaweiTargetRegion!==REGION)return pending('', 'HW_TARGET_REGION');
  if(row.service==='EVS'&&row.evsCapacityConflict)return pending('', 'HW_DISK_CAPACITY_CONFLICT');
+ if(row.service==='DCS'&&row.dcsCapacityConflict)return pending('', 'HW_CACHE_CAPACITY');
  if(!Object.hasOwn(BILLING_MODES,mode))return pending('华为云目标计费模式仅支持按需、包月、包年。','PRICE_MODE');
  if(!item)return pending(`请为${BILLING_MODES[mode]}选择已验证的目标规格；未获取价格的服务保持 Pending。`,row.huaweiMatch||'PRICE_MISSING');
  if(item.billingMode!==mode)return pending('所选官方价格与华为云目标计费模式不一致，请重新选择。','PRICE_MODE');
