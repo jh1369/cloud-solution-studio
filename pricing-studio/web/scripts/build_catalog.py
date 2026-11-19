@@ -10,6 +10,7 @@ PATH='/api/calculator/rest/cbc/portalcalculatornodeservice/v4/api/productInfo'
 INQUIRY='/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource'
 REGION='eu-west-101'
 MODES={'ONDEMAND':('hour',None),'MONTHLY':('month',2),'YEARLY':('year',3)}
+PUBLIC_NAT_DAILY='https://support.huaweicloud.com/eu/price-natgateway/nat_billing_0005.html'
 def fetch(url,payload=None):
  req=urllib.request.Request(url,data=json.dumps(payload).encode() if payload else None,headers={'Content-Type':'application/json','Origin':'https://www.huaweicloud.com'})
  try:
@@ -45,9 +46,12 @@ def get(path):
    for plan in item.get('planList',[]):
     mode=plan.get('billingMode')
     if mode not in MODES or not plan.get('productId') or isinstance(plan.get('amount'),bool) or not isinstance(plan.get('amount'),(float,int)) or not math.isfinite(plan['amount']) or plan['amount']<0:continue
-    if mode=='ONDEMAND' and (plan.get('measureUnit')!=4 or 'duration' not in plan.get('usageFactor','').lower()):continue
+    public_nat_day=mode=='ONDEMAND' and path=='nat' and key=='natgateway_natgateway' and item['resourceType']=='hws.resource.type.natgateway'
+    if mode=='ONDEMAND' and (isinstance(plan.get('measureUnit'),bool) or plan.get('measureUnit')!=(0 if public_nat_day else 4) or 'duration' not in plan.get('usageFactor','').lower()):continue
+    if path=='elb' and (mode!='ONDEMAND' or plan.get('usageFactor')!='instance_duration'):continue
     if mode!='ONDEMAND' and plan.get('periodNum')!=1:continue
     unit,period_type=MODES[mode]
+    if public_nat_day:unit='day'
     rows.append(dict(id=plan['productId'] if mode=='ONDEMAND' else plan['productId']+':'+mode,service=service,sku=spec,description=desc,cpu=int(cpu[1]) if cpu else None,memory=int(mem[1])/1024 if mem else None,os='Windows' if spec.endswith('.win') else 'Linux',arch=item.get('instanceArch','Review Required'),engine=item.get('engineType',''),resourceType=item['resourceType'],cloudServiceType=item['cloudServiceType'],productId=plan['productId'],usageFactor=plan.get('usageFactor'),size=size,unit=('GB-' if size else '')+unit,billingMode=mode,periodType=period_type,periodNum=1 if period_type else None,catalogUrl=url,siteCode=plan.get('siteCode','HWC')))
  return rows
 def verify(chunk):
@@ -57,7 +61,7 @@ def verify(chunk):
  for index,row in enumerate(chunk):
   product={key:row[key] for key in ['cloudServiceType','resourceType','productId']}
   product.update(id=str(index),resourceSpecCode=row['sku'],productNum=1)
-  if mode=='ONDEMAND':product.update(usageFactor=row['usageFactor'],usageMeasureId=4,usageValue=1)
+  if mode=='ONDEMAND':product.update(usageFactor=row['usageFactor'],usageMeasureId=0 if row.get('unit')=='day' else 4,usageValue=1)
   if row['size']:product.update(resourceSize=1,resouceSizeMeasureId=17)
   payload['productInfos'].append(product)
  try:result=fetch(BASE+INQUIRY,payload)
@@ -80,6 +84,7 @@ def verify(chunk):
   row=chunk[index];rate=quote.get('officialWebsiteAmount')
   if isinstance(rate,bool) or not isinstance(rate,(float,int)) or not math.isfinite(rate) or rate<0 or rate>1e12 or quote.get('productId')!=row['productId']:continue
   row.update(rate=rate,currency='USD',region=REGION,verifiedAt=datetime.now(timezone.utc).isoformat(),sourceUrl=BASE+INQUIRY,evidence={'request':payload['productInfos'][index],'inquiry':{k:v for k,v in payload.items() if k!='productInfos'},'response':quote,'currency':result['currency'],'responseSha256':hashlib.sha256(json.dumps(result,sort_keys=True).encode()).hexdigest()})
+  if row.get('unit')=='day':row['evidence']['billingSource']=PUBLIC_NAT_DAILY
   verified.append(row)
  return verified
 def main():

@@ -63,15 +63,16 @@ export function priceValidation(item,catalog,{now=Date.now()}={}){
  if(typeof item.rate!=='number'||!Number.isFinite(item.rate)||item.rate<0||item.rate>1e12)return fail('PRICE_RATE');
  const mode=item.billingMode;
  if(!Object.hasOwn(BILLING_MODES,mode))return fail('PRICE_MODE');
- const suffix={ONDEMAND:'hour',MONTHLY:'month',YEARLY:'year'}[mode];
- if(typeof item.size!=='boolean'||item.service==='EVS'&&!item.size||item.unit!==(item.size?'GB-':'')+suffix)return fail('PRICE_UNIT');
+ const publicNatDay=mode==='ONDEMAND'&&item.service==='NAT Gateway'&&item.resourceType==='hws.resource.type.natgateway';
+ const suffix=publicNatDay?'day':{ONDEMAND:'hour',MONTHLY:'month',YEARLY:'year'}[mode];
+ if(typeof item.size!=='boolean'||publicNatDay&&item.size||item.service==='EVS'&&!item.size||item.unit!==(item.size?'GB-':'')+suffix)return fail('PRICE_UNIT');
  const periodType=mode==='MONTHLY'?2:mode==='YEARLY'?3:null;
  if(mode!=='ONDEMAND'&&(item.periodType!==periodType||item.periodNum!==1)||mode==='ONDEMAND'&&(item.periodType!=null||item.periodNum!=null))return fail('PRICE_PERIOD');
  if(item.sourceUrl!==OFFICIAL_PRICE_SOURCE)return fail('PRICE_SOURCE');
  const evidence=item.evidence,request=evidence?.request,response=evidence?.response,inquiry=evidence?.inquiry;
  if(!evidence||evidence.currency!=='USD'||!request||!response||!inquiry||typeof item.productId!=='string'||!item.productId||typeof item.sku!=='string'||!item.sku||request.productId!==item.productId||response.productId!==item.productId||request.resourceSpecCode!==item.sku||request.cloudServiceType!==item.cloudServiceType||request.resourceType!==item.resourceType||!item.cloudServiceType||!item.resourceType||request.productNum!==1||typeof request.id!=='string'||!request.id||response.id!==request.id||response.officialWebsiteAmount!==item.rate||inquiry.regionId!==REGION||inquiry.subscriptionNum!==1||inquiry.chargingMode!==(mode==='ONDEMAND'?1:0))return fail('PRICE_EVIDENCE');
  if(mode==='ONDEMAND'){
-  if(typeof request.usageFactor!=='string'||!/duration/i.test(request.usageFactor)||request.usageMeasureId!==4||request.usageValue!==1||inquiry.periodType!=null||inquiry.periodNum!=null)return fail('PRICE_EVIDENCE');
+  if(typeof request.usageFactor!=='string'||!/duration/i.test(request.usageFactor)||request.usageMeasureId!==(publicNatDay?0:4)||request.usageValue!==1||inquiry.periodType!=null||inquiry.periodNum!=null)return fail('PRICE_EVIDENCE');
  }else if(inquiry.periodType!==periodType||inquiry.periodNum!==1)return fail('PRICE_EVIDENCE');
  if(item.size&&(request.resourceSize!==1||(request.resouceSizeMeasureId??request.resourceSizeMeasureId)!==17||(request.resouceSizeMeasureId!=null&&request.resourceSizeMeasureId!=null&&request.resouceSizeMeasureId!==request.resourceSizeMeasureId)))return fail('PRICE_EVIDENCE');
  if(typeof catalog.ttlDays!=='number'||!Number.isFinite(catalog.ttlDays)||catalog.ttlDays<=0||catalog.ttlDays>7)return fail('PRICE_TTL');
@@ -212,11 +213,13 @@ export function sumMoney(values){
 const pendingResult=(reason,reasonCode='INPUT_INVALID')=>({status:'Pending',reason,reasonCode,monthly:null,scenario:null,annual:null,termPublic:null,termScenario:null,upfrontScenario:null});
 export function huaweiProductSpecIssue(row,item){
  const match=row.huaweiProductMatch;
- if(row.service!=='DCS'||!match)return null;
+ if(!match)return null;
  if(match.reasonCode)return match.reasonCode;
  const spec=match.selected;
- if(spec?.evidence?.kind!=='official-doc'||!item||spec.specCode!==item.sku||spec.service!==item.service||spec.resourceType!==item.resourceType||item.size!==false||
-    match.specification!==row.specification||match.product!==row.product||match.capacity!==row.capacity)return 'HW_DCS_SPEC_RECHECK';
+ if(!['official-doc','official-catalog'].includes(spec?.evidence?.kind)||!item||spec.specCode!==item.sku||spec.service!==row.service||
+    spec.service!==item.service||spec.resourceType!==item.resourceType||item.size!==false||
+    spec.usageFactor&&(item.usageFactor!==spec.usageFactor||item.evidence?.request?.usageFactor!==spec.usageFactor)||
+    match.specification!==row.specification||match.product!==row.product||match.capacity!==row.capacity)return row.service==='DCS'?'HW_DCS_SPEC_RECHECK':'HW_SPEC_RECHECK';
  return null;
 }
 export function calculate(row,catalog,options={}){
@@ -268,6 +271,7 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
  const capacityMonth=monthlyReference&&item.size&&row.huaweiUsageAssumption==='HW_STORAGE_MONTH';
  const hourMonth=monthlyReference&&!item.size&&row.huaweiUsageAssumption==='HW_MONTH_HOURS';
  const billable=capacityMonth?row.capacity:hourMonth?hours:row.usage;
+ if(item.unit==='day'&&(billable==null||!Number.isInteger(billable)||!['day','days','billable days','计费日','天'].includes(String(row.unit||'').toLowerCase())))return pending('', 'HW_NAT_BILLED_DAYS');
  if(billable==null)return pending('请补充用量。','USAGE_REQUIRED');
  finite(billable,'用量');if(row.scope!=='aggregate')finite(quantity,'目标资源数量');
  if(row.scope!=='aggregate'&&(!Number.isInteger(quantity)||quantity<=0))return pending('资源数量必须是正整数。','QUANTITY_INVALID');
@@ -278,7 +282,7 @@ function calculateValidated(row,catalog,{hours=730,discount=0,now=Date.now()}={}
    if(referenceHours<=0||referenceHours>744)return pending('Invalid quantity, usage, discount or reference hours.');
    usage*=referenceHours;
   }else if(!['gb-hour','gb-hours'].includes(unit)&&!(row.huaweiMatch&&unit==='gib-hour'))return pending('存储用量需为 GB-month 或 GB-hour；IOPS、快照单独计价。','USAGE_UNIT');
- }else if(!['hour','hours','hrs','hr','hourly','instance-hrs'].includes(unit))return pending('此目标按小时计费，请确认用量单位。','USAGE_UNIT');
+ }else if(item.unit!=='day'&&!['hour','hours','hrs','hr','hourly','instance-hrs'].includes(unit))return pending('此目标按小时计费，请确认用量单位。','USAGE_UNIT');
  const values=cost(row.scope==='aggregate'?1:quantity,usage,item.rate,discount);
  if(row.period==='source-period')values.annual=null;
  return {status:row.period==='source-period'?'Period':'Valid',reason:row.period==='source-period'?'华为云按需 × 来源账期用量，未折算整月或全年。':'华为云独立按需价格 × 已确认目标方案用量；AWS 原计费方式不参与目标定价。',...values,item,billingMode:mode,termPublic:values.monthly,termScenario:values.scenario,termLabel:row.period==='source-period'?'来源账期':'1个月参考',upfrontScenario:null,effectiveUsage:usage,quantity:row.scope==='aggregate'?null:quantity};

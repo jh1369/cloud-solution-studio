@@ -43,11 +43,11 @@ Implemented:
 
 - Rule-based Chinese and English resource descriptions, CSV/XLSX inventory import, and the supported text-based AWS billing PDF layout.
 - Editable target SKU suggestions and explicit human confirmation. Product-family similarity does not guarantee architecture, OS/licensing, engine, topology or feature equivalence.
-- Huawei online estimates match ECS, EVS, Redis DCS, scoped RDS and scoped private NAT. DCS matches the European product specification in the browser and joins its `spec_code` to a verified public EU-Dublin price plan. The Worker refreshes prices through the public calculator without a Huawei Cloud account. [DCS sources and matching rules](pricing-studio/web/README.md#official-dcs-product-specifications)
+- Huawei online estimates match ECS, EVS, Redis DCS, scoped RDS, dedicated elastic ELB, CCE management and public or private NAT gateway charges. The browser links documented product specs to verified EU-Dublin plans. The Worker refreshes prices through the public calculator without a Huawei Cloud account. [Matching rules](pricing-studio/web/README.md#huawei-specification-matching)
 - AWS source billing retained separately from Huawei target **按需 / 包月 / 包年**. Source reserved/spot does not become a target billing choice.
-- Independently verified public price plans: 441 pay-per-use, 400 one-month and 400 one-year records in the checked-in snapshot. Unsupported services/modes and missing/expired prices remain Pending.
+- The checked-in snapshot contains 445 pay-per-use, 400 one-month and 400 one-year price plans. Public NAT pay-per-use requires a whole number of billed days. Unsupported or expired plans remain Pending.
 - Monthly calculations, independent annual subscription prices, first-term prepayment, explicitly labeled annual amortization, and manual discount scenarios.
-- Five-sheet Excel export includes Input, Service Mapping, Public Pricing, Quotation and Assumptions. DCS specification evidence is recorded in Service Mapping. Pending amounts stay blank and incomplete totals are partial subtotals.
+- Five-sheet Excel export includes Input, Service Mapping, Public Pricing, Quotation and Assumptions. Service Mapping retains specification evidence. Quotation records related Pending charges with blank amounts and a reference to the same input row.
 - Browser-local file parsing. Only allowlisted Huawei product IDs go to the server when refreshing prices; original files, AWS account IDs and descriptions are not uploaded by that flow.
 - The local Web + Worker workspace can use a loopback model to propose fields for nonstandard CSV and XLSX. Review source sheet, row and header evidence before confirming. The hosted workspace supports manual review. [Local model configuration](pricing-studio/web/README.md#model-assisted-csv-and-excel-on-the-user-machine)
 

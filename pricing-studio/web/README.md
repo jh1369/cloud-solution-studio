@@ -1,6 +1,6 @@
 # Cloud Solution Studio · Pricing Studio Web
 
-Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.10-dev` quotes DCS using the European product specifications and public prices without a Huawei Cloud account. [Development status](../../docs/DEVELOPMENT_STATUS.md)
+Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.11-dev` extends documented product matching to dedicated ELB, CCE and public and private NAT gateways without a Huawei Cloud account. [Development status](../../docs/DEVELOPMENT_STATUS.md)
 
 ## Features
 
@@ -15,7 +15,7 @@ Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes us
 
 ## Huawei specification matching
 
-The bundled public catalog has 441 pay-per-use and 400 plans each for one month and one year. It contains ECS, EVS, RDS, DCS, ELB, NAT Gateway and CCE. The automatic matching rules currently cover these components.
+The bundled public catalog has 445 pay-per-use and 400 plans each for one month and one year. The automatic matching rules cover the following components.
 
 | Component | Exact match and review conditions |
 | --- | --- |
@@ -23,10 +23,12 @@ The bundled public catalog has 441 pay-per-use and 400 plans each for one month 
 | EVS | Match the disk class and keep per-disk capacity separate from metered usage. Generic SSD uses a disclosed GPSSD estimate. Performance, snapshots and inconsistent capacities require review. |
 | DCS | Match Redis capacity, topology and supplied architecture, version, replicas, shards and verifiable performance against official European product specifications. Both automatic and manual pricing require an exact, verified EU-Dublin `USD` plan. |
 | RDS | Match engine, version, shape, topology and explicit Cloud SSD for instance-only estimates. Storage, backups and database licensing require review. |
-| NAT Gateway | Match a declared private NAT size (`small`, `medium`, `large`, `xlarge`) for an explicitly scoped instance-only estimate. |
-| ELB, CCE and other services | Manual candidate selection where a catalog plan exists. ELB has one hourly SKU. OBS has no usable price rows. |
+| ELB | Match the dedicated elastic `elbv3.professional` hourly instance meter. Check declared L4/L7 performance against documented limits. Solely requesting the dedicated instance fee allows an explicit elastic assumption. LCU, bound EIP and bandwidth are separate fees. [EU specifications](https://support.huaweicloud.com/eu/productdesc-elb/en-us_topic_0287737145.html) · [Billing items](https://support.huaweicloud.com/eu/price-elb/elb_billing_0003.html) |
+| CCE | Match the exact Standard cluster SKU or the declared master count and worker capacity. Capacity selects the smallest covering documented tier. A generic Kubernetes cluster can use Standard with a visible assumption. Exact Autopilot management and explicitly purchased general-computing resource packages also have plans. Worker compute, disk and networking are separate fees. [EU flavors](https://support.huaweicloud.com/eu/api-cce/cce_02_0236.html) · [Billing items](https://support.huaweicloud.com/eu/price-cce/cce_03_0006.html) |
+| NAT Gateway | Match a declared public or private gateway and tier, exact SKU or uniquely satisfying limits. Private instance-only pay-per-use is hourly. Public pay-per-use requires whole billed days, and public monthly/yearly plans have independent prices. Pricing uses the official billing-day boundary, with any partial billing day counted as a whole day. EIP, bandwidth and outbound traffic are separate fees. [EU specifications](https://support.huaweicloud.com/eu/productdesc-natgateway/en-us_topic_0086739763.html) · [Billing items](https://support.huaweicloud.com/eu/price-natgateway/nat_billing_0005.html) |
+| EIP and OBS | Map resource families. Automatic pricing requires the applicable public rates and independently verified units. |
 
-Each eligible service checks the requested target region, billing mode and verified rate before pricing. A known count with omitted usage can use a disclosed full-month estimate for supported per-resource rows. Aggregate usage keeps its source period. When billing changes after manual selection, the same SKU requires fresh confirmation. If the plan is unavailable, choose another SKU or select **Match automatically**. Pending lines have blank quote amounts and are excluded from subtotals.
+Each eligible service checks the requested target region, billing mode and verified rate before pricing. A known count with omitted usage can use a disclosed full-month estimate for supported per-resource hourly or capacity rows. Aggregate usage keeps its source period. Manual selection checks the documented constraints. Changing billing after manual selection requires fresh confirmation. If the plan is unavailable, choose an eligible SKU or select **Match automatically**. Additional unpriced charges appear separately in the resource card and use the same input row number in Quotation. Pending amounts stay blank and are excluded from subtotals.
 
 ## Official DCS product specifications
 
@@ -44,7 +46,7 @@ Future adapters share this evidence contract and add only service-specific field
 | --- | --- |
 | ECS | Normalize flavor ID, vCPU, memory, CPU architecture, flavor class and AZ status. Join the flavor to a verified OS or license price variant. [ECS flavor details](https://support.huaweicloud.com/eu/api-ecs/en-us_topic_0020212656.html) |
 | RDS | Normalize engine and version, instance class, topology, vCPU, memory and AZ status. Join the instance SKU and retain separate storage, backup and licensing charges. [RDS flavor API](https://support.huaweicloud.com/intl/en-us/api-rds/rds_06_0002.html) |
-| ELB | Normalize load balancer flavor ID, layer, performance limits and AZ evidence. Join the instance plan and verify separate capacity, bandwidth or traffic billing. [ELB flavor API](https://support.huaweicloud.com/intl/en-us/api-elb/ListFlavors.html) |
+| ELB | Extend the verified dedicated elastic base plan to separate LCU, bandwidth and traffic billing. Require placement and performance evidence for additional deployment configurations. [EU billing items](https://support.huaweicloud.com/eu/price-elb/elb_billing_0003.html) |
 
 ## Model-assisted CSV and Excel on the user machine
 
