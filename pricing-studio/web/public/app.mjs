@@ -257,7 +257,6 @@ $('#resources').addEventListener('change',event=>{
  const input=event.target;
  row[field]=field==='accepted'?input.checked:['quantity','targetQuantity','capacity','usage'].includes(field)?input.value===''?null:Number(input.value):input.value;
  if(field==='unit')row.unitExplicit=!!input.value;
- if(field==='usage'&&row.evsUsageFromCapacity)row.evsUsageFromCapacity=false;
  if(field==='specification'&&provider==='tcp'){row.targetId=recommend(row,catalog);row.accepted=false;}
  if(field==='targetBilling')setBilling(row,input.value);
  if(provider==='huawei'&&huaweiMatching){
@@ -265,8 +264,12 @@ $('#resources').addEventListener('change',event=>{
    service:'product',specification:'specification',huaweiTargetRegion:'huawei_target_region'};
   if(row.huaweiImportIssues?.length&&importFields[field])row.huaweiImportIssues=row.huaweiImportIssues.filter(key=>key!==importFields[field]);
   if(field==='huaweiTargetRegion')row.huaweiRegionFromSpec=false;
-  if(field==='capacity'&&row.service==='EVS')row.evsCapacitySource=row.capacity===null?'specification':'explicit';
-  if(field==='capacity'&&row.service==='DCS')row.dcsCapacitySource=row.capacity===null?'specification':'explicit';
+  if(field==='capacity'&&['EVS','DCS'].includes(row.service))row.huaweiCapacityExplicit=row.capacity!==null;
+  if(row.service==='EVS'){
+   if(field==='usage'){
+    row.huaweiUsageFromSpec=false;row.evsUsageConflict=false;
+   }else if(field==='unit'&&!row.evsUsageConflict)row.huaweiUsageFromSpec=false;
+  }
   if(field==='targetId'||field==='accepted'){
    if(row.targetId==='__auto__'){
     row.huaweiSelection=null;row.huaweiPreferredSku=null;selectHuawei(row);

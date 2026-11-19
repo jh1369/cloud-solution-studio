@@ -168,7 +168,7 @@ function observedFields(draft,header){
  const specParts=[values.specification,dimensionText(cells,header?.row.cells),...unmappedText].filter(Boolean);
  const spec=specParts.join(' ');
  const inferred=identifyHuaweiService(values.product??'',spec||text);
- let capacityFromSpec=false;
+ let capacityFromSpec=false,usageFromSpec=false;
  for(const [field,pattern] of [['quantity',quantityToken],['capacity_gb',capacityToken],['usage',usageToken]]){
   if(field==='capacity_gb'&&!['EVS','DCS'].includes(inferred)&&values[field]===undefined)continue;
   const evidence=field==='capacity_gb'&&specParts.length?specParts:textCells;
@@ -178,6 +178,10 @@ function observedFields(draft,header){
    if(amount!==undefined&&values[field]===undefined){
     values[field]=amount;
     if(field==='capacity_gb')capacityFromSpec=true;
+    if(field==='usage'&&inferred==='EVS'&&values.unit===undefined){
+     const specification=specParts.length?[values.product,...specParts].filter(Boolean):textCells;
+     usageFromSpec=explicitField(specification,'usage',usageToken)===amount;
+    }
    }
   }catch{invalid.add(field);}
  }
@@ -189,7 +193,7 @@ function observedFields(draft,header){
  if(sourcePeriod.test(text)||values.usage_scope==='aggregate')values.usage_period??='source-period';
  if(values.unit)values.unit=usageUnit(values.unit);
  if(spec)values.specification=spec.slice(0,1024);
- return {values,inferred,text,invalid,capacityFromSpec};
+ return {values,inferred,text,invalid,capacityFromSpec,usageFromSpec};
 }
 
 const record=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
@@ -208,7 +212,7 @@ function indexOutput(source,output){
 }
 
 function applyModelFields(draft,entry,header,observed){
- const {values,inferred,text,invalid,capacityFromSpec}=observed;
+ const {values,inferred,text,invalid,capacityFromSpec,usageFromSpec}=observed;
  const source=comparable(text);
  const needsReview=new Set(invalid);
  const warnings=new Set([...draft.warnings,...invalid]);
@@ -254,6 +258,7 @@ function applyModelFields(draft,entry,header,observed){
  draft.needsReview=[...needsReview];
  draft.warnings=[...warnings];
  draft.capacityFromSpec=capacityFromSpec;
+ draft.usageFromSpec=usageFromSpec;
 }
 
 export function reviewInventory(source,output){
@@ -290,10 +295,9 @@ export function confirmInventory(review){
   }
   input.product||='Unknown';
   const [row]=normalizeRows([input]);
-  if(draft.capacityFromSpec&&!draft.edited?.includes('capacity_gb')){
-   row.dcsCapacitySource='specification';
-   row.evsCapacitySource='specification';
-  }
+  if(draft.capacityFromSpec&&!draft.edited?.includes('capacity_gb'))row.huaweiCapacityExplicit=false;
+  if(draft.edited?.some(key=>key==='usage'||key==='unit'))row.huaweiUsageFromSpec=false;
+  else if(draft.usageFromSpec)row.huaweiUsageFromSpec=true;
   row.huaweiImportIssues=[...issues];
   row.importSource={sheet:draft.sheet,row:draft.row,cells:draft.cells,headerRow:draft.header?.row,headers:draft.header?.cells};
   return row;

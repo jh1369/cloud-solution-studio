@@ -1,6 +1,6 @@
 # Cloud Solution Studio · Pricing Studio Web
 
-Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.7-dev` includes catalog-based Huawei SKU matching and a local model-assisted review workflow. [Browser acceptance](../../docs/PRICING_BROWSER_ACCEPTANCE.md)
+Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.8-dev` includes catalog-based Huawei SKU matching and a local model-assisted review workflow. [Browser acceptance](../../docs/PRICING_BROWSER_ACCEPTANCE.md)
 
 ## Features
 
@@ -21,7 +21,7 @@ The bundled public catalog has 441 pay-per-use and 400 plans each for one month 
 | --- | --- |
 | ECS | Match vCPU, memory, architecture, OS, compute class and explicit series. Generic requests use visible x86, Linux and General Computing assumptions. Specialized hosts, licenses and accelerators require review. |
 | EVS | Match the disk class and keep per-disk capacity separate from metered usage. Generic SSD uses a disclosed GPSSD estimate. Performance, snapshots and inconsistent capacities require review. |
-| DCS | Match Redis capacity and a compatible topology. With unspecified topology and one compatible single-node SKU, disclose the single-node assumption. Pricing requires a resource count. Multiple node counts, version constraints and conflicting capacities require review. |
+| DCS | Match Redis capacity and a compatible topology. With unspecified topology and one compatible single-node SKU, disclose the single-node assumption. Pricing requires a resource count. Multiple node counts, version constraints and conflicting capacities require review. A manual SKU with a different capacity remains Pending. |
 | RDS | Match engine, version, shape, topology and explicit Cloud SSD for instance-only estimates. Storage, backups and database licensing require review. |
 | NAT Gateway | Match a declared private NAT size (`small`, `medium`, `large`, `xlarge`) for an explicitly scoped instance-only estimate. |
 | ELB, CCE and other services | Manual candidate selection where a catalog plan exists. ELB has one hourly SKU. OBS has no usable price rows. |

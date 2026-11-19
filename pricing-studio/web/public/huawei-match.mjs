@@ -11,24 +11,26 @@ function attributes(item){
 const amountPattern='[+-]?(?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d+)?';
 const capacityUnits='\\s*(?:GiB|GB|G)(?![a-z])';
 const capacityToken=new RegExp('(?<![\\w.])(?<!\\d,)('+amountPattern+')'+capacityUnits,'gi');
-const capacityRange=new RegExp(amountPattern+'\\s*[-–~至/]\\s*'+amountPattern+capacityUnits,'i');
-const meterSuffix=/^\s*(?:[-/·]\s*)?(?:(?:months?|hours?|mo|h)\b|月|小时)/i;
-function sizeInfo(text){
- const sizes=new Set(Array.from(text.matchAll(capacityToken))
-  .filter(match=>!meterSuffix.test(text.slice(match.index+match[0].length)))
-  .map(match=>Number(match[1].replaceAll(',',''))));
- const size=sizes.values().next().value;
- const conflict=sizes.size>1||capacityRange.test(text)||size<=0;
- return {size:conflict?null:size??null,conflict};
-}
-function updateCapacity(row,key,text){
- const {size,conflict}=sizeInfo(text);
- const explicit=row[key]==='explicit';
- if(!explicit){
-  row.capacity=size;
-  row[key]='specification';
+const capacityRange=new RegExp(amountPattern+'\\s*[-–~至/]\\s*'+amountPattern+capacityUnits,'gi');
+const meterSuffix=/^\s*(?:[-/·]\s*)?(?:(months?\b|mo\b|月)|hours?\b|h\b|小时)/i;
+function storageDimensions(text){
+ const sizes=new Set(),metered=new Map();
+ for(const match of text.matchAll(capacityToken)){
+  const amount=Number(match[1].replaceAll(',',''));
+  const suffix=text.slice(match.index+match[0].length).match(meterSuffix);
+  if(!suffix){sizes.add(amount);continue;}
+  const unit=(/GiB$/i.test(match[0])?'GiB':'GB')+(suffix[1]?'-month':'-hour');
+  metered.set(unit+':'+amount,{amount,unit});
  }
- return conflict||(explicit&&size!==null&&size!==row.capacity);
+ let sizeRange=false,meteredRange=false;
+ for(const match of text.matchAll(capacityRange)){
+  if(meterSuffix.test(text.slice(match.index+match[0].length)))meteredRange=true;
+  else sizeRange=true;
+ }
+ const size=sizes.values().next().value;
+ const conflict=sizes.size>1||sizeRange||size<=0;
+ const usageConflict=metered.size>1||meteredRange;
+ return {size:conflict?null:size??null,conflict,metered:usageConflict?null:metered.values().next().value,usageConflict};
 }
 
 const policy=(test,assumptions=[])=>({test,assumptions});
@@ -39,7 +41,7 @@ function observedIntegers(text,pattern){
 function computeShape(text){
  const cpus=observedIntegers(text,/(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*(?:vCPUs?\b|核)/gi);
  const awsTypes=new Set(Array.from(text.matchAll(/\b(?:db\.)?(?:m5|m6i)\.(?:large|xlarge|2xlarge)\b/gi),match=>match[0].toLowerCase()));
- const {size:memory,conflict}=sizeInfo(text);
+ const {size:memory,conflict}=storageDimensions(text);
  const cpu=cpus.values().next().value;
  if(cpus.size>1||awsTypes.size>1||conflict||cpu!==undefined&&(!Number.isInteger(cpu)||cpu<=0))return null;
  const known=awsTypes.size===1?awsShape(awsTypes.values().next().value):null;
@@ -82,7 +84,7 @@ const rules={
    (!series.size||series.has(fields.series?.toLowerCase())),assumptions);
  },
  EVS(row,spec){
-  if(row.evsCapacityConflict)return missing('HW_DISK_CAPACITY_CONFLICT');
+  if(row.huaweiCapacityConflict)return missing('HW_DISK_CAPACITY_CONFLICT');
   if(/snapshot|快照|iops|throughput|吞吐|mbps|premium|\b(?:io[12]|gp4)\b/i.test(spec))return missing('HW_DISK_PERFORMANCE');
   const types=[
    [/\bESSD\b|Extreme SSD|极速型/i,'ESSD'],
@@ -100,7 +102,7 @@ const rules={
  DCS(row,source){
   if(!/redis|\bdcs\b/i.test(source)||cacheEngineConstraint.test(source))return missing('HW_CACHE_ENGINE');
   if(/\b(?:flash|SSD|persistent memory)\b|闪存/i.test(source))return missing('HW_NO_MATCH');
-  if(row.dcsCapacityConflict||!(row.capacity>0))return missing('HW_CACHE_CAPACITY');
+  if(row.huaweiCapacityConflict||!(row.capacity>0))return missing('HW_CACHE_CAPACITY');
   const modes=topologies(source);
   const units=observedIntegers(source,/(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*(?:节点|nodes?\b|副本|replicas?\b)/gi);
   const count=units.values().next().value;
@@ -138,7 +140,7 @@ const rules={
 
 const servicePatterns=[
  ['ECS',/云主机|云服务器|虚拟机|\b(?:VMs?|virtual machines?|virtual server|EC2|ECS)\b/i],
- ['EVS',/云盘|云硬盘|硬盘|\b(?:EBS|EVS|managed disks?|block storage)\b/i],
+ ['EVS',/云盘|云硬盘|硬盘|磁盘|\d\s*块\s*盘|\b(?:EBS|EVS|managed disks?|block storage)\b/i],
  ['DCS',/redis|缓存|\b(?:ElastiCache|DCS|memcached|valkey)\b/i],
  ['RDS',/数据库|\b(?:RDS|MySQL|PostgreSQL|MariaDB|SQL Server)\b/i],
  ['ELB',/负载均衡|\b(?:ELB|load balancers?|load balancing)\b/i],
@@ -160,23 +162,22 @@ export function identifyHuaweiService(product,specification=''){
 const targetRegion=/(?:华为云区域|华为云目标区域|目标区域|(?:huawei\s+)?target\s+region)\s*[:=：]\s*([a-z]{2}(?:-[a-z]+)+-\d+)\b/i;
 export function identifyHuaweiRow(row){
  const text=(row.product+' '+row.specification).normalize('NFKC');
- const inferred=row.service==='Unmapped';
- if(inferred)row.service=identifyHuaweiService(row.product,row.specification);
+ if(row.service==='Unmapped')row.service=identifyHuaweiService(row.product,row.specification);
  if(!row.huaweiTargetRegion||row.huaweiRegionFromSpec){
   row.huaweiTargetRegion=text.match(targetRegion)?.[1].toLowerCase()??'';
   row.huaweiRegionFromSpec=!!row.huaweiTargetRegion;
  }
  row.huaweiTargetRegion=row.huaweiTargetRegion.toLowerCase();
- if(row.service==='DCS'){
-  row.dcsCapacitySource??=row.capacity==null?'specification':'explicit';
-  row.dcsCapacityConflict=updateCapacity(row,'dcsCapacitySource',text);
-  if(!row.unit)row.unit='hour';
- }
- if(row.service==='EVS'){
-  // A copy made by the text parser is not independent billable usage.
-  if(row.evsUsageFromCapacity){row.usage=null;row.evsUsageFromCapacity=false;}
-  row.evsCapacityConflict=updateCapacity(row,'evsCapacitySource',text);
-  if(inferred&&!row.unitExplicit&&row.usage==null)row.unit='';
+ if(row.service==='DCS'||row.service==='EVS'){
+  const {size,conflict,metered,usageConflict}=storageDimensions(text);
+  row.huaweiCapacityConflict=conflict||!!(row.huaweiCapacityExplicit&&size!==null&&size!==row.capacity);
+  if(!row.huaweiCapacityExplicit)row.capacity=size;
+  if(row.service==='DCS'&&!row.unit)row.unit='hour';
+  if(row.service==='EVS'&&row.huaweiUsageFromSpec){
+   row.evsUsageConflict=usageConflict;
+   row.usage=metered?.amount??null;
+   row.unit=metered?.unit??'';
+  }
  }
  if(row.scope==='resource'&&row.quantity==null&&!row.importSource){
   const quantities=observedIntegers(text,/(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*(?:套|台|块|instances?\b)/gi);
@@ -233,7 +234,7 @@ export function selectHuaweiBilling(row,mode,catalog){
 export function setHuaweiUsageAssumption(row,item){
  row.huaweiUsageAssumption=null;
  if(item&&row.scope==='resource'&&row.period==='monthly'&&row.usage==null&&billingOf(row)==='ONDEMAND'){
-  if(row.service==='EVS'&&row.capacity>0&&(!row.unit||['GB-month','GiB-month','GB','GiB'].includes(row.unit))){
+  if(row.service==='EVS'&&!row.evsUsageConflict&&row.capacity>0&&(!row.unit||['GB-month','GiB-month','GB','GiB'].includes(row.unit))){
    row.huaweiUsageAssumption='HW_STORAGE_MONTH';
   }else if(item.unit==='hour'&&(!row.unit||/^(?:hour|hours|hr|hrs)$/i.test(row.unit))){
    row.huaweiUsageAssumption='HW_MONTH_HOURS';
