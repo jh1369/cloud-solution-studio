@@ -1,6 +1,6 @@
 # Cloud Solution Studio · Pricing Studio Web
 
-Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.12-dev` supports dedicated EIP bandwidth, outbound internet traffic and idle IPv4 reservation without a Huawei Cloud account. [Development status](../../docs/DEVELOPMENT_STATUS.md)
+Pricing Studio uses browser JavaScript and a Cloudflare Worker. Huawei quotes use independently verified public plans for pay-per-use, one-month and one-year billing in `eu-west-101`. Web `0.3.13-dev` adds batched local model review and official AWS source specification evidence. [Development status](../../docs/DEVELOPMENT_STATUS.md)
 
 ## Features
 
@@ -55,25 +55,34 @@ Future adapters share this evidence contract and add only service-specific field
 
 ## Model-assisted CSV and Excel on the user machine
 
-Standard CSV and spreadsheet templates still take the direct local parser. Use UTF-8 for CSV. Nonstandard uploads open an editable preview. The model button is enabled only when the Web + Worker stack is running locally with a configured model. The hosted Site supports the same manual preview and confirmation.
+Standard CSV and spreadsheet templates take the direct local parser. Use UTF-8 for CSV. Nonstandard uploads open an editable preview. On loopback, **Review AWS usage sheets with local model** also opens the preview for the recognized AWS billing layout. The model button requires a configured local runtime. The hosted Site supports the same manual preview and confirmation.
 
 Install an approved local model runtime that implements OpenAI-compatible `/v1/chat/completions` and strict `json_schema` output. Acceptance used llama.cpp and Qwen2.5-1.5B-Instruct Q4_K_M on CPU. Obtain the runtime and weights through your approved software channel. Example local startup for an existing GGUF model
 
 ```bash
 llama-server --host 127.0.0.1 --port 4813 --alias inventory-local -m /path/to/model.gguf -c 8192 \
-  --cors-origins http://127.0.0.1:4814 --no-cors-credentials
+  --offline --no-webui --log-disable --api-key-file /path/to/local-model-key
 # In pricing-studio/web. Use an absolute path to an existing reviewed ZIP.
 PRICING_OFFLINE_ARCHIVE=/path/to/existing.zip python3.12 scripts/build_worker.py
+# Supply INVENTORY_MODEL_TOKEN to the Node process through your local secret store.
 INVENTORY_MODEL_PORT=4813 INVENTORY_MODEL=inventory-local PORT=4814 node scripts/dev-server.mjs
 ```
 
-Open `http://127.0.0.1:4814`, select Huawei Cloud and upload a file. In the preview, run the local model, inspect the original cells and proposed fields, adjust the included rows, and click **Confirm and quote**. Verify highlighted pricing fields or correct them in the preview. Rows with unverified fields can be exported as Pending alongside priced rows. The page keeps up to four successful analyses in memory for repeated imports. The Input worksheet retains source sheet, row, original cells and any applicable header.
+Open `http://127.0.0.1:4814`, select Huawei Cloud and upload a file. In the preview, run the local model, inspect the original cells and proposed fields, adjust the included rows, and click **Confirm and quote**. Verify highlighted pricing fields or correct them in the preview. Rows with unverified fields can be exported as Pending alongside priced rows. The page caches up to four workbook analyses in memory, including verified batches. It retries a failed batch once and reuses completed batches when the user retries. The Input worksheet retains source sheet, physical row, original cells, applicable header and per-field source columns.
 
-The model receives sheet names and a cell preview bounded to 10 sheets, 60 nonempty rows, 20 columns and 12,000 serialized characters. It proposes source fields and header mappings in a JSON Schema. Known column names and explicit units ground counts, capacity and metered usage. Other proposed field assignments require review. Omitted rows stay visible, and timeouts preserve editable source cells. Complex ranges, unsupported encodings and unfamiliar fields may need manual cleanup or a standard template. After confirmation, both import paths use the same deterministic matching and price validation.
+The review supports up to 10 sheets, 2,000 nonempty rows and 64 columns. The browser retains full source cells and sends bounded cell previews in batches of up to 24 rows and 20,000 serialized bytes. Repeated sheet headings provide context. The adapter validates strict JSON Schema output, exact row keys, source column references and numeric limits. It caps generation at 2,048 tokens per batch. Unknown or incomplete rows remain editable. Known headers, explicit units and documented AWS usage types ground counts, capacity and metered usage. Suggestions that lack such evidence require review. Both import paths use the same deterministic matching and price validation.
 
 With the model enabled, the local Web server and model listen on the user's machine. The same-origin Node adapter forwards only to a configured `127.0.0.1` port via direct HTTP. It does not use a proxy or follow redirects. Use a trusted local runtime with telemetry disabled. Before handling sensitive data, require authentication at the model server and restrict its browser origins. Supply the matching credential through the local process environment as `INVENTORY_MODEL_TOKEN`. The hosted app has no external model configuration, upload endpoint or model credential. Any external integration would require explicit approval for the allowed columns, purpose, data residency, retention, credentials and audit controls.
 
-The server adapter receives `{rows, schema, signal}` and returns the structured proposal. The shipped adapter uses local OpenAI-compatible chat completions. Alternate approved local adapters can implement the same interface and share the same request limits, preview validation and quote engine.
+The server adapter receives `{rows, header, knowledge, schema, signal}` and returns the structured proposal. The workbook endpoint uses the local OpenAI-compatible adapter. A separate server-only OpenAI API adapter targets the fixed HTTPS endpoint and requires explicit synthetic-test configuration. It has no route from file upload and uses a test transport in automated verification. Approved runtimes can implement the same contract.
+
+## AWS source specifications and conditional quotes
+
+EC2, RDS, ElastiCache and OpenSearch source instances are looked up by exact type in the public AWS specification snapshot. Each record retains the applicable official URL, extraction date and source document digest. The extractor accepts separately downloaded official HTML and generates the checked-in JavaScript module without a network request at application runtime. Verified vCPU, memory, architecture and family are available when the source tables establish them. Source storage and cache node memory remain source facts. [AWS EC2 specifications](https://docs.aws.amazon.com/ec2/latest/instancetypes/instance-types.html) · [AWS RDS classes](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.Types.html) · [AWS ElastiCache node types](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/CacheNodes.SupportedTypes.html) · [AWS OpenSearch instance types](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-instance-types.html)
+
+Source billable instance hours remain cumulative hours for the original billing period. They cannot establish an instance count for a Huawei subscription. EC2 target plans require exact vCPU, memory, architecture and supported OS. Specialized or burstable source families need confirmation of the target performance assumption. Database engine, version, deployment and storage scope require independent evidence. Cache engine and topology also require evidence. A verified AWS profile can therefore coexist with several Huawei SKUs or a Pending target price.
+
+**Review matching estimates** shows the condition and the number of rows sharing the same source configuration and selected Huawei plan. Confirming those rows triggers deterministic revalidation and preserves per-row usage. The webpage and Excel subtotal confirmed charges separately from conditional estimates. The Service Mapping worksheet records AWS evidence, candidate Huawei SKUs and conditions. The Quotation worksheet keeps Pending amounts blank.
 
 ## Commands
 

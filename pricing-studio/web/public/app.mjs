@@ -1,7 +1,7 @@
 import {buildWorkbook} from './excel.mjs';
 import {normalizeRows,parseText,recommend,calculate,parseBillPages,switchBilling,priceValidation,huaweiProductSpecIssue,huaweiQuoteLines} from './engine.mjs';
 import {tcpQuoteRows,tcpQuoteTotals} from './providers.mjs';
-import {t,billingLabel,dateLabel,translateMessage,readLanguage,saveLanguage,applyTranslations,serviceLabel} from './i18n.mjs';
+import {t,billingLabel,dateLabel,translateMessage,readLanguage,saveLanguage,applyTranslations,serviceLabel,reasonLabel} from './i18n.mjs';
 import {escapeHTML,icon,money,emptyResources,resourceHTML,tcpResourceHTML,summaryModel,breakdownHTML,catalogueHTML} from './ui.mjs';
 
 const $=selector=>document.querySelector(selector);
@@ -16,6 +16,7 @@ let language=readLanguage(storage);
 let catalog={items:[],ttlDays:7},rows=[],page=0,activeView='studio',mappingSelected=false,busy=false,catalogState='loading';
 let tcpStatus={provider:'tcp',status:'NEVER_CHECKED'},tcpLoaded=false,tcpBusy=false;
 let provider='huawei',tcpPublication={state:null,catalog:null},tcpQuoteLoading=false,tcpExpiryTimer;
+let conditionAnchor=null;
 const T=(key,vars)=>t(key,language,vars);
 const E=escapeHTML;
 
@@ -36,7 +37,7 @@ function setBilling(row,mode){
 }
 function canConfirm(row){
  if(!row.targetId)return false;
- return provider!=='huawei'||!row.huaweiProductMatch||!huaweiProductSpecIssue(row,catalog.items.find(item=>item.id===row.targetId));
+ return provider!=='huawei'||!row.awsMatchIssue&&(!row.huaweiProductMatch||!huaweiProductSpecIssue(row,catalog.items.find(item=>item.id===row.targetId)));
 }
 function refreshIds(output){
  return [...new Set(huaweiQuoteLines(rows,output).filter(({row,result})=>row&&result.status!=='Linked'&&canConfirm(row)).map(({row})=>row.targetId))];
@@ -82,6 +83,13 @@ function renderSummary(output,now){
  $('#upfront-row').hidden=!summary.hasPrepaid;$('#upfront-money').textContent=money(summary.upfront);
  $('#quote-status').textContent=summary.status;$('#quote-status').className='badge '+summary.statusClass;
  $('#coverage').textContent=summary.coverage;$('#quote-note').textContent=summary.note;
+ const conditional=$('#conditional-summary');
+ conditional.hidden=!summary.conditionalCount;
+ conditional.textContent=summary.conditionalCount?[
+  T('quote.conditional',{count:summary.conditionalCount}),
+  summary.conditionalMonthly==null?'':T('quote.conditionalMonthly',{amount:money(summary.conditionalMonthly)}),
+  summary.conditionalPeriod==null?'':T('quote.conditionalPeriod',{amount:money(summary.conditionalPeriod)})
+ ].filter(Boolean).join(' · '):'';
  $('#breakdown').innerHTML=breakdownHTML(summary,language);renderMetrics(output,now);
 }
 function renderTCPSummary(output,now){
@@ -92,6 +100,7 @@ function renderTCPSummary(output,now){
  $('#quote-status').textContent=T(!rows.length?'status.waiting':totals.pendingCount?'tcp.quote.pendingCount':'tcp.quote.priced',{count:totals.pendingCount});
  $('#quote-status').className='badge '+(!rows.length?'neutral':totals.pendingCount?'pending':'valid');
  $('#coverage').textContent=T('quote.coverage',{ready:totals.ready,total:rows.length});
+ $('#conditional-summary').hidden=true;
  $('#quote-note').textContent=T('tcp.quote.note');
  renderMetrics(output,now);
 }
@@ -116,7 +125,7 @@ function render({now=Date.now()}={}){
  page=Math.min(page,Math.max(0,Math.ceil(rows.length/10)-1));
  $('#resource-count').textContent=rows.length;
  $('#export').disabled=!rows.length||(isTCP&&tcpQuoteLoading);$('#quote-export').disabled=$('#export').disabled;
- $('#confirm-all').disabled=!rows.some(row=>!row.accepted&&canConfirm(row));
+ $('#confirm-all').disabled=!rows.some(row=>!row.accepted&&!row.huaweiConditionKey&&canConfirm(row));
  $('#refresh-prices').disabled=!!offlineBundle||busy||(isTCP?tcpQuoteLoading:!refreshIds(output).length);
  $('#parse').disabled=busy;$('#file').disabled=busy;
  $('#resources').innerHTML=!rows.length?emptyResources(language):isTCP?tcpResourceHTML(rows,output,tcpPublication.state,language,page):resourceHTML(rows,output,catalog,language,page,now);
@@ -129,6 +138,7 @@ function render({now=Date.now()}={}){
 function renderProvider(){
  const isTCP=provider==='tcp';
  const onlineHuawei=!isTCP&&!!huaweiMatching;
+ $('#inventory-ai-option').hidden=!onlineHuawei||!['127.0.0.1','localhost','[::1]'].includes(location.hostname);
  for(const element of $$('[data-huawei-quote]'))element.hidden=isTCP;
  for(const element of $$('[data-tcp-quote]'))element.hidden=!isTCP;
  $('#target-provider-control').hidden=!!offlineBundle;
@@ -270,6 +280,7 @@ $('#resources').addEventListener('change',event=>{
   const importFields={targetQuantity:'quantity',capacity:'capacity_gb',unit:'unit',period:'usage_period',usage:'usage',
    service:'product',specification:'specification',huaweiTargetRegion:'huawei_target_region'};
   if(row.huaweiImportIssues?.length&&importFields[field])row.huaweiImportIssues=row.huaweiImportIssues.filter(key=>key!==importFields[field]);
+  if(row.importSource?.fieldSources&&importFields[field])row.importSource.fieldSources[importFields[field]]={origin:'confirmed'};
   if(field==='huaweiTargetRegion')row.huaweiRegionFromSpec=false;
   if(row.service==='NAT Gateway'&&(field==='usage'||field==='unit'))row.huaweiNatUsageFromText=false;
   if(field==='capacity'&&['EVS','DCS'].includes(row.service))row.huaweiCapacityExplicit=row.capacity!==null;
@@ -285,13 +296,14 @@ $('#resources').addEventListener('change',event=>{
     row.huaweiSelection='manual';row.huaweiCandidates=null;
     row.huaweiPreferredSku=catalog.items.find(item=>item.id===row.targetId)?.sku;
     if(field==='targetId'){row.accepted=false;row.huaweiAssumptions=[];row.huaweiMatch=row.targetId?'HW_MATCHED':'HW_MANUAL_SERVICE';}
-    if(huaweiMatching.usesHuaweiProductSpecs(row.service))selectHuawei(row);
+    if(huaweiMatching.revalidateHuaweiSelection(row))selectHuawei(row);
     else huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
+    if(field==='accepted'&&row.huaweiConditionKey)row.huaweiConditionApproval=row.accepted?row.huaweiConditionKey:null;
    }
   }else if(['service','targetQuantity','capacity','usage','unit','period','specification','huaweiTargetRegion'].includes(field)){
    if(field==='service'){row.targetId='';row.huaweiSelection=null;row.huaweiPreferredSku=null;}
    row.accepted=false;
-   if(row.huaweiSelection!=='manual'||huaweiMatching.usesHuaweiProductSpecs(row.service))selectHuawei(row);
+   if(row.huaweiSelection!=='manual'||huaweiMatching.revalidateHuaweiSelection(row))selectHuawei(row);
    else{
     if(['specification','capacity'].includes(field))huaweiMatching.identifyHuaweiRow(row);
     huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
@@ -304,6 +316,15 @@ $('#resources').addEventListener('change',event=>{
 });
 $('#resources').addEventListener('click',event=>{
  if(event.target.closest('[data-sample]')){sample();return;}
+ const review=event.target.closest('[data-review-condition]');
+ if(review&&provider==='huawei'&&huaweiMatching){
+  conditionAnchor=rows.find(row=>row.id===review.dataset.reviewCondition);
+  if(!conditionAnchor?.huaweiConditionKey)return;
+  const group=rows.filter(row=>row.huaweiConditionKey===conditionAnchor.huaweiConditionKey).length;
+  const sku=catalog.items.find(plan=>plan.id===conditionAnchor.targetId)?.sku;
+  $('#condition-detail').textContent=[T('quote.conditionGroup',{count:group,sku}),...conditionAnchor.huaweiConditions.map(reasonCode=>reasonLabel({reasonCode},language))].join(' ');
+  $('#condition-dialog').showModal();return;
+ }
  const button=event.target.closest('[data-delete]');if(!button)return;
  rows=rows.filter(row=>row.id!==button.dataset.delete);render();
 });
@@ -316,7 +337,13 @@ $('#hours').addEventListener('change',render);$('#discount').addEventListener('c
 $('#confirm-all').addEventListener('click',()=>{$('#confirm-check').checked=false;$('#apply-confirm').disabled=true;$('#confirm-dialog').showModal();});
 $('#confirm-check').addEventListener('change',event=>{$('#apply-confirm').disabled=!event.target.checked;});
 $('#cancel-confirm').addEventListener('click',()=>$('#confirm-dialog').close());
-$('#apply-confirm').addEventListener('click',()=>{rows.forEach(row=>{if(canConfirm(row))row.accepted=true;});$('#confirm-dialog').close();render();toast(T('toast.confirmed'));});
+$('#apply-confirm').addEventListener('click',()=>{rows.forEach(row=>{if(!row.huaweiConditionKey&&canConfirm(row))row.accepted=true;});$('#confirm-dialog').close();render();toast(T('toast.confirmed'));});
+$('#cancel-condition').addEventListener('click',()=>$('#condition-dialog').close());
+$('#apply-condition').addEventListener('click',()=>{
+ if(!conditionAnchor||provider!=='huawei'||!huaweiMatching)return;
+ const count=huaweiMatching.confirmHuaweiConditionGroup(rows,conditionAnchor,catalog,settings());
+ $('#condition-dialog').close();render();toast(T('toast.groupConfirmed',{count}));
+});
 
 async function importFile(file){
  if(!file)return;if(file.size>10*1024*1024){toast(T('error.size'),true);return;}
@@ -348,7 +375,7 @@ async function importFile(file){
     catch{throw Error('inventory.encoding');}
    }
    const book=window.XLSX.read(input,{type:huaweiCSV?'string':'array',cellFormula:false,cellHTML:false,...(huaweiCSV?{raw:true}:{})});
-   if(provider==='huawei'&&inventoryReview)parsed=inventoryReview.read(book,window.XLSX);
+   if(provider==='huawei'&&inventoryReview)parsed=inventoryReview.read(book,window.XLSX,{reviewAws:$('#inventory-ai-review').checked});
    else{
     const worksheet=book.Sheets[book.SheetNames.includes('Input')?'Input':book.SheetNames[0]];
     parsed=normalizeRows(window.XLSX.utils.sheet_to_json(worksheet,{defval:''}));

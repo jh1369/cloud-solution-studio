@@ -1,4 +1,6 @@
-import {INVENTORY_FIELDS,INVENTORY_NUMBERS,readInventory,reviewInventory,confirmInventory} from './inventory-import.mjs';
+import {INVENTORY_FIELDS,INVENTORY_NUMBERS,readInventory,reviewInventory,confirmInventory,knownInventoryHeader} from './inventory-import.mjs';
+import {inventoryBatches,mergeInventoryBatches} from './inventory-batches.mjs';
+import {lookupAwsSpec} from './aws-specs.mjs';
 import {escapeHTML} from './ui.mjs';
 import {reasonLabel,t} from './i18n.mjs';
 
@@ -15,14 +17,20 @@ export function createInventoryReview({getLanguage,onConfirm,onError}){
  let pending=false;
  const T=(key,vars)=>t(key,getLanguage(),vars);
  function render(){
-  analyze.disabled=pending||cache.has(identity);
+  analyze.disabled=pending||!!cache.get(identity)?.review;
   commit.disabled=pending;
   list.inert=pending;
-  list.innerHTML=review.map(draft=>`<article class="inventory-draft" data-draft="${draft.id}">
+  list.innerHTML=review.map(draft=>{
+   const profile=lookupAwsSpec(draft.product,draft.specification);
+   return `<article class="inventory-draft" data-draft="${draft.id}">
    <label><input type="checkbox" data-key="include" ${draft.include?'checked':''}> ${escapeHTML(draft.sheet)} · ${T('inventory.row')} ${draft.row}</label>
    <details><summary>${T('inventory.original')}</summary>
    ${draft.header?`<p>${T('inventory.headerRow',{row:draft.header.row})}</p><pre>${escapeHTML(JSON.stringify(draft.header.cells))}</pre>`:''}
-   <pre>${escapeHTML(JSON.stringify(draft.cells))}</pre></details>
+   <pre>${escapeHTML(JSON.stringify(draft.cells))}</pre>
+   ${draft.proposals?`<p>${T('inventory.modelSuggestions')}</p><pre>${escapeHTML(JSON.stringify(draft.proposals))}</pre>`:''}
+   ${draft.fieldSources?`<pre>${escapeHTML(JSON.stringify(draft.fieldSources))}</pre>`:''}</details>
+   ${profile?`<p class="row-notes">${escapeHTML([T('inventory.officialAws'),profile.type,profile.cpu?profile.cpu+' vCPU':null,
+    profile.memory?profile.memory+' GiB':null,profile.architecture].filter(Boolean).join(' · '))}</p>`:''}
    ${draft.warnings.length?`<p class="row-notes">${T('inventory.verify')} ${draft.warnings.map(key=>escapeHTML(T('inventory.field.'+key))).join(', ')}</p>`:''}
    <div class="field-grid">${INVENTORY_FIELDS.map(key=>{
     const name=T('inventory.field.'+key);
@@ -32,7 +40,8 @@ export function createInventoryReview({getLanguage,onConfirm,onError}){
     return `<label><span>${name}</span>${control}</label>`;
    }).join('')}</div>
    ${draft.needsReview.length?`<label class="check-line"><input type="checkbox" data-key="reviewed" ${draft.reviewed?'checked':''}> ${T('inventory.verifyFields')}</label>`:''}
-  </article>`).join('');
+  </article>`;
+  }).join('');
  }
  list.addEventListener('input',event=>{
   const key=event.target.dataset.key,draft=review.find(row=>row.id===Number(event.target.closest('[data-draft]')?.dataset.draft));
@@ -40,24 +49,47 @@ export function createInventoryReview({getLanguage,onConfirm,onError}){
   draft[key]=event.target.type==='checkbox'?event.target.checked:event.target.value;
   if(key!=='reviewed')draft.edited=[...new Set([...(draft.edited??[]),key])];
  });
+ async function sendBatch(rows,header){
+  let failure='inventory.unavailable';
+  for(let attempt=0;attempt<2;attempt++){
+   try{
+    const result=await fetch('/api/inventory/model',{method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({rows,header,retry:attempt>0}),signal:AbortSignal.timeout(125000)});
+    const output=await result.json();
+    if(result.ok)return mergeInventoryBatches(rows,[output]);
+    failure=output.error||failure;
+    if(result.status<500&&![409,422,429].includes(result.status))break;
+   }catch(error){failure=error.name==='TimeoutError'?'inventory.timeout':error.message;}
+  }
+  throw Error(failure);
+ }
  analyze.addEventListener('click',async()=>{
-  if(pending||cache.has(identity))return;
+  if(pending||cache.get(identity)?.review)return;
   if(!loopback.includes(location.hostname)){status.textContent=T('inventory.localOnly');return;}
   pending=true;status.textContent=T('inventory.analyzing');render();
   try{
-   const signal=AbortSignal.timeout(125000);
-   const capability=await fetch('/api/inventory/model',{cache:'no-store',signal});
+   const capability=await fetch('/api/inventory/model',{cache:'no-store',signal:AbortSignal.timeout(5000)});
    if(!capability.ok||!(await capability.json()).available)throw Error('inventory.localOnly');
-   const result=await fetch('/api/inventory/model',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({rows:source}),signal});
-   const output=await result.json();
-   if(!result.ok)throw Error(output.error||'inventory.unavailable');
+   const batches=inventoryBatches(source),headers=new Map();
+   if(!cache.has(identity)){
+    if(cache.size===4)cache.delete(cache.keys().next().value);
+    cache.set(identity,{batches:new Map()});
+   }
+   const pendingReview=cache.get(identity);
+   for(const [index,rows] of batches.entries()){
+    const sheet=rows[0].sheet;
+    status.textContent=T('inventory.progress',{batch:index+1,total:batches.length});
+    if(!pendingReview.batches.has(index))pendingReview.batches.set(index,await sendBatch(rows,headers.get(sheet)));
+    const decoded=new Map(pendingReview.batches.get(index).rows.map(row=>[row.id,row]));
+    for(const row of rows)if(knownInventoryHeader(row)||decoded.get(row.id)?.kind==='header'&&
+      Object.keys(decoded.get(row.id).columns??{}).length>=2)headers.set(sheet,row);
+   }
+   const output=mergeInventoryBatches(source,pendingReview.batches.values());
    const normalized=reviewInventory(source,output);
-   if(cache.size===4)cache.delete(cache.keys().next().value);
-   cache.set(identity,structuredClone(normalized));
+   pendingReview.review=structuredClone(normalized);
    normalized.forEach((draft,index)=>{
     const previous=review[index];
-    draft.edited=previous.edited;
+    draft.edited=previous.edited;draft.reviewed=previous.reviewed;
     for(const key of draft.edited??[])draft[key]=previous[key];
    });
    review=normalized;status.textContent=T('inventory.check');
@@ -70,16 +102,17 @@ export function createInventoryReview({getLanguage,onConfirm,onError}){
  dialog.querySelector('#inventory-cancel').addEventListener('click',()=>{if(!pending)dialog.close();});
  commit.addEventListener('click',()=>{
   if(pending)return;
-  try{const rows=confirmInventory(review);onConfirm(rows);dialog.close();}
+  try{const rows=confirmInventory(review,{semantic:!!cache.get(identity)?.review});onConfirm(rows);dialog.close();}
   catch(error){status.textContent=error.message.startsWith('inventory.')?T(error.message):reasonLabel({reason:error.message},getLanguage());onError(error);}
  });
  return {
-  read(book,XLSX){
-   const result=readInventory(book,XLSX);
+  read(book,XLSX,options){
+   const result=readInventory(book,XLSX,options);
    if(result.standard)return result.standard;
    source=result.source;identity=JSON.stringify(source);
-   review=cache.has(identity)?structuredClone(cache.get(identity)):reviewInventory(source,{rows:[]});
-   status.textContent=T(cache.has(identity)?'inventory.cached':'inventory.ready');
+   const cached=cache.get(identity)?.review;
+   review=cached?structuredClone(cached):reviewInventory(source,{rows:[]});
+   status.textContent=T(cached?'inventory.cached':'inventory.ready');
    analyze.hidden=!loopback.includes(location.hostname);
    render();dialog.showModal();return null;
   }
