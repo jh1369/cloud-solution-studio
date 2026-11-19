@@ -7,17 +7,17 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-19，Europe/Berlin |
-| 当前优先目标 / 模式 | Huawei 自动报价覆盖率分析与长期优先级，单 Agent |
-| 本轮检查基线 | `main` / `563a453e7629daa7fdfbaf963d568fc17daeda08` |
-| `main` 代码合并基线 | `0dbd72463b21e3f85d9ac879fd4de897d5241237`，与已验收代码树一致。[合并提交](https://github.com/jh1369/cloud-solution-studio/commit/0dbd72463b21e3f85d9ac879fd4de897d5241237) · [当前 `main` HEAD](https://github.com/jh1369/cloud-solution-studio/commits/main/) |
+| 当前优先目标 / 模式 | Huawei DCS 官方产品规格证据，单 Agent |
+| 本轮检查基线 | `main` / `2590c374a5557fdd960807ba396f33f3696fdbce` |
+| 前轮 `main` 规格匹配合并基线 | `0dbd72463b21e3f85d9ac879fd4de897d5241237`。[合并提交](https://github.com/jh1369/cloud-solution-studio/commit/0dbd72463b21e3f85d9ac879fd4de897d5241237) · [当前 `main` HEAD](https://github.com/jh1369/cloud-solution-studio/commits/main/) |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | GitHub 整合版 `0.3.8-dev`。上一轮私有站第 11 版记录为 `0.3.7-dev` |
+| 当前网页版本 | 本轮在线源码 `0.3.9-dev`。上次记录的私有站第 11 版为 `0.3.7-dev` |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
 | 上次记录的 Sites 部署源码 | `4741d6a2b4044f7afee16e3a4ef208c370c804c9`（私有站第 11 版，见 PR #13 记录） |
-| 整体进度 | 已实测华为云在线目录匹配、三种计费、导入复核和浏览器五表导出。本机真实模型复验待运行环境 |
-| 本轮同步范围 | Huawei 自动报价覆盖率报告及开发状态，文档交付 |
+| 整体进度 | DCS 区域规格适配、三种公开价格及浏览器导出已回归。生产接入待认证规格复验。本机真实模型复验待运行环境 |
+| 本轮同步范围 | Huawei DCS 在线源码、虚构测试夹具及技术和验收记录。源码同步与私有站发布分别记录 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -29,7 +29,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 | 安全及协作规则 | 禁止敏感资料进入仓库；任务结束更新状态；重大架构变更联动 README/路线图；Push 需明确授权 | `AGENTS.md`、`SECURITY.md` |
 | Python CLI 基础映射 | CSV→JSON，8 条产品族映射；SKU/价格待复核，没有费用计算 | `pricing-studio/src/pricing_studio/cli.py` |
 | 网页输入 | 文字、标准 CSV/XLSX、受支持的文字版 AWS 账单 PDF。非标准 CSV/XLSX 支持编辑式预览及配置后的本机模型分析 | `pricing-studio/web/public/app.mjs`、`inventory-import.mjs`、`scripts/local_inventory_api.mjs` |
-| 产品及规格候选 | Huawei ECS、EVS、Redis DCS、限实例费 RDS 和私网 NAT 由明确规则匹配当前目录。人工选型优先 | `huawei-match.mjs`、`engine.mjs` |
+| 产品及规格候选 | Huawei ECS、EVS、限实例费 RDS 和私网 NAT 匹配现有目录。Redis DCS 使用区域规格 API 和独立价格证据，官方文档提供待核验候选。支持人工选型 | `huawei-match.mjs`、`huawei-dcs-specs.mjs`、`huawei-dcs-spec-api.mjs`、`engine.mjs` |
 | 计费模式分离 | AWS 原计费仅作来源记录；华为云目标仅有按需、包月、包年；支持逐项及批量切换，切换后需重新确认 | `engine.mjs`、`app.mjs` |
 | 官方公开价格 | `eu-west-101` / USD；快照有 441 个按需、400 个包月、400 个包年计划，分别独立询价；含官方产品编码、请求/响应、来源和时间 | `public/catalog.json`、`scripts/build_catalog.py` |
 | 价格刷新 | 固定官方端点、服务端产品白名单；按目标计费模式分组请求；验证失败不生成价格 | `worker.mjs` |
@@ -84,6 +84,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 
 | 优先级 | 任务 | 完成标准 |
 | --- | --- | --- |
+| P0 / DCS 上线复验 | 认证的 EU-Dublin ListFlavors 与私有站部署 | 通过受控运行时注入只读区域项目及短期令牌，核验真实规格记录和可用区，复测浏览器报价与导出后发布 |
 | P0 / 模型复验 | 使用真实本机模型重复两类非标准导入 | 在获准的本机运行时复验 `0.3.8-dev` 字段分类、表头映射、人工纠正和报价导出。记录模型及版本 |
 | P1 / 报价覆盖建议 | RDS 数据盘和超额备份 | 独立核验实例、盘型与备份计费证据，按相应计量口径导出分项费用。[覆盖率分析](HUAWEI_QUOTE_COVERAGE.md) |
 | P2 / 独立任务 | Python CSV starter 数值与单位问题 | 不进入当前报价 MVP；继续保留原逻辑，独立修复 NaN/Infinity 与数量/单位，不重复开发 Python 报价系统 |
@@ -459,3 +460,19 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - **测试** 在 `pricing-studio/web` 以 Node 24.22.1 运行 `node --test tests/huawei-import.test.mjs`，21 通过、0 失败。用实际随包目录和现有导入、匹配、报价逻辑执行 32 行虚构 CSV。Chromium 156.0.8078.79 导入该清单及两份虚构 AWS 样式 XLSX，三份下载均以 openpyxl 3.1.5 重开验证。主清单月均小计 USD 801.70，Pending 金额为空。两份 XLSX 使用不同虚构资源标识及公式或数值来源成本，均为 2 项计价、2 项 Pending 和 USD 127.95 小计。
 - **结果与边界** 主清单识别 31 / 32、自动匹配 13 / 32、计价 12 / 32、Pending 20 / 32。4 行需架构或输入复核，16 行为现有能力缺口，其中 13 行缺项目已验证价格、10 行缺计费规则，两者重叠 10 行。报价采用随包已验证费率，欧站原始目录用于候选发现。真实模型、生产及离线验收沿用各自记录。
 - **长期优先级** RDS 数据盘和超额备份优先，其次为专享 ELB/EIP 分项与 OBS 标准单 AZ 按需。EVS 性能费率需补足明确来源。覆盖率报告和本条状态记录为本轮 GitHub 同步范围。
+
+### 2026-11-19 — Huawei DCS 官方产品规格元数据
+
+- **新增** `0.3.9-dev` Web + Worker DCS 规格端点、版本 1 元数据、15 分钟区域规格证据和 8 条带版本的官方文档候选。规格关联沿用现有官方核价、费用计算与三种计费。**修改** DCS 自动和手选规则、页面证据、五表 Excel 的 Service Mapping 和 Public Pricing。**删除** 在线 DCS 从价格描述推导规格的分支。 [接口与扩展点](../pricing-studio/web/README.md#official-dcs-product-specifications)
+- **定向与完整回归** 在 `pricing-studio/web` 用 Node 24.22.1 和 Python 3.12.14，设置 `PRICING_OFFLINE_ARCHIVE` 为已发布的 `0.3.1-dev` ZIP 后执行 `npm run build`。`node --test tests/dcs-specs.test.mjs tests/huawei-import.test.mjs` 29 通过，`node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs` 125 通过。已归档 ZIP 单独逐字节核对通过。`PYTHONPATH=tests python3.12 -m unittest test_catalog test_catalog_updates test_tcp_pdf test_schedule test_catalog_publication` 40 通过、2 项缺 `boto3` 跳过。父级 `pricing-studio` 执行 `PYTHONPATH=src python3.12 -m unittest discover -s tests` 1 通过。以上 0 失败。
+- **实际官方接口** 在 EU-Dublin 对 ListFlavors 发起无认证请求，返回 HTTP 401。公开询价对下表三个 SKU 逐模式验证，3 组均 HTTP 200，9 / 9 通过产品、地区、币种、单位与计费证据检查。费率与仓库现有快照相同。公开询价确认费率。区域可售性验收待认证响应。 [ListFlavors](https://support.huaweicloud.com/eu/api-dcs/ListFlavors.html) · [公开询价](https://portal.eu.huaweicloud.com/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource)
+
+| 虚构规格输入 | 匹配的规格编码 | 实际官方单价 USD，按需每小时 / 包月 / 包年 |
+| --- | --- | --- |
+| 2 GB 单机 x86 | `redis.single.xu1.large.2` | 0.034 / 16.75 / 167.53 |
+| 2 GB 主备双副本 x86 | `redis.ha.xu1.large.r2.2` | 0.068 / 73.10 / 728.09 |
+| 4 GB Redis Cluster 双副本三分片 x86 | `redis.cluster.xu1.large.r2.4` | 0.182 / 125.28 / 1247.70 |
+
+- **浏览器与 Excel** Chromium 156.0.8078.79 跑通实际页面、Worker 和下载。模拟 ListFlavors 验证三种规格、容量和拓扑编辑、三模式报价、三副本手选及重回自动匹配。混合清单 5 行计价、3 行 Pending，月均小计 USD 302.50。禁用服务端认证后由标准 CSV 导入同三个规格，3 行均显示文档候选和认证原因。openpyxl 3.1.5 重开两份下载，确认五表、三种计费单位和款项、两类来源及 Pending 金额空白。
+- **边界** 模拟响应检验 Arm 缺价格关联、版本或分片不匹配、可用区缺失、区域不符、认证失败、API 超时、重复候选及证据过期。当前重点是 EU-Dublin 的 Redis DRAM 普通实例。跨可用区部署承诺、QPS、计费阶梯及没有确切单位的带宽要求仍要复核。真实区域可售结果待获准的认证复验，私有站当前以最近发布记录为准。
+- **同步与后续** 本轮源码分支 `feat/huawei-dcs-product-specs`，`main` 同步以包含本条记录的提交为准。本轮使用存档离线附件做在线构建。ECS、RDS、ELB 的后续接入复用产品证据结构，各自补充官方维度和 SKU 关联。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/) · [服务扩展点](../pricing-studio/web/README.md#official-dcs-product-specifications)

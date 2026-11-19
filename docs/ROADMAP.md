@@ -8,6 +8,8 @@ The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, t
 - [x] Review bounded nonstandard CSV and multi-sheet Excel imports with structured output from a configured local model. Preserve source evidence through export.
 - [x] Verify imported counts, capacity and usage against their source columns or explicit units. Retain header evidence and require review of uncertain pricing inputs.
 - [x] Match explicit ECS series and private NAT instance sizes from the catalog. Keep manually chosen SKUs through billing changes when an equivalent plan exists.
+- [x] Match DCS product flavors and regional availability with the official ListFlavors contract, exact price-plan evidence, documented candidates and five-sheet export. Local browser tests use simulated flavor responses. Public price verification covers all three billing modes. [Verification record](DEVELOPMENT_STATUS.md#2026-11-19--huawei-dcs-官方产品规格元数据)
+- [ ] Verify the authenticated DCS flavor response in the approved EU-Dublin runtime. The metadata contract also defines the extension points for ECS, RDS and ELB. [Metadata contract](../pricing-studio/web/README.md#official-dcs-product-specifications)
 - [ ] Revalidate the updated import schema with a local language model in the release environment.
 - [ ] Expand supported vendor layouts, service-specific dimensions and verified ancillary price coverage using fictional fixtures and public evidence.
 

@@ -1,5 +1,5 @@
 import {buildWorkbook} from './excel.mjs';
-import {normalizeRows,parseText,recommend,calculate,parseBillPages,switchBilling,priceValidation} from './engine.mjs';
+import {normalizeRows,parseText,recommend,calculate,parseBillPages,switchBilling,priceValidation,huaweiProductSpecIssue} from './engine.mjs';
 import {tcpQuoteRows,tcpQuoteTotals} from './providers.mjs';
 import {t,billingLabel,dateLabel,translateMessage,readLanguage,saveLanguage,applyTranslations,serviceLabel} from './i18n.mjs';
 import {escapeHTML,icon,money,emptyResources,resourceHTML,tcpResourceHTML,summaryModel,breakdownHTML,catalogueHTML} from './ui.mjs';
@@ -16,6 +16,7 @@ let language=readLanguage(storage);
 let catalog={items:[],ttlDays:7},rows=[],page=0,activeView='studio',mappingSelected=false,busy=false,catalogState='loading';
 let tcpStatus={provider:'tcp',status:'NEVER_CHECKED'},tcpLoaded=false,tcpBusy=false;
 let provider='huawei',tcpPublication={state:null,catalog:null},tcpQuoteLoading=false,tcpExpiryTimer;
+let dcsSpecs,dcsSpecRequest,dcsSpecExpiryTimer;
 const T=(key,vars)=>t(key,language,vars);
 const E=escapeHTML;
 
@@ -27,12 +28,36 @@ function report(error,fallback='error.file'){
  const message=error?.message||T(fallback);
  toast(message.startsWith('inventory.')?T(message):translateMessage(message,language),true);
 }
+const huaweiMatchOptions=()=>({dcsSpecs:dcsSpecs??{status:'loading'}});
 function selectHuawei(row){
- huaweiMatching.applyHuaweiMatch(huaweiMatching.identifyHuaweiRow(row),catalog);
+ huaweiMatching.applyHuaweiMatch(huaweiMatching.identifyHuaweiRow(row),catalog,huaweiMatchOptions());
+ if(row.service==='DCS'&&!dcsSpecs)void refreshDcsSpecs();
+}
+function refreshDcsSpecs(){
+ if(dcsSpecRequest)return dcsSpecRequest;
+ dcsSpecRequest=(async()=>{
+  try{
+   const response=await fetch('/api/specifications/dcs',{cache:'no-store',signal:AbortSignal.timeout(10000)});
+   if(!response.ok)throw Error('DCS specifications unavailable');
+   dcsSpecs=await response.json()??{status:'unavailable'};
+  }catch{dcsSpecs={status:'unavailable'};}
+  clearTimeout(dcsSpecExpiryTimer);
+  const expires=Date.parse(dcsSpecs.records?.[0]?.evidence?.expiresAt);
+  if(expires>Date.now())dcsSpecExpiryTimer=setTimeout(()=>{if(provider==='huawei')render();},expires-Date.now()+1);
+  if(provider==='huawei'){
+   rows.filter(row=>row.service==='DCS').forEach(selectHuawei);
+   render();
+  }
+ })().finally(()=>{dcsSpecRequest=null;});
+ return dcsSpecRequest;
 }
 function setBilling(row,mode){
- if(provider==='huawei'&&huaweiMatching)huaweiMatching.selectHuaweiBilling(row,mode,catalog);
+ if(provider==='huawei'&&huaweiMatching)huaweiMatching.selectHuaweiBilling(row,mode,catalog,huaweiMatchOptions());
  else switchBilling(row,mode,catalog);
+}
+function canConfirm(row,now=Date.now()){
+ if(!row.targetId)return false;
+ return provider!=='huawei'||row.service!=='DCS'||!huaweiProductSpecIssue(row,catalog.items.find(item=>item.id===row.targetId),now);
 }
 function settings(){
  const hours=Number($('#hours').value),discount=Number($('#discount').value)/100;
@@ -109,8 +134,8 @@ function render({now=Date.now()}={}){
  page=Math.min(page,Math.max(0,Math.ceil(rows.length/10)-1));
  $('#resource-count').textContent=rows.length;
  $('#export').disabled=!rows.length||(isTCP&&tcpQuoteLoading);$('#quote-export').disabled=$('#export').disabled;
- $('#confirm-all').disabled=!rows.some(row=>row.targetId&&!row.accepted);
- $('#refresh-prices').disabled=!!offlineBundle||busy||(isTCP?tcpQuoteLoading:!rows.some(row=>row.targetId));
+ $('#confirm-all').disabled=!rows.some(row=>!row.accepted&&canConfirm(row,now));
+ $('#refresh-prices').disabled=!!offlineBundle||busy||(isTCP?tcpQuoteLoading:!rows.some(row=>row.targetId||row.service==='DCS'));
  $('#parse').disabled=busy;$('#file').disabled=busy;
  $('#resources').innerHTML=!rows.length?emptyResources(language):isTCP?tcpResourceHTML(rows,output,tcpPublication.state,language,page):resourceHTML(rows,output,catalog,language,page,now);
  $('#resource-pagination').hidden=rows.length<=10;
@@ -277,12 +302,13 @@ $('#resources').addEventListener('change',event=>{
     row.huaweiSelection='manual';row.huaweiCandidates=null;
     row.huaweiPreferredSku=catalog.items.find(item=>item.id===row.targetId)?.sku;
     if(field==='targetId'){row.accepted=false;row.huaweiAssumptions=[];row.huaweiMatch=row.targetId?'HW_MATCHED':'HW_MANUAL_SERVICE';}
-    huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
+    if(row.service==='DCS')selectHuawei(row);
+    else huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
    }
   }else if(['service','targetQuantity','capacity','usage','unit','period','specification','huaweiTargetRegion'].includes(field)){
    if(field==='service'){row.targetId='';row.huaweiSelection=null;row.huaweiPreferredSku=null;}
    row.accepted=false;
-   if(row.huaweiSelection!=='manual')selectHuawei(row);
+   if(row.huaweiSelection!=='manual'||row.service==='DCS')selectHuawei(row);
    else{
     if(['specification','capacity'].includes(field))huaweiMatching.identifyHuaweiRow(row);
     huaweiMatching.setHuaweiUsageAssumption(row,catalog.items.find(item=>item.id===row.targetId));
@@ -307,7 +333,7 @@ $('#hours').addEventListener('change',render);$('#discount').addEventListener('c
 $('#confirm-all').addEventListener('click',()=>{$('#confirm-check').checked=false;$('#apply-confirm').disabled=true;$('#confirm-dialog').showModal();});
 $('#confirm-check').addEventListener('change',event=>{$('#apply-confirm').disabled=!event.target.checked;});
 $('#cancel-confirm').addEventListener('click',()=>$('#confirm-dialog').close());
-$('#apply-confirm').addEventListener('click',()=>{rows.forEach(row=>{if(row.targetId)row.accepted=true;});$('#confirm-dialog').close();render();toast(T('toast.confirmed'));});
+$('#apply-confirm').addEventListener('click',()=>{rows.forEach(row=>{if(canConfirm(row))row.accepted=true;});$('#confirm-dialog').close();render();toast(T('toast.confirmed'));});
 
 async function importFile(file){
  if(!file)return;if(file.size>10*1024*1024){toast(T('error.size'),true);return;}
@@ -378,10 +404,14 @@ $('#export-evidence').addEventListener('click',()=>download(JSON.stringify(catal
 $('#refresh-prices').addEventListener('click',async()=>{
  if(offlineBundle){toast(T('offline.noRefresh'),true);return;}
  if(provider==='tcp'){await loadTCPQuote();return;}
- const ids=[...new Set(rows.map(row=>row.targetId).filter(Boolean))];if(!ids.length||busy)return;
+ if(!rows.length||busy)return;
  const updates=new Map();
  busy=true;render();toast(T('toast.refreshing'));
  try{
+  if(rows.some(row=>row.service==='DCS'))await refreshDcsSpecs();
+  if(provider!=='huawei')return;
+  const ids=[...new Set(rows.filter(row=>canConfirm(row)).map(row=>row.targetId))];
+  if(!ids.length){toast(T('toast.noRateSelection'));return;}
   for(let start=0;start<ids.length;start+=10){
    const batch=ids.slice(start,start+10);
    try{
@@ -422,7 +452,7 @@ try{
  if(!Array.isArray(data.items))throw Error(T('error.catalog'));
  catalog=data;updateCatalogState();
  rows.forEach(row=>{
-  if(!row.targetId&&!row.accepted){
+  if(!row.targetId&&!row.accepted||provider==='huawei'&&huaweiMatching&&row.service==='DCS'){
    if(provider==='huawei'&&huaweiMatching)selectHuawei(row);
    else row.targetId=recommend(row,catalog);
   }
