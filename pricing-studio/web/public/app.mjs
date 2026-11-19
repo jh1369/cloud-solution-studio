@@ -16,7 +16,6 @@ let language=readLanguage(storage);
 let catalog={items:[],ttlDays:7},rows=[],page=0,activeView='studio',mappingSelected=false,busy=false,catalogState='loading';
 let tcpStatus={provider:'tcp',status:'NEVER_CHECKED'},tcpLoaded=false,tcpBusy=false;
 let provider='huawei',tcpPublication={state:null,catalog:null},tcpQuoteLoading=false,tcpExpiryTimer;
-let dcsSpecs,dcsSpecRequest,dcsSpecExpiryTimer;
 const T=(key,vars)=>t(key,language,vars);
 const E=escapeHTML;
 
@@ -28,36 +27,16 @@ function report(error,fallback='error.file'){
  const message=error?.message||T(fallback);
  toast(message.startsWith('inventory.')?T(message):translateMessage(message,language),true);
 }
-const huaweiMatchOptions=()=>({dcsSpecs:dcsSpecs??{status:'loading'}});
 function selectHuawei(row){
- huaweiMatching.applyHuaweiMatch(huaweiMatching.identifyHuaweiRow(row),catalog,huaweiMatchOptions());
- if(row.service==='DCS'&&!dcsSpecs)void refreshDcsSpecs();
-}
-function refreshDcsSpecs(){
- if(dcsSpecRequest)return dcsSpecRequest;
- dcsSpecRequest=(async()=>{
-  try{
-   const response=await fetch('/api/specifications/dcs',{cache:'no-store',signal:AbortSignal.timeout(10000)});
-   if(!response.ok)throw Error('DCS specifications unavailable');
-   dcsSpecs=await response.json()??{status:'unavailable'};
-  }catch{dcsSpecs={status:'unavailable'};}
-  clearTimeout(dcsSpecExpiryTimer);
-  const expires=Date.parse(dcsSpecs.records?.[0]?.evidence?.expiresAt);
-  if(expires>Date.now())dcsSpecExpiryTimer=setTimeout(()=>{if(provider==='huawei')render();},expires-Date.now()+1);
-  if(provider==='huawei'){
-   rows.filter(row=>row.service==='DCS').forEach(selectHuawei);
-   render();
-  }
- })().finally(()=>{dcsSpecRequest=null;});
- return dcsSpecRequest;
+ huaweiMatching.applyHuaweiMatch(huaweiMatching.identifyHuaweiRow(row),catalog);
 }
 function setBilling(row,mode){
- if(provider==='huawei'&&huaweiMatching)huaweiMatching.selectHuaweiBilling(row,mode,catalog,huaweiMatchOptions());
+ if(provider==='huawei'&&huaweiMatching)huaweiMatching.selectHuaweiBilling(row,mode,catalog);
  else switchBilling(row,mode,catalog);
 }
-function canConfirm(row,now=Date.now()){
+function canConfirm(row){
  if(!row.targetId)return false;
- return provider!=='huawei'||row.service!=='DCS'||!huaweiProductSpecIssue(row,catalog.items.find(item=>item.id===row.targetId),now);
+ return provider!=='huawei'||row.service!=='DCS'||!huaweiProductSpecIssue(row,catalog.items.find(item=>item.id===row.targetId));
 }
 function settings(){
  const hours=Number($('#hours').value),discount=Number($('#discount').value)/100;
@@ -134,8 +113,8 @@ function render({now=Date.now()}={}){
  page=Math.min(page,Math.max(0,Math.ceil(rows.length/10)-1));
  $('#resource-count').textContent=rows.length;
  $('#export').disabled=!rows.length||(isTCP&&tcpQuoteLoading);$('#quote-export').disabled=$('#export').disabled;
- $('#confirm-all').disabled=!rows.some(row=>!row.accepted&&canConfirm(row,now));
- $('#refresh-prices').disabled=!!offlineBundle||busy||(isTCP?tcpQuoteLoading:!rows.some(row=>row.targetId||row.service==='DCS'));
+ $('#confirm-all').disabled=!rows.some(row=>!row.accepted&&canConfirm(row));
+ $('#refresh-prices').disabled=!!offlineBundle||busy||(isTCP?tcpQuoteLoading:!rows.some(canConfirm));
  $('#parse').disabled=busy;$('#file').disabled=busy;
  $('#resources').innerHTML=!rows.length?emptyResources(language):isTCP?tcpResourceHTML(rows,output,tcpPublication.state,language,page):resourceHTML(rows,output,catalog,language,page,now);
  $('#resource-pagination').hidden=rows.length<=10;
@@ -404,14 +383,11 @@ $('#export-evidence').addEventListener('click',()=>download(JSON.stringify(catal
 $('#refresh-prices').addEventListener('click',async()=>{
  if(offlineBundle){toast(T('offline.noRefresh'),true);return;}
  if(provider==='tcp'){await loadTCPQuote();return;}
- if(!rows.length||busy)return;
+ const ids=[...new Set(rows.filter(canConfirm).map(row=>row.targetId))];
+ if(!ids.length||busy)return;
  const updates=new Map();
  busy=true;render();toast(T('toast.refreshing'));
  try{
-  if(rows.some(row=>row.service==='DCS'))await refreshDcsSpecs();
-  if(provider!=='huawei')return;
-  const ids=[...new Set(rows.filter(row=>canConfirm(row)).map(row=>row.targetId))];
-  if(!ids.length){toast(T('toast.noRateSelection'));return;}
   for(let start=0;start<ids.length;start+=10){
    const batch=ids.slice(start,start+10);
    try{
@@ -452,7 +428,7 @@ try{
  if(!Array.isArray(data.items))throw Error(T('error.catalog'));
  catalog=data;updateCatalogState();
  rows.forEach(row=>{
-  if(!row.targetId&&!row.accepted||provider==='huawei'&&huaweiMatching&&row.service==='DCS'){
+  if(!row.targetId&&!row.accepted){
    if(provider==='huawei'&&huaweiMatching)selectHuawei(row);
    else row.targetId=recommend(row,catalog);
   }

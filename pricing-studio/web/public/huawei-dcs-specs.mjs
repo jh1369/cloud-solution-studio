@@ -1,32 +1,26 @@
-export const DCS_SPEC_REGION='eu-west-101';
-export const DCS_FLAVOR_DOC='https://support.huaweicloud.com/eu/api-dcs/ListFlavors.html';
+import {dcsDocTables,dcsDocExamples} from './huawei-dcs-spec-data.mjs';
+
 const DCS_PRODUCT_DOC='https://support.huaweicloud.com/eu/productdesc-dcs/dcs-pd-0522002.html';
-export const DCS_TOPOLOGIES=['single','ha','cluster','proxy','ha_rw_split'];
+const DCS_ARCHITECTURE_DOC='https://support.huaweicloud.com/intl/en-us/productdesc-dcs/dcs-pd-0522002.html';
 const redisVersions=['4.0','5.0','6.0','7.0'];
+const topologies={1:'single',2:'ha',3:'proxy',5:'cluster',7:'ha_rw_split'};
 
-// A small, versioned reference for matching when a regional API response is unavailable.
-// Table 3 describes Proxy Cluster. Table 5 describes native Redis Cluster.
-export const documentedDcsSpecs=[
- ['redis.single.xu1.large.1','single',1,1,null,50000,80,100000,1],
- ['redis.single.xu1.large.2','single',2,1,null,50000,128,100000,1],
- ['redis.single.xu1.large.4','single',4,1,null,50000,192,100000,1],
- ['redis.ha.xu1.large.r2.1','ha',1,2,null,50000,80,100000,2],
- ['redis.ha.xu1.large.r2.2','ha',2,2,null,50000,128,100000,2],
- ['redis.ha.xu1.large.r2.4','ha',4,2,null,50000,192,100000,2],
- ['redis.proxy.xu1.large.4','proxy',4,null,3,20000,2304,300000,3],
- ['redis.cluster.xu1.large.r2.4','cluster',4,2,3,150000,2304,300000,5]
-].map(([specCode,topology,gb,replicas,shards,maxConnections,bandwidthMbps,referenceQps,table])=>({
- service:'DCS',engine:'redis',specCode,region:null,resourceType:null,topology,
- architecture:table===1||table===3?null:'x86_64',
- versions:topology==='proxy'?redisVersions.slice(0,3):redisVersions,
- capacityMiB:gb*1024,replicas,shards,performance:{defaultConnections:({3:20000,5:30000})[table]??10000,
-  maxConnections,assuredBandwidthMbps:bandwidthMbps,maxBandwidthMbps:bandwidthMbps,referenceQps},
- availableZones:[],evidence:{kind:'official-doc',url:DCS_PRODUCT_DOC,revision:'2025-11-03',section:`Table ${table}`}
-}));
-
-export function dcsSpecSnapshot(status,records=documentedDcsSpecs){
- return {schemaVersion:1,service:'DCS',region:DCS_SPEC_REGION,status,records};
+function documentedSpec(table,anchor,row,example=false){
+ const [specCode,gb,replicas,shards,defaultConnections,maxConnections,assuredBandwidthMbps,maxBandwidthMbps,referenceQps]=row;
+ const evidence={kind:'official-doc',url:DCS_PRODUCT_DOC+(example?'':'#'+anchor),revision:'2025-11-03',
+  section:`Table ${table}${example?' accompanying example':''}`};
+ // The linked architecture tables identify the same x86 codes. Scope and versions come from the EU tables.
+ if(table!==7&&!example)evidence.architectureUrl=DCS_ARCHITECTURE_DOC+'#'+anchor;
+ return {service:'DCS',engine:'redis',specCode,region:null,resourceType:'hws.resource.type.dcs3',topology:topologies[table],
+  architecture:'x86_64',versions:table===3||table===7?redisVersions.slice(0,3):redisVersions,
+  capacityMiB:gb*1024,replicas,shards,performance:{defaultConnections,maxConnections,assuredBandwidthMbps,maxBandwidthMbps,referenceQps},
+  availableZones:[],evidence};
 }
+
+export const documentedDcsSpecs=[
+ ...dcsDocTables.flatMap(([table,anchor,rows])=>rows.map(row=>documentedSpec(table,anchor,row))),
+ ...dcsDocExamples.map(([table,row])=>documentedSpec(table,null,row,true))
+];
 
 function values(text,pattern,convert=Number){
  return [...new Set(Array.from(text.matchAll(pattern),match=>convert(match[1])))];

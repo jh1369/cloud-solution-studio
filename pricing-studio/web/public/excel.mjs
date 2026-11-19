@@ -71,7 +71,7 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
  add('Public Pricing',[
   ['Row','Price Status','Product ID','SKU','Unit Price','Currency','Unit','Verified At','Official Source','Official Evidence','Huawei Billing Mode','Verified Period Type','Verified Period Count'],
   ...rows.map((row,i)=>{
-   const price=catalog.items.find(p=>p.id===row.targetId),specIssue=huaweiProductSpecIssue(row,price,opts.now);
+   const price=catalog.items.find(p=>p.id===row.targetId),specIssue=huaweiProductSpecIssue(row,price);
    const fresh=price&&!specIssue&&priceValidation(price,catalog,opts).valid&&(price.billingMode||'ONDEMAND')===billingOf(row);
    return [i+1,fresh?'Valid':'Pending',price?.productId??null,price?.sku??null,fresh?price.rate:null,price?.currency??null,price?.unit??null,
     specIssue?null:price?.verifiedAt??null,specIssue?null:price?.sourceUrl??null,price&&!specIssue?JSON.stringify(price.evidence):null,
@@ -88,6 +88,7 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
   ['Delivery',opts.delivery==='offline'?'Offline single HTML; embedded official snapshot, original expiry enforced, no live refresh.':'Web + Worker'],
   ['AWS vs Huawei','AWS source billing is retained only for traceability. Huawei target billing is selected independently: pay-per-use, monthly or yearly.'],
   ['Pricing','Each target billing mode is independently verified using officialWebsiteAmount. No multiplication of hourly prices to invent subscription prices. Snapshots expire after 7 days.'],
+  ...(includeSpec?[['DCS evidence',t('resource.hwSpecPurchase',language)]]:[]),
   ['Subscription terms','Monthly = verified 1-month subscription; yearly = verified 1-year subscription. Quantities and per-disk capacities must be explicit.'],
   ['Annual basis','Yearly uses its independent annual price. Pay-per-use/monthly annual scenarios repeat the monthly plan 12 times.'],
   ['Monthly equivalent','For yearly subscriptions, monthly figures are annual price / 12 for comparison, not a monthly payment option.'],

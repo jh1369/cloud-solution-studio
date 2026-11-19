@@ -6,13 +6,10 @@ import {normalizeRows,parseText,calculate} from '../public/engine.mjs';
 import {identifyHuaweiRow,applyHuaweiMatch,selectHuaweiBilling} from '../public/huawei-match.mjs';
 import {readInventory,reviewInventory,confirmInventory} from '../public/inventory-import.mjs';
 import {createLocalInventoryEndpoint} from '../scripts/local_inventory_api.mjs';
-import {normalizeDcsFlavors} from '../huawei-dcs-spec-api.mjs';
-import {flavors} from './fixtures/dcs-flavors.mjs';
 
 const catalog=JSON.parse(readFileSync(new URL('../public/catalog.json',import.meta.url)));
 const now=Date.parse(catalog.verifiedAt)+600000;
-const dcsSpecs=normalizeDcsFlavors(flavors,now-30000);
-const match=(input,source=catalog)=>applyHuaweiMatch(identifyHuaweiRow(input),source,{dcsSpecs,now});
+const match=(input,source=catalog)=>applyHuaweiMatch(identifyHuaweiRow(input),source,{now});
 const selection=row=>catalog.items.find(item=>item.id===row.targetId)?.sku;
 const resource=text=>match(parseText(text)[0]);
 
@@ -157,7 +154,7 @@ test('Huawei DCS matches the edited size, protects explicit fields and checks ma
  assert.ok(direct.targetId&&direct.targetId!==originalSku);
  assert.equal(match(row).targetId,direct.targetId);
  assert.equal(calculate(row,catalog,{now}).monthly,49.64);
- assert.deepEqual(row.huaweiAssumptions,['HW_DEFAULT_REDIS_SINGLE']);
+ assert.deepEqual(row.huaweiAssumptions,['HW_DEFAULT_REDIS_SINGLE','HW_DCS_DOCUMENTED_VERSIONS','HW_DCS_DOCUMENTED_X86']);
  const [imported]=normalizeRows([{product:'DCS',specification:'Redis 2G',capacity_gb:2,quantity:1}]);
  match(imported);
  imported.huaweiSelection='manual';
@@ -182,27 +179,27 @@ test('DCS defaults to a unique single node and leaves unspecified quantities unp
  assert.equal(calculate(bare,catalog,{now}).reasonCode,'QUANTITY_REQUIRED');
  const inferred=resource('1个1g的redis');
  assert.equal(selection(inferred),'redis.single.xu1.large.1');
- assert.deepEqual(inferred.huaweiAssumptions,['HW_DEFAULT_REDIS_SINGLE']);
+ assert.deepEqual(inferred.huaweiAssumptions,['HW_DEFAULT_REDIS_SINGLE','HW_DCS_DOCUMENTED_VERSIONS','HW_DCS_DOCUMENTED_X86']);
  assert.equal(calculate(inferred,catalog,{now}).monthly,12.41);
  const expired=calculate(inferred,{...catalog,ttlDays:0.001},{now});
  assert.deepEqual([expired.reasonCode,expired.monthly],['PRICE_EXPIRED',null]);
- const HA=resource('Redis 2GB 主备 3套');
+ const HA=resource('Redis 8GB 主备 3套');
  assert.equal(HA.huaweiMatch,'HW_MULTIPLE');
  assert.ok(HA.huaweiCandidates.length>1);
  assert.equal(selection(resource('Redis 2GB 主备 2节点 3套')),'redis.ha.xu1.large.r2.2');
  const single=resource('Redis 2GB 单机 3套');
  assert.equal(selection(single),'redis.single.xu1.large.2');
- assert.deepEqual(single.huaweiAssumptions,[]);
+ assert.deepEqual(single.huaweiAssumptions,['HW_DCS_DOCUMENTED_VERSIONS','HW_DCS_DOCUMENTED_X86']);
  assert.equal(calculate(single,catalog,{now}).monthly,74.46);
  assert.equal(calculate(single,catalog,{now:now+8*86400000}).monthly,null);
 });
 
 test('Redis default rejects conflicts and ambiguous or invalid catalog records',()=>{
  for(const [text,code] of [
-  ['1个1g的redis 主备','HW_MULTIPLE'],['1个1g的redis 单机 主备','HW_CACHE_MODE'],
+  ['1个8g的redis 主备','HW_MULTIPLE'],['1个1g的redis 单机 主备','HW_CACHE_MODE'],
   ['1个1g的redis 2节点','HW_CACHE_MODE'],['1个1g的redis 高可用','HW_CACHE_MODE'],
   ['1个1g的redis 1GB 或 2GB','HW_CACHE_CAPACITY'],['1个1g的redis 1-2GB','HW_CACHE_CAPACITY'],
-  ['1个1g的redis 版本7.0','HW_DCS_SPEC_NO_MATCH'],['Redis v7 1GB','HW_DCS_SPEC_NO_MATCH'],['Redis 1GB ARM x86','HW_DCS_SPEC_CONSTRAINT']
+  ['1个1g的redis 版本8.0','HW_DCS_SPEC_NO_MATCH'],['Redis v8 1GB','HW_DCS_SPEC_NO_MATCH'],['Redis 1GB ARM x86','HW_DCS_SPEC_CONSTRAINT']
  ]){
   const row=resource(text);
   assert.equal(row.huaweiMatch,code,text);
@@ -221,7 +218,7 @@ test('Redis default rejects conflicts and ambiguous or invalid catalog records',
  assert.equal(manual.accepted,false);
  const monthly=match({...parseText('1个1g的redis')[0],targetBilling:'MONTHLY'});
  assert.equal(catalog.items.find(item=>item.id===monthly.targetId)?.billingMode,'MONTHLY');
- for(const [product,code] of [['Redis Cluster','HW_DCS_SPEC_NO_MATCH'],['Redis 7.0','HW_DCS_SPEC_NO_MATCH'],['Redis 2G','HW_CACHE_CAPACITY'],['Redis ARM','HW_DCS_SPEC_AZ_REQUIRED']]){
+ for(const [product,code] of [['Redis Cluster','HW_DCS_SPEC_NO_MATCH'],['Redis 8.0','HW_DCS_SPEC_NO_MATCH'],['Redis 2G','HW_CACHE_CAPACITY'],['Redis ARM','HW_DCS_SPEC_NO_MATCH']]){
   const [row]=normalizeRows([{product,specification:'1g',quantity:1}]);
   assert.equal(match({...row,service:'DCS'}).huaweiMatch,code);
  }

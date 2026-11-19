@@ -1,5 +1,5 @@
-import {REGION,awsShape,billingOf,family,priceValidation,productSpecAvailability} from './engine.mjs';
-import {dcsRequirements,dcsSpecSnapshot,matchesDcsSpec} from './huawei-dcs-specs.mjs';
+import {REGION,awsShape,billingOf,family,priceValidation} from './engine.mjs';
+import {dcsRequirements,documentedDcsSpecs,matchesDcsSpec} from './huawei-dcs-specs.mjs';
 
 function attributes(item){
  if(typeof item.description!=='string')return {};
@@ -168,45 +168,40 @@ export function identifyHuaweiRow(row){
  return row;
 }
 
-function matchDcs(row,catalog,plans,source,dcsSpecs,now){
+function matchDcs(row,catalog,plans,source,now){
  const manual=row.huaweiSelection==='manual';
  const chosen=manual?plans.find(plan=>plan.id===row.targetId):null;
  if(manual&&!chosen)return missing('HW_MANUAL_PLAN');
  const requirements=dcsRequirements(row,source,manual);
  if(requirements.code)return requirements;
- const status=dcsSpecs?.status;
- const regional=status==='official'&&dcsSpecs.schemaVersion===1&&dcsSpecs.service==='DCS'&&dcsSpecs.region===REGION&&Array.isArray(dcsSpecs.records);
- const records=regional?dcsSpecs.records:dcsSpecSnapshot('unavailable').records;
- const scope=records.filter(spec=>spec.service==='DCS'&&(!chosen||spec.specCode===chosen.sku));
+ const scope=chosen?documentedDcsSpecs.filter(spec=>spec.specCode===chosen.sku):documentedDcsSpecs;
  const matches=scope.filter(spec=>matchesDcsSpec(spec,requirements));
  const pending=(code,specs=matches)=>({code,specs,candidates:[...new Set(specs.map(spec=>spec.specCode))],assumptions:requirements.assumptions});
- if(!regional){
-  const code={loading:'HW_DCS_SPEC_LOADING',authentication_required:'HW_DCS_SPEC_AUTH'}[status??'authentication_required'];
-  return pending(code??'HW_DCS_SPEC_UNAVAILABLE');
- }
  if(!matches.length){
   const wrongCapacity=chosen&&requirements.capacityMiB&&scope.length&&scope.every(spec=>spec.capacityMiB!==requirements.capacityMiB);
-  return pending(wrongCapacity?'HW_CACHE_SKU_CAPACITY':'HW_DCS_SPEC_NO_MATCH',scope.filter(spec=>chosen&&wrongCapacity));
+  return pending(wrongCapacity?'HW_CACHE_SKU_CAPACITY':'HW_DCS_SPEC_NO_MATCH',wrongCapacity?scope:matches);
  }
- const eligible=matches.filter(spec=>!productSpecAvailability(spec,REGION,now)&&(!requirements.zone||spec.availableZones.includes(requirements.zone)));
- if(!eligible.length)return pending(matches.some(spec=>productSpecAvailability(spec,REGION,now)==='HW_DCS_SPEC_EXPIRED')?'HW_DCS_SPEC_EXPIRED':'HW_DCS_SPEC_AZ_REQUIRED');
- if(eligible.length!==1)return pending('HW_MULTIPLE',eligible);
- const [spec]=eligible;
- const conflicting=matches.filter(other=>other.specCode===spec.specCode&&other.versions.some(version=>spec.versions.includes(version)));
- if(conflicting.length>1)return pending('HW_MULTIPLE',conflicting);
+ if(requirements.zone)return pending('HW_DCS_SPEC_AZ_REQUIRED');
+ if(matches.length!==1)return pending('HW_MULTIPLE');
+ const [spec]=matches;
  const exact=plans.filter(plan=>plan.sku===spec.specCode&&plan.resourceType===spec.resourceType&&plan.size===false);
- if(exact.length!==1||chosen&&chosen.id!==exact[0].id)return pending('HW_DCS_SPEC_PRICE_LINK',eligible);
+ if(exact.length!==1||chosen&&chosen.id!==exact[0].id)return pending('HW_DCS_SPEC_PRICE_LINK');
  const [item]=exact;
- return {item,spec,code:priceValidation(item,catalog,{now}).valid?'HW_MATCHED':'HW_MATCHED_PRICE',assumptions:requirements.assumptions};
+ const assumptions=[...requirements.assumptions];
+ if(!requirements.version)assumptions.push('HW_DCS_DOCUMENTED_VERSIONS');
+ if(!requirements.architecture)assumptions.push('HW_DCS_DOCUMENTED_X86');
+ if(!requirements.replicas&&spec.replicas>1)assumptions.push('HW_DCS_DOCUMENTED_REPLICAS');
+ if(!requirements.shards&&spec.shards)assumptions.push('HW_DCS_DOCUMENTED_SHARDS');
+ return {item,spec,code:priceValidation(item,catalog,{now}).valid?'HW_MATCHED':'HW_MATCHED_PRICE',assumptions};
 }
 
-export function matchHuawei(row,catalog,{now=Date.now(),dcsSpecs}={}){
+export function matchHuawei(row,catalog,{now=Date.now()}={}){
  if(row.huaweiTargetRegion&&row.huaweiTargetRegion!==REGION)return missing('HW_TARGET_REGION');
  const rule=Object.hasOwn(rules,row.service)?rules[row.service]:null;
  const mode=billingOf(row);
  const plans=catalog.items.filter(item=>item?.region===REGION&&item.service===row.service&&item.billingMode===mode);
  const spec=(row.product+' '+row.specification).normalize('NFKC').trim();
- if(row.service==='DCS')return matchDcs(row,catalog,plans,spec,dcsSpecs,now);
+ if(row.service==='DCS')return matchDcs(row,catalog,plans,spec,now);
  if(!plans.length)return missing('HW_NO_PLAN');
  if(!rule)return missing('HW_MANUAL_SERVICE');
  const contract=rule(row,spec);
