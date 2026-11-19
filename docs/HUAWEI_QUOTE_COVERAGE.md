@@ -1,6 +1,6 @@
 # Huawei Cloud Pricing Studio 自动报价覆盖率
 
-最新复测见 [0.3.12-dev EIP 覆盖率复测](#0312-dev-eip-覆盖率复测)。原始分析和 32 行虚构清单保留在下文。
+32 行虚构清单的最新覆盖率复测见 [0.3.12-dev EIP 覆盖率复测](#0312-dev-eip-覆盖率复测)。AWS 智能导入后的规格与报价阻塞原因见 [0.3.13-dev Pending 原因评审](HUAWEI_PENDING_REVIEW.md)。
 
 ## 基线与口径
 
