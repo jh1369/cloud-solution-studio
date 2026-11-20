@@ -373,10 +373,10 @@ export function huaweiApprovalKey(row,item,{hours=730,discount=0}={}){
 export function calculate(row,catalog,options={}){
  try{
   const item=catalog.items.find(plan=>plan.id===row.targetId);
-  const approved=row.huaweiConditionApproval===huaweiApprovalKey(row,item,options);
+  const approved=!row.huaweiAi?.display&&row.huaweiConditionApproval===huaweiApprovalKey(row,item,options);
   const result=calculateValidated(row,catalog,options,approved);
   if(!['Valid','Period'].includes(result.status)||!row.huaweiConditionKey||approved)return result;
-  return {...result,...pendingResult('','HW_AWS_CONDITIONAL'),status:'Conditional',conditionalScenario:result.termScenario,
+  return {...result,...pendingResult('',row.huaweiAi?.display?'HW_AI_ESTIMATE':'HW_AWS_CONDITIONAL'),status:'Conditional',conditionalScenario:result.termScenario,
    conditionalPublic:result.termPublic,conditionalMonthly:result.status==='Valid'?result.scenario:null,
    conditionalAnnual:result.annual,conditionalUpfront:result.upfrontScenario,
    conditionalPeriod:result.status==='Period'?'source-period':result.billingMode};

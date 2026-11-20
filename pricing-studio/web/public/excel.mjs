@@ -54,6 +54,15 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
  const includeCharge=lines.some(line=>line.charge),includeEip=mapped.some(({row})=>row.service==='EIP');
  const includeAnalysis=rows.some(row=>row.awsInventory||row.semanticInventory);
  const includeMigration=rows.some(row=>row.huaweiMigration);
+ const mappingOrigin=row=>row.huaweiSelection==='manual'||row.huaweiDesign?.candidateId?'Manual':
+  row.huaweiAi?.display?'AI Suggested':row.targetId?'Rule-based':null;
+ const aiDetails=row=>{
+  const ai=row.huaweiAi;
+  return ai?.display?JSON.stringify({sku:ai.display.sku,specification:ai.display.description,
+   ...(ai.manualId?{originalRecommendation:ai.recommendation.selection}:{}),reason:ai.recommendation.reason,
+   differences:ai.recommendation.differences,assumptions:ai.recommendation.assumptions,missing:ai.display.missing,
+   budgetAssumptions:row.huaweiConditions?.map(reasonCode=>reasonLabel({reasonCode},language))}):null;
+ };
  const detailedCharges=includeEip||includeMigration;
  const chargeLabel=charge=>charge?t('charge.'+charge,language):null;
  add('Input',[
@@ -69,7 +78,8 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
  ]);
  add('Service Mapping',[
   ['Row','AWS Product','Target Service','Target SKU','Target Description','Region','Confirmed','Notes','Huawei Billing Mode','Target Quantity','Mapping Review','Match and Assumptions',...(includeSpec?['Product Spec Evidence']:[]),...(detailedCharges?['Charge']:[]),...(includeAnalysis?['Official AWS Source Type','Source vCPU','Source Memory GiB','Source Architecture','Source Specification Evidence','Huawei Candidate SKUs','Conditions']:[]),
-   ...(includeMigration?['Source Attributes and Evidence','Target Design and Origins','Candidate Evidence','Target DCS Instance Quantity','Target DCS Instance Hours','Single-Node Comparison']:[])],
+   ...(includeMigration?['Source Attributes and Evidence','Target Design and Origins','Candidate Evidence','Target DCS Instance Quantity','Target DCS Instance Hours','Single-Node Comparison']:[]),
+   'Match Source','AI Budget Design'],
   ...mapped.map(({row,index,charge,result})=>{
    const price=catalog.items.find(p=>p.id===row.targetId),match=row.huaweiProductMatch;
    const selected=match?.selected,candidates=match?.candidates?.slice(0,12);
@@ -77,7 +87,7 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
    const aws=row.awsProfile;
    const migration=row.huaweiMigration,meter=migration?.metering;
    const confirmed=migration?['Valid','Period'].includes(result.status):row.accepted&&!['Linked','Conditional'].includes(result.status);
-   return [index+1,row.product,row.service,price?.sku??null,match?null:price?.description??null,REGION,confirmed?'Yes':'No',translateMessage(row.notes,language),
+   return [index+1,row.product,row.service,price?.sku??row.huaweiAi?.display?.sku??null,match?null:price?.description??row.huaweiAi?.display?.description??null,REGION,confirmed?'Yes':'No',translateMessage(row.notes,language),
     billingLabel(billingOf(row),language),row.targetQuantity??row.quantity??row.huaweiQuantity,mappingReview(row,price).map(issue=>mappingLabel(issue,language)).join(' '),
     [...(row.huaweiAssumptions??[]),row.huaweiUsageAssumption].filter(Boolean).map(reasonCode=>reasonLabel({reasonCode},language)).join(' '),...(includeSpec?[productEvidence]:[]),...(detailedCharges?[chargeLabel(charge)]:[]),
     ...(includeAnalysis?[aws?.type??null,aws?.cpu??null,aws?.memory??null,aws?.architecture??null,
@@ -88,15 +98,17 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
       sku:item.sku,cpu:item.cpu,memory:item.memory,capacity,category,cpuRatio:cpu,memoryRatio:memory,rate:item.rate,unit:item.unit,
       officialSource:item.sourceUrl,verifiedAt:item.verifiedAt} ))):null,
      meter?.targetInstanceQuantity??null,meter?.targetInstanceHours??null,migration?.comparison?
-      JSON.stringify({sku:migration.comparison.sku,rate:migration.comparison.rate,unit:migration.comparison.unit}):null]:[])];
+      JSON.stringify({sku:migration.comparison.sku,rate:migration.comparison.rate,unit:migration.comparison.unit}):null]:[]),
+    mappingOrigin(row),charge&&!['rdsInstance','dcsInstance','cssNode'].includes(charge)?null:aiDetails(row)];
   })
  ]);
  add('Public Pricing',[
   ['Row','Price Status','Product ID','SKU','Unit Price','Currency','Unit','Verified At','Official Source','Official Evidence','Huawei Billing Mode','Verified Period Type','Verified Period Count',...(detailedCharges?['Charge']:[]),...(includeMigration?['Target Specification Source']:[])],
   ...mapped.map(({row,index,charge,result})=>{
-   const price=catalog.items.find(p=>p.id===row.targetId),specIssue=huaweiProductSpecIssue(row,price);
+   const aiCandidate=!row.targetId&&row.huaweiAi?.display;
+   const price=catalog.items.find(p=>p.id===(row.targetId||aiCandidate?.id)),specIssue=huaweiProductSpecIssue(row,price);
    const fresh=price&&!specIssue&&result.status!=='Linked'&&priceValidation(price,catalog,opts).valid&&(price.billingMode||'ONDEMAND')===billingOf(row);
-   return [index+1,result.status==='Linked'?'Linked':fresh?'Valid':'Pending',price?.productId??null,price?.sku??null,fresh?price.rate:null,price?.currency??null,price?.unit??null,
+   return [index+1,result.status==='Linked'?'Linked':fresh?(aiCandidate?'Candidate':'Valid'):'Pending',price?.productId??null,price?.sku??null,fresh?price.rate:null,price?.currency??null,price?.unit??null,
     specIssue?null:price?.verifiedAt??null,specIssue?null:price?.sourceUrl??null,price&&!specIssue?JSON.stringify(price.evidence):null,
     billingLabel(billingOf(row),language),price?.periodType??null,price?.periodNum??null,...(detailedCharges?[chargeLabel(charge)]:[]),
     ...(includeMigration?[price?.specificationSource??null]:[])];
@@ -151,6 +163,9 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
    ['Estimated Budget Source Period USD',budget.sourcePeriod],['Estimated Budget Monthly Equivalent USD',budget.monthly],
    ['Estimated Budget Annual Scenario USD',budget.annual],['Estimated Budget First-Term Prepaid USD',budget.prepaid],
    ['Budget Basis',t('budget.detail',language)],
+   ...['Rule-based','AI Suggested','Manual'].map(origin=>[origin+' priced rows',rows.filter((row,index)=>
+    mappingOrigin(row)===origin&&output[index].status!=='Pending').length]),
+   ...rows.flatMap((row,index)=>aiDetails(row)?[[`AI budget design (row ${index+1})`,aiDetails(row)]]:[]),
    ...(opts.storageBudget?.RDS?[['RDS Budget Storage GiB per Instance',opts.storageBudget.RDS]]:[]),
    ...(opts.storageBudget?.CSS?[['CSS Budget Storage GiB per Node',opts.storageBudget.CSS]]:[]),
    ...budget.assumptions.map(([code,count])=>[code,t('budget.assumptionLine',{text:reasonLabel({reasonCode:code},language),count},language)])

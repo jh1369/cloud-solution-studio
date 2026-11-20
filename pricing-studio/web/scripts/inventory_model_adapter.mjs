@@ -36,18 +36,15 @@ export async function readBounded(message,limit){
  }finally{await reader.cancel();}
 }
 
-function chatAdapter({url,model,token,fetcher}){
- return async ({rows,header,schema,knowledge=[],signal,retry=false,classifyOnly=false})=>{
-  const data={rows,...(header?{precedingHeader:header}:{}),...(knowledge.length?{awsProfiles:knowledge}:{})};
+export function createStructuredChat({url,model,token,fetcher}){
+ return async ({data,schema,name,instructions,maxTokens,signal})=>{
   let response;
   try{
    response=await fetcher(url,{method:'POST',signal,redirect:'error',
     headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},
-    body:JSON.stringify({model,temperature:0,max_tokens:MODEL_OUTPUT_TOKENS,stream:false,
-     response_format:{type:'json_schema',json_schema:{name:'inventory_batch',strict:true,schema}},
-     messages:[{role:'system',content:(classifyOnly?classification:instructions)+
-      (retry?' Pay special attention to exact row keys and field types.':'')},
-      {role:'user',content:JSON.stringify(data)}]})});
+    body:JSON.stringify({model,temperature:0,max_tokens:maxTokens,stream:false,
+     response_format:{type:'json_schema',json_schema:{name,strict:true,schema}},
+     messages:[{role:'system',content:instructions},{role:'user',content:JSON.stringify(data)}]})});
   }catch{throw Error('inventory.unavailable');}
   if(!response.ok){await response.body?.cancel();throw Error('inventory.unavailable');}
   const result=JSON.parse(await readBounded(response,131072));
@@ -55,6 +52,15 @@ function chatAdapter({url,model,token,fetcher}){
   if(result.choices?.[0]?.message?.refusal)throw Error('inventory.modelSyntax');
   return JSON.parse(result.choices?.[0]?.message?.content);
  };
+}
+
+function chatAdapter(config){
+ const chat=createStructuredChat(config);
+ return ({rows,header,schema,knowledge=[],signal,retry=false,classifyOnly=false})=>chat({
+  data:{rows,...(header?{precedingHeader:header}:{}),...(knowledge.length?{awsProfiles:knowledge}:{})},
+  schema,signal,name:'inventory_batch',maxTokens:MODEL_OUTPUT_TOKENS,
+  instructions:(classifyOnly?classification:instructions)+(retry?' Pay special attention to exact row keys and field types.':'')
+ });
 }
 
 function directLocalRequest(url,{method,signal,headers,body}){
@@ -67,10 +73,20 @@ function directLocalRequest(url,{method,signal,headers,body}){
  });
 }
 
-export function createLocalInventoryModel({port,model,token,fetcher=directLocalRequest}={}){
+function localChatConfig({port,model,token,fetcher=directLocalRequest}={}){
  if(port&&(!/^\d{1,5}$/.test(port)||Number(port)<1||Number(port)>65535))throw Error('Invalid local inventory model port');
  if(!port||!model)return null;
- return chatAdapter({url:'http://127.0.0.1:'+port+'/v1/chat/completions',model,token,fetcher});
+ return {url:'http://127.0.0.1:'+port+'/v1/chat/completions',model,token,fetcher};
+}
+
+export function createLocalInventoryModel(options){
+ const config=localChatConfig(options);
+ return config?chatAdapter(config):null;
+}
+
+export function createLocalStructuredChat(options){
+ const config=localChatConfig(options);
+ return config?createStructuredChat(config):null;
 }
 
 // Server-only integration for explicitly approved synthetic tests. The workbook route never selects it.
