@@ -1,0 +1,11 @@
+product,specification,quantity,usage,unit,huawei_billing_mode
+AmazonEC2,m5.large Linux,1,11,hour,ONDEMAND
+AmazonEC2,t3.nano Linux,1,73,hour,ONDEMAND
+AmazonEC2,m6g.xlarge Linux,1,20,hour,ONDEMAND
+AmazonElastiCache,NodeUsage:cache.t2.small,,120,hour,ONDEMAND
+AmazonRDS,Aurora Serverless reference design,1,40,hour,ONDEMAND
+AmazonRDS,Aurora ServerlessV2Usage,,27,ACU-hour,ONDEMAND
+AmazonES,t2.micro.search,1,30,hour,ONDEMAND
+AmazonES,UltraWarmUsage:ultrawarm1.medium,,43,hour,ONDEMAND
+AmazonEC2,m5.large Linux,1,,,MONTHLY
+AmazonEC2,m5.large Linux,1,,,YEARLY

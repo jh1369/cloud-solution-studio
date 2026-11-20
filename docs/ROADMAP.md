@@ -91,3 +91,7 @@ Current policy is Token-Efficient Development Mode: one primary Agent by default
 ### Huawei AI 补充匹配
 
 本轮实现规则优先、独立结构化推荐、官方目录校验和共用计价引擎。Web 入口只按需启动。客户端使用会话内存缓存候选决策，服务端通过同源回环接口复用本机结构化模型适配。现有目录和五表 Excel 格式继续适用，Service Mapping 与 Assumptions 增加方案出处。后续验收用真实隔离清单复跑覆盖率和对账。在线 Provider 的供应商、区域、保留策略和外发授权仍待确定。
+
+### 本地 Codex 辅助报价
+
+Node CLI 重用 Web 的导入器、候选与校验逻辑、价格引擎和五表生成器。跨步骤只交换本地 JSON 文件。任务附带现有推荐 schema，并使用任务摘要绑定回复。CLI 不存储模型凭据，支持按现有公开目录证据重新报价。真实客户清单及其派生任务仍限获批隔离环境。

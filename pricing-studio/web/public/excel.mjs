@@ -54,8 +54,10 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
  const includeCharge=lines.some(line=>line.charge),includeEip=mapped.some(({row})=>row.service==='EIP');
  const includeAnalysis=rows.some(row=>row.awsInventory||row.semanticInventory);
  const includeMigration=rows.some(row=>row.huaweiMigration);
+ const codex=opts.delivery==='codex';
+ const ruleOrigin=codex?'Rule Matched':'Rule-based';
  const mappingOrigin=row=>row.huaweiSelection==='manual'||row.huaweiDesign?.candidateId?'Manual':
-  row.huaweiAi?.display?'AI Suggested':row.targetId?'Rule-based':null;
+  row.huaweiAi?.display?'AI Suggested':row.targetId?ruleOrigin:null;
  const aiDetails=row=>{
   const ai=row.huaweiAi;
   return ai?.display?JSON.stringify({sku:ai.display.sku,specification:ai.display.description,
@@ -122,7 +124,7 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
    const mode=row?billingOf(row):null;
    const priced=['Valid','Period'].includes(result.status);
    const estimate=budget?huaweiBudgetAmounts(result):null;
-   return [index+1,row?.service??(charge==='eipReservation'?'EIP':rows[index].service),result.status,result.status==='Valid'?result.monthly:null,row?opts.discount:null,
+   return [index+1,row?.service??(charge==='eipReservation'?'EIP':rows[index].service),codex&&result.status==='Conditional'?'Conditional Estimate':result.status,result.status==='Valid'?result.monthly:null,row?opts.discount:null,
     result.status==='Valid'?result.scenario:null,result.status==='Valid'?result.annual:null,result.status==='Period'?result.monthly:null,
     result.status==='Period'?result.scenario:null,reasonLabel(result,language),mode?billingLabel(mode,language):null,
     result.termLabel?translateMessage(result.termLabel,language):null,result.termPublic,result.termScenario,result.upfrontScenario,
@@ -140,8 +142,8 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
  const monthlyEstimates=estimates.filter(result=>result.conditionalPeriod!=='source-period');
  const periodEstimates=estimates.filter(result=>result.conditionalPeriod==='source-period');
  add('Assumptions',[
-  ['Item','Value'],['Project',projectName],['Exported At',new Date().toISOString()],['Region',REGION],['Currency','USD'],['Discount',opts.discount],['Reference hours / month',opts.hours],
-  ['Delivery',opts.delivery==='offline'?'Offline single HTML; embedded official snapshot, original expiry enforced, no live refresh.':'Web + Worker'],
+  ['Item','Value'],['Project',projectName],['Exported At',new Date(opts.now??Date.now()).toISOString()],['Region',REGION],['Currency','USD'],['Discount',opts.discount],['Reference hours / month',opts.hours],
+  ['Delivery',codex?'Local Codex-assisted quotation':opts.delivery==='offline'?'Offline single HTML; embedded official snapshot, original expiry enforced, no live refresh.':'Web + Worker'],
   ['AWS vs Huawei','AWS source billing is retained only for traceability. Huawei target billing is selected independently: pay-per-use, monthly or yearly.'],
   ['Pricing','Each target billing mode is independently verified using officialWebsiteAmount. No multiplication of hourly prices to invent subscription prices. Snapshots expire after 7 days.'],
   ...(includeSpec?[['Product specifications',t('resource.hwSpecPurchase',language)]]:[]),
@@ -163,7 +165,7 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
    ['Estimated Budget Source Period USD',budget.sourcePeriod],['Estimated Budget Monthly Equivalent USD',budget.monthly],
    ['Estimated Budget Annual Scenario USD',budget.annual],['Estimated Budget First-Term Prepaid USD',budget.prepaid],
    ['Budget Basis',t('budget.detail',language)],
-   ...['Rule-based','AI Suggested','Manual'].map(origin=>[origin+' priced rows',rows.filter((row,index)=>
+   ...[ruleOrigin,'AI Suggested','Manual'].map(origin=>[origin+' priced rows',rows.filter((row,index)=>
     mappingOrigin(row)===origin&&output[index].status!=='Pending').length]),
    ...rows.flatMap((row,index)=>aiDetails(row)?[[`AI budget design (row ${index+1})`,aiDetails(row)]]:[]),
    ...(opts.storageBudget?.RDS?[['RDS Budget Storage GiB per Instance',opts.storageBudget.RDS]]:[]),

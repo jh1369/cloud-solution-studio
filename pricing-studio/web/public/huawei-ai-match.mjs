@@ -47,6 +47,9 @@ function candidateDetails(item,service){
   if(spec&&!item.size)return {capacityGiB:spec.capacityMiB/1024,architecture:'x86',engine:'Redis OSS',
    version:'6.0',topology:'Primary/Standby',replicas:2,specificationSource:spec.evidence.url};
  }
+ if(service==='CSS'&&item.migrationCharge==='cssNode'&&!item.size&&item.targetArch==='x86'&&dimensions(item)){
+  return {architecture:'x86',engine:'OpenSearch',performance:item.performanceClass};
+ }
  if(service==='CSS'&&item.migrationCharge==='cssStorage'&&item.size){
   return {storageType:item.storageType,topology:'Managed CSS node volume (reference only)'};
  }
@@ -59,13 +62,17 @@ function eligibleCandidate(item,source,catalog,mode,now){
  if(!details)return null;
  if(source.service==='ECS'&&(item.os!==(source.os??defaultOs)||
     item.cpu<(source.cpu??Infinity)||item.memory<(source.memoryGiB??Infinity)))return null;
+ if(source.service==='CSS'){
+  if(source.reason==='HW_CSS_WARM_REVIEW'?item.migrationCharge!=='cssStorage':
+     item.migrationCharge!=='cssNode'||item.cpu<(source.cpu??Infinity)||item.memory<(source.memoryGiB??Infinity))return null;
+ }
  if(source.service==='DCS'&&details.capacityGiB<(source.memoryGiB??Infinity))return null;
  return {id:item.id,sku:item.sku,service:item.service,cpu:item.cpu,memoryGiB:item.memory,
   ...details,unit:item.unit,officialPriceValid:true,verifiedAt:item.verifiedAt,
   specificationSource:details.specificationSource??item.specificationSource??item.catalogUrl,priceSource:item.sourceUrl};
 }
 
-function sourceFor(row,reason){
+function sourceFor(row,reason,{codexQuotation=false}={}){
  const kind=awsMigrationKind(row);
  if(!kind||row.huaweiCapacityConflict||row.huaweiImportIssues?.length||
     row.huaweiTargetRegion&&row.huaweiTargetRegion!==REGION||blockedReasons.has(reason))return null;
@@ -74,16 +81,18 @@ function sourceFor(row,reason){
  if(kind==='EC2'&&(!dimensions(profile??{})||!row.awsOS&&/\b(?:windows|linux|runinstances\b|rhel|suse|sql server|license|byol|dedicated)\b/i.test(spec)))return null;
  if(kind==='ElastiCache'&&(!profile?.memory||row.capacity!=null||
     /\b(?:cluster|shards?|proxy|standalone|single node|serverless|tiering|flash|memcached|valkey|redis enterprise)\b/i.test(spec)))return null;
- if(kind==='OpenSearch'&&reason!=='HW_CSS_WARM_REVIEW')return null;
+ if(kind==='OpenSearch'&&reason!=='HW_CSS_WARM_REVIEW'&&
+    !(codexQuotation&&reason==='HW_CSS_NO_PLAN'&&dimensions(profile??{})&&profile.architecture))return null;
  return {service:row.service,type:profile?.type??null,cpu:profile?.cpu??null,memoryGiB:profile?.memory??null,
   architecture:profile?.architecture??null,performance:profile?.category??null,os:row.awsOS?.value??null,
   reason,meter:awsUsageSemantics(kind,spec)?.basis??null};
 }
 
-function rankCandidates(candidates,source){
+function rankCandidates(candidates,source,codexQuotation){
  const distance=item=>source.service==='DCS'?item.capacityGiB:
   Math.abs(Math.log2((item.cpu??1)/(source.cpu??4)))+Math.abs(Math.log2((item.memoryGiB??1)/(source.memoryGiB??16)));
- const ordered=candidates.sort((a,b)=>distance(a)-distance(b)||a.id.localeCompare(b.id));
+ const storagePreference=item=>Number(codexQuotation&&source.service==='RDS'&&item.storageType!=='Cloud SSD');
+ const ordered=candidates.sort((a,b)=>storagePreference(a)-storagePreference(b)||distance(a)-distance(b)||a.id.localeCompare(b.id));
  const groups=new Map();
  for(const item of ordered){
   const key=source.service==='RDS'&&!source.cpu?item.cpu:[item.architecture,item.series,item.performance].join('/');
@@ -92,12 +101,12 @@ function rankCandidates(candidates,source){
  return [...new Set([...groups.values(),...ordered])].slice(0,AI_CANDIDATE_LIMIT);
 }
 
-export function huaweiAiRequest(row,catalog,ruleResult,{now=Date.now()}={}){
+export function huaweiAiRequest(row,catalog,ruleResult,{now=Date.now(),codexQuotation=false}={}){
  if(ruleResult.status!=='Pending'||row.huaweiSelection==='manual'||Object.keys(row.huaweiDesign??{}).length)return null;
- const source=sourceFor(row,ruleResult.reasonCode);
+ const source=sourceFor(row,ruleResult.reasonCode,{codexQuotation});
  if(!source)return null;
  const mode=billingOf(row);
- const candidates=rankCandidates(catalog.items.map(item=>eligibleCandidate(item,source,catalog,mode,now)).filter(Boolean),source);
+ const candidates=rankCandidates(catalog.items.map(item=>eligibleCandidate(item,source,catalog,mode,now)).filter(Boolean),source,codexQuotation);
  if(!candidates.length)return null;
  return {source,region:REGION,billingMode:mode,candidateIds:candidates.map(item=>item.id)};
 }
@@ -188,6 +197,14 @@ function budgetRules(row,item,rule){
   if(row.awsProfile.category==='burstable')conditions.push('HW_AWS_BURST_REVIEW');
   if(row.scope==='aggregate'&&(!hourUnit(row.unit)||!rule.migration?.meter))return null;
  }
+ if(kind==='OpenSearch'){
+  if(row.scope==='aggregate'&&(!hourUnit(row.unit)||rule.migration?.meter?.basis!=='search-node-hours'))return null;
+  extra.charge='cssNode';
+  extra.migration={...rule.migration,canApprove:false};
+  conditions.push('HW_MIG_CSS_DESIGN');
+  if(row.awsProfile.architecture!==item.targetArch)conditions.push('HW_AI_ARCH');
+  if(item.cpu>row.awsProfile.cpu||item.memory>row.awsProfile.memory)conditions.push('HW_MIG_UPSIZE');
+ }
  if(kind==='RDS'){
   if(/\b(?:acu(?:-hours?)?|serverless(?:v?2)?usage)\b/i.test(row.specification)||
      row.scope==='aggregate'&&(!hourUnit(row.unit)||!rule.migration?.meter)||
@@ -209,7 +226,7 @@ export function applyAiOverlay(row,rule,catalog,options={}){
   return rule;
  }
  const now=options.now??Date.now();
- const source=sourceFor(row,saved.request.source.reason);
+ const source=sourceFor(row,saved.request.source.reason,options);
  if(!source){delete row.huaweiAi;return rule;}
  const catalogById=new Map(catalog.items.map(item=>[item.id,item]));
  const ids=[saved.manualId??saved.recommendation.selection,...saved.recommendation.alternatives,saved.recommendation.selection];
@@ -221,9 +238,9 @@ export function applyAiOverlay(row,rule,catalog,options={}){
  if(!item){delete row.huaweiAi;return rule;}
  const ranked=items.map(item=>({item}));
  saved.display={id:item.id,sku:item.sku,description:item.description,
-  missing:source.service==='CSS'?[...new Set([...saved.recommendation.missing,'cold-data-capacity','cold-storage-meter'])]:saved.recommendation.missing};
+  missing:source.reason==='HW_CSS_WARM_REVIEW'?[...new Set([...saved.recommendation.missing,'cold-data-capacity','cold-storage-meter'])]:saved.recommendation.missing};
  const pending={...rule,item:undefined,code:'HW_AI_METER_REQUIRED',ranked,candidates:items.map(plan=>plan.sku)};
- if(source.service==='CSS'||saved.recommendation.missing.length)return pending;
+ if(source.reason==='HW_CSS_WARM_REVIEW'||saved.recommendation.missing.length)return pending;
  if(source.service==='DCS'){
   const match=cacheMatch(row,item,items,catalog,now);
   if(!match||match.usageOverride===null){

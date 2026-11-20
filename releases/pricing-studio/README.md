@@ -6,6 +6,7 @@ Every completed version includes a standalone HTML and ZIP. Download the ZIP fro
 
 | Version | Status | Download | Details |
 | --- | --- | --- | --- |
+| 0.3.18-dev | Local Codex JSON workflow with a fictional five-sheet quotation | [ZIP](v0.3.18-dev/Pricing-Studio-0.3.18-dev-Offline.zip?raw=true) | [Example XLSX](examples/Codex-Synthetic-Quotation.xlsx?raw=true) |
 | 0.3.17-dev | Standalone HTML verified in Chromium through loopback. Native file opening pending. | [ZIP](v0.3.17-dev/Pricing-Studio-0.3.17-dev-Offline.zip?raw=true) | [Files and instructions](v0.3.17-dev/README.md) |
 | 0.3.1-dev | Browser QA candidate. Authenticated production testing and native HTML file testing pending. | [Download ZIP](https://raw.githubusercontent.com/jh1369/cloud-solution-studio/main/releases/pricing-studio/v0.3.1-dev/Pricing-Studio-0.3.1-dev-Offline.zip) | [Browser acceptance and checklist](../../docs/PRICING_BROWSER_ACCEPTANCE.md) |
 | 0.3.0-dev | TCP catalog/data phase; TCP quoting not enabled | [ZIP](v0.3.0-dev/Pricing-Studio-0.3.0-dev-Offline.zip?raw=true) | [Files and instructions](v0.3.0-dev/README.md) |

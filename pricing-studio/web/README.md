@@ -185,3 +185,18 @@ The client sends a temporary ID, normalized AWS fields and at most 12 plan IDs p
 The production Worker responds with model availability off. The offline HTML keeps its network-free workflow. For future deployment on an authenticated private server, the server-only endpoint factory accepts a Provider Adapter with a structured `chat` function and a trusted authorization callback. Enable a remote provider only after approval of the vendor, region, retention policy and data transfer. Each run also requires explicit browser consent. Provision server credentials outside frontend assets and the repository.
 
 Run `node --test tests/huawei-ai-match.test.mjs` for focused tests. After `npm run build`, run `node tests/browser/huawei-ai-match.cjs` with Playwright and Chromium installed for loopback XLSX import, recommendation, manual choice, actual Excel download and standalone HTML acceptance over loopback. The test model is a synthetic OpenAI-compatible HTTP stub.
+
+## Local Codex-assisted quotation
+
+From `pricing-studio/web` with Node 24, run the following commands with the fictional inventory:
+
+```sh
+node scripts/codex-quotation.mjs export tests/fixtures/codex-quotation-synthetic.csv --task pending.json --quote initial.xlsx
+node scripts/codex-quotation.mjs import tests/fixtures/codex-quotation-synthetic.csv --task pending.json --recommendations recommendations.json --quote final.xlsx
+```
+
+Between the commands, ask Codex in the approved environment to read `pending.json` and save a response following its `responseSchema` as `recommendations.json`. Only share the fictional task JSON with cloud Codex. Keep any customer workbook, derived task and quotation in the authorized isolated environment. The CLI runs without network access or an inference server. It accepts standard CSV/XLSX and the supported AWS usage worksheet. Nonstandard layouts must be normalized first. The input can specify `huawei_billing_mode` as `ONDEMAND`, `MONTHLY` or `YEARLY`. Subscription estimates require explicit target quantities.
+
+Both commands require the active eu-west-101 USD public catalog. Use `--catalog /path/to/verified-catalog.json` when supplying a newer trusted public snapshot. Expired plans stay Pending. A candidate change requires a fresh task for the affected rows. Use fresh output paths. The task lists only eligible Pending rows, the normalized specifications, coarse metering flags and verified candidates. Keep the original task until import. The CLI revalidates the result against the current local catalog and recalculates the five-sheet workbook. Amounts for the source period, monthly equivalent and first-term prepayment have different bases.
+
+The [fictional XLSX example](../../releases/pricing-studio/examples/Codex-Synthetic-Quotation.xlsx) was generated while the bundled public catalog was valid. Its original verification timestamps are available in Public Pricing. The [Codex response](tests/fixtures/codex-quotation-recommendations.json) is tied to that catalog's task ID.
