@@ -1,0 +1,11 @@
+Product,Specification,Quantity,Usage,Unit,AWS Actual USD,Currency,Original Comment
+AmazonEC2,BoxUsage:m5.large Linux,1.25,930,hour,42.12,USD,aggregate complete July
+AmazonEC2,m6g.xlarge Linux,1,20,hour,12.34,USD,ARM fallback
+AmazonElastiCache,NodeUsage:cache.t2.small,2,1510,hour,19.51,USD,source cache node-hours
+AmazonRDS,Aurora Serverless reference design,1,40,hour,29.92,USD,explicit target reference
+AmazonRDS,Aurora ServerlessV2Usage,,27,ACU-hour,6.27,USD,ACU pending
+AmazonES,t2.micro.search,1,30,hour,2.66,USD,OpenSearch reference
+AmazonES,UltraWarmUsage:ultrawarm1.medium,,43,hour,5.43,USD,cold storage pending
+AmazonRDS,Database I/O requests,,35,Requests,-1.25,USD,usage not instance-hours
+EBS,gp3 100 GB,2,100,GB-month,16.78,USD,volume capacity reference
+Private NAT Gateway,Small instance only,1,80,hour,5.20,USD,hourly fallback example
