@@ -1,3 +1,4 @@
+import {applyAiOverlay} from './huawei-ai-match.mjs';
 import {REGION,awsShape,billingOf,family,parseText,priceValidation,calculate,huaweiApprovalKey,pendingResult,relatedHuaweiCharges} from './engine.mjs';
 import {dcsRequirements,documentedDcsSpecs,matchesDcsSpec} from './huawei-dcs-specs.mjs';
 import {infrastructureRules} from './huawei-infrastructure-specs.mjs';
@@ -303,7 +304,22 @@ export function matchHuawei(row,catalog,{now=Date.now()}={}){
 export function applyHuaweiMatch(row,catalog,options){
  const manual=row.huaweiSelection==='manual';
  if(manual&&!revalidateHuaweiSelection(row))return row;
- const match=matchHuawei(row,catalog,options);
+ const rule=matchHuawei(row,catalog,options);
+ if(row.huaweiAi){
+  const baseline={...row,huaweiAi:null};
+  assignHuaweiMatch(baseline,rule,catalog,options,manual);
+  if(manual||calculate(baseline,catalog,options).status==='Pending'){
+   const match=applyAiOverlay(row,rule,catalog,options);
+   if(row.huaweiAi){
+    row.targetId=match.item?.id??'';
+    return assignHuaweiMatch(row,match,catalog,options,false);
+   }
+  }
+  delete row.huaweiAi;
+ }
+ return assignHuaweiMatch(row,rule,catalog,options,manual);
+}
+function assignHuaweiMatch(row,match,catalog,options,manual){
  row.huaweiMatch=match.code;
  row.huaweiCandidates=match.candidates;
  row.huaweiRanked=match.ranked;
@@ -341,12 +357,12 @@ function updateConditionKey(row,item){
 
 export function confirmHuaweiConditionGroup(rows,source,catalog,options){
  const group=source.huaweiConditionKey;
- if(!group)return 0;
+ if(!group||source.huaweiAi)return 0;
  const migration=source.huaweiMigration?migrationGroup(source):null;
  const design=JSON.stringify(source.huaweiDesign??{});
  let confirmed=0;
  for(const row of rows){
-  if(row.huaweiConditionKey!==group||row.huaweiImportIssues?.length||
+  if(row.huaweiAi||row.huaweiConditionKey!==group||row.huaweiImportIssues?.length||
      migration&&(migrationGroup(row)!==migration||JSON.stringify(row.huaweiDesign??{})!==design))continue;
   applyHuaweiMatch(identifyHuaweiRow(row),catalog,options);
   if(row.huaweiConditionKey!==group||row.huaweiMigration?.canApprove===false||calculate(row,catalog,options).status!=='Conditional')continue;
@@ -373,6 +389,7 @@ export function configureHuaweiMigrationGroup(rows,source,design,catalog,options
 }
 
 export function selectHuaweiBilling(row,mode,catalog,options){
+ if(billingOf(row)!==mode)delete row.huaweiAi;
  row.targetBilling=mode;
  if(row.huaweiDesign?.candidateId)delete row.huaweiDesign.candidateId;
  if(row.huaweiSelection!=='manual')return applyHuaweiMatch(identifyHuaweiRow(row),catalog,options);

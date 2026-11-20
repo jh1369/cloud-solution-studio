@@ -57,6 +57,9 @@ export default {async fetch(request,env){
   const state=await inspectTCPSource(undefined,{loadStatus:async()=>(await readTCPPublication(env?.TCP_CATALOG_BUCKET??tcpRelease)).state});
   return json({...state,catalog:state.effectiveState==='ACTIVE'?state.catalog:null},state.status==='CHECK_FAILED'?502:200);
  }
+ if(url.pathname==='/api/huawei/match'){
+  return request.method==='GET'?json({available:false}):json({error:'unavailable'},503);
+ }
  if(url.pathname==='/api/rates'){
   if(request.method!=='POST')return json({error:'POST required'},405);
   if(request.headers.get('Origin')&&request.headers.get('Origin')!==url.origin)return json({error:'Origin mismatch'},403);

@@ -87,3 +87,7 @@ Current policy is Token-Efficient Development Mode: one primary Agent by default
 ## V0.4 Cloud Live Lab
 
 - [ ] Read-only API adapter for approved test accounts; secrets only in approved secure runtime.
+
+### Huawei AI 补充匹配
+
+本轮实现规则优先、独立结构化推荐、官方目录校验和共用计价引擎。Web 入口只按需启动。客户端使用会话内存缓存候选决策，服务端通过同源回环接口复用本机结构化模型适配。现有目录和五表 Excel 格式继续适用，Service Mapping 与 Assumptions 增加方案出处。后续验收用真实隔离清单复跑覆盖率和对账。在线 Provider 的供应商、区域、保留策略和外发授权仍待确定。

@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="app-build" content="budget-estimator-v0.3.16"><meta name="theme-color" content="#0b0719">
+  <meta name="app-build" content="ai-matching-v0.3.17"><meta name="theme-color" content="#0b0719">
   <meta name="description" content="Cloud Solution Studio Pricing Studio — AWS to Huawei Cloud EU-Dublin budget estimates with public prices and visible assumptions.">
   <title>Pricing Studio · 云迁移报价指挥台</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='11' fill='%23150b2b'/%3E%3Cpath d='M10 27a7 7 0 0 1 0-14 10 10 0 0 1 19 3 6 6 0 0 1-1 11Z' fill='none' stroke='%23c77dff' stroke-width='3'/%3E%3C/svg%3E">
@@ -29,7 +29,7 @@
 </defs></svg>
 <aside class="sidebar">
   <a class="brand" href="/" aria-label="Cloud Solution Studio"><span class="brand-symbol"><svg class="icon"><use href="#i-cloud"/></svg></span><span>Cloud Solution<small>STUDIO / PRICING</small></span></a>
-  <div class="workspace-label"><span data-i18n="nav.label">工作空间</span><span class="version">V0.3.16-dev</span></div>
+  <div class="workspace-label"><span data-i18n="nav.label">工作空间</span><span class="version">V0.3.17-dev</span></div>
   <nav>
     <button class="nav-item active" data-view="studio"><svg class="icon"><use href="#i-grid"/></svg><span data-i18n="nav.workspace">报价工作台</span></button>
     <button class="nav-item" id="mapping-nav"><svg class="icon"><use href="#i-map"/></svg><span data-i18n="nav.mapping">产品映射</span></button>
@@ -76,6 +76,14 @@
           <div id="breakdown" class="breakdown" data-huawei-quote></div>
           <p id="budget-unpriced" class="quote-footer" data-budget hidden></p>
           <button id="budget-show-unpriced" class="text-button" type="button" data-i18n="budget.showUnpriced" data-budget hidden>查看未计价资源</button>
+          <section id="ai-matching" hidden>
+            <p id="ai-coverage" class="quote-footer" aria-live="polite"></p>
+            <label id="ai-remote-label" class="check-line" hidden><input id="ai-remote-consent" type="checkbox"><span><span data-i18n="ai.remote"></span> <small id="ai-remote-details"></small></span></label>
+            <button id="ai-run" class="button secondary full" type="button" data-i18n="ai.run"></button>
+            <button id="ai-retry" class="text-button" type="button" data-i18n="ai.retry" hidden></button>
+            <button id="ai-cancel" class="text-button" type="button" data-i18n="ai.cancel" hidden></button>
+            <p id="ai-state" class="quote-footer" aria-live="polite"></p>
+          </section>
           <p id="conditional-summary" class="quote-footer" hidden></p>
           <div class="quote-footer"><svg class="icon"><use href="#i-check"/></svg><span id="quote-note"></span></div>
           <details id="budget-assumptions" class="budget-details" data-budget open hidden>

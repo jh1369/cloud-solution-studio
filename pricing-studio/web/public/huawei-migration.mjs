@@ -127,7 +127,7 @@ function sourceHourIssue(row,meter){
 
 const rdsTopology={ha:'Primary/Standby',single:'Single'};
 const engineName=value=>typeof value==='string'?value.replace(/^Microsoft SQL Server$/i,'SQL Server'):null;
-function rdsOffer(item){
+export function rdsOffer(item){
  if(item.size||item.resourceType!=='hws.resource.type.rds.vm')return null;
  const fields=readValues(item.description??''),engine=engineName(fields['db engine']);
  if(!['MySQL','PostgreSQL','SQL Server'].includes(engine)||engineName(item.engine)!==engine||

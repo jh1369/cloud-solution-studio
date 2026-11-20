@@ -91,3 +91,7 @@ There is 1 existing Python test. Its known NaN/Infinity and quantity/unit valida
 ## Development and handoff
 
 ChatGPT handles requirements, solution design, public service-capability analysis and technical review. Codex handles implementation, testing and state updates. Read and update [docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md) for each task; record added/changed/deleted features, test evidence, open issues and next steps. Update this README and [docs/ROADMAP.md](docs/ROADMAP.md) when architecture changes. Do not infer that planned features, another checkout, or a test count from a different version is already integrated.
+
+### Huawei AI 补充匹配
+
+Pricing Studio 先用规则生成 Huawei EU-Dublin 初步预算。连接回环模型后，可对 Pending 条目运行「AI 补充匹配」。模型从公开目录候选中选择目标规格，现有报价引擎核验费率和计量并计算金额。页面和五表 Excel 标识 AI 估算、手动选择及方案假设。模型服务、数据传输和本机配置见 [Pricing Studio Web](pricing-studio/web/README.md#huawei-ai-specification-matching)。

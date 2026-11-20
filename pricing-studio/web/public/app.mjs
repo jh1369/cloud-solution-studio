@@ -9,6 +9,7 @@ const $$=selector=>[...document.querySelectorAll(selector)];
 const storage=(()=>{try{return window.localStorage;}catch{return undefined;}})();
 const offlineBundle=window.PRICING_STUDIO_OFFLINE||null;
 const huaweiMatching=offlineBundle?null:await import('./huawei-match.mjs');
+const huaweiAi=offlineBundle?null:await import('./huawei-ai-match.mjs');
 const inventoryReview=offlineBundle?null:(await import('./inventory-review.mjs')).createInventoryReview({
  getLanguage:()=>language,onConfirm:incoming=>setRows(incoming),onError:error=>report(error)
 });
@@ -16,6 +17,8 @@ let language=readLanguage(storage);
 let catalog={items:[],ttlDays:7},rows=[],page=0,activeView='studio',mappingSelected=false,busy=false,catalogState='loading';
 let tcpStatus={provider:'tcp',status:'NEVER_CHECKED'},tcpLoaded=false,tcpBusy=false;
 let provider='huawei',tcpPublication={state:null,catalog:null},tcpQuoteLoading=false,tcpExpiryTimer;
+let aiRun=null,aiAttempted=false,aiSummary=null,aiModel=null;
+const aiCache=new Map();
 let conditionAnchor=null,pendingOnly=false;
 const T=(key,vars)=>t(key,language,vars);
 const E=escapeHTML;
@@ -158,6 +161,7 @@ function render({now=Date.now()}={}){
    if(huaweiMatching)renderBudget(output,now);else renderSummary(output,now);
   }
  }catch(error){
+  $('#ai-matching').hidden=true;
   $('#monthly-money').textContent='—';$('#annual-money').textContent='—';$('#scenario-money').textContent='—';
   $('#upfront-row').hidden=true;$('#upfront-money').textContent='—';$('#coverage').textContent='—';$('#breakdown').textContent='—';
   for(const id of ['#budget-monthly-row','#budget-assumptions','#budget-unpriced','#budget-show-unpriced','#conditional-summary'])$(id).hidden=true;
@@ -165,6 +169,7 @@ function render({now=Date.now()}={}){
   $('#quote-note').textContent=translateMessage(error.message,language);
   $('#export').disabled=true;$('#quote-export').disabled=true;$('#export-regression').disabled=true;report(error);return;
  }
+ renderAiControls(output);
  const filtered=!isTCP&&!!huaweiMatching&&pendingOnly;
  const visibleRows=filtered?rows.filter((_,i)=>output[i].status==='Pending'):rows;
  const visibleOutput=filtered?output.filter(result=>result.status==='Pending'):output;
@@ -315,6 +320,7 @@ function setRows(incoming,append=false){
   if(provider==='huawei'&&huaweiMatching)selectHuawei(row);
   else row.targetId=recommend(row,catalog);
  });
+ if(!append){aiRun?.abort();aiAttempted=false;aiSummary=null;$('#ai-remote-consent').checked=false;}
  rows=candidate;page=0;pendingOnly=false;render();
  toast(T('toast.parsed',{count:incoming.length}));
 }
@@ -336,6 +342,10 @@ $('#resources').addEventListener('change',event=>{
  row[field]=field==='accepted'?input.checked:['quantity','targetQuantity','capacity','usage'].includes(field)?input.value===''?null:Number(input.value):input.value;
  if(field==='unit')row.unitExplicit=!!input.value;
  if(field==='specification'&&provider==='tcp'){row.targetId=recommend(row,catalog);row.accepted=false;}
+ if(field==='aiAlternative'&&huaweiAi){
+  if(huaweiAi.selectAiAlternative(row,input.value))selectHuawei(row);
+  render();return;
+ }
  if(field==='targetBilling')setBilling(row,input.value);
  if(provider==='huawei'&&huaweiMatching){
   if(field!=='accepted')row.huaweiConditionApproval=null;
@@ -505,6 +515,80 @@ function download(data,name,type){
  const url=URL.createObjectURL(new Blob([data],{type})),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),3000);
 }
 $('#template').addEventListener('click',()=>download('\uFEFFproduct,specification,region,quantity,usage,billing_method,unit\r\nEC2,m6i.2xlarge Linux,eu-central-1,2,730,on-demand,hour\r\nEBS,gp3,eu-central-1,1,500,on-demand,GB-month\r\nRDS,db.m5.large MySQL Single-AZ,eu-central-1,1,730,on-demand,hour\r\n','aws-resource-template.csv','text/csv;charset=utf-8'));
+function renderAiControls(output){
+ const visible=!!huaweiAi&&provider==='huawei'&&rows.length>0;
+ $('#ai-matching').hidden=!visible;
+ if(!visible)return;
+ const coverage=huaweiAi.aiCoverage(rows,output);
+ $('#ai-coverage').textContent=T('ai.coverage',{...coverage,total:rows.length});
+ $('#ai-run').disabled=!!aiRun||busy||!coverage.pending;
+ $('#ai-retry').hidden=!aiAttempted||!coverage.pending&&!coverage.ai;
+ $('#ai-retry').disabled=!!aiRun||busy;
+ $('#ai-cancel').hidden=!aiRun;
+ $('#ai-remote-label').hidden=!aiModel?.remote;
+ if(aiModel?.remote)$('#ai-remote-details').textContent=[aiModel.vendor,aiModel.region,aiModel.retention].join(' · ');
+ $('#ai-state').textContent=aiRun?T('ai.running'):aiSummary?T(aiSummary.key,aiSummary):'';
+}
+
+async function supplementHuaweiBudget(retry){
+ if(aiRun||busy||provider!=='huawei'||!huaweiAi)return;
+ const output=render();
+ if(!output)return;
+ const options=settings(),snapshot=catalog;
+ const jobs=rows.flatMap((row,index)=>{
+  if(row.huaweiSelection==='manual')return [];
+  let rule=output[index];
+  if(row.huaweiAi){
+   if(!retry)return [];
+   const baseline={...row,huaweiAi:null};
+   huaweiMatching.applyHuaweiMatch(baseline,snapshot,options);
+   rule=calculate(baseline,snapshot,options);
+  }
+  const request=huaweiAi.huaweiAiRequest(row,snapshot,rule,options);
+  return request?[{row,request,catalog:snapshot,signature:huaweiAi.aiSourceSignature(row)}]:[];
+ });
+ if(!jobs.length){aiSummary={key:'ai.noCandidates'};render();return;}
+ const controller=new AbortController();
+ aiRun=controller;aiAttempted=true;render();
+ try{
+  const status=await fetch('/api/huawei/match',{signal:AbortSignal.any([controller.signal,AbortSignal.timeout(5000)]),
+   credentials:'same-origin',cache:'no-store'});
+  aiModel=status.ok?await status.json():null;
+  if(!aiModel?.available){aiSummary={key:'ai.unavailable'};return;}
+  if(aiModel.remote&&!$('#ai-remote-consent').checked){aiSummary={key:'ai.authorize'};return;}
+  const stats=await huaweiAi.runHuaweiAi(jobs,{
+   retry,cache:aiCache,signal:controller.signal,
+   send:async(inputs,signal)=>{
+    const response=await fetch('/api/huawei/match',{method:'POST',signal:AbortSignal.any([signal,AbortSignal.timeout(50000)]),
+     credentials:'same-origin',headers:{'Content-Type':'application/json',
+      ...(aiModel.remote?{'X-Huawei-Match-Consent':'yes'}:{})},body:JSON.stringify(inputs)});
+    if(!response.ok)throw Error('model');
+    return response.json();
+   },
+   commit:({row,request,signature},recommendation)=>{
+    if(controller.signal.aborted||provider!=='huawei'||catalog!==snapshot||!rows.includes(row)||row.huaweiSelection==='manual'||
+       huaweiAi.aiSourceSignature(row)!==signature)return false;
+    const current=settings();
+    const draft={...row,huaweiAi:{request,signature:huaweiAi.aiPlanSignature(row),recommendation}};
+    huaweiMatching.applyHuaweiMatch(draft,catalog,current);
+    if(!draft.huaweiAi||calculate(row,catalog,current).status!=='Pending'&&calculate(draft,catalog,current).status==='Pending')return false;
+    Object.assign(row,draft);
+    return true;
+   }
+  });
+  aiSummary={key:controller.signal.aborted?'ai.cancelled':'ai.results',...stats};
+ }catch{
+  aiSummary={key:controller.signal.aborted?'ai.cancelled':'ai.unavailable'};
+ }finally{
+  aiRun=null;
+  $('#ai-remote-consent').checked=false;
+  render();
+ }
+}
+$('#ai-run').onclick=()=>supplementHuaweiBudget(false);
+$('#ai-retry').onclick=()=>supplementHuaweiBudget(true);
+$('#ai-cancel').onclick=()=>aiRun?.abort();
+
 function exportExcel(){
  try{
   if(!window.XLSX)throw Error(T('error.excelModule'));

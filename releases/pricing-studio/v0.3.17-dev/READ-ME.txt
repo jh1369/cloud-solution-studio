@@ -1,0 +1,28 @@
+﻿Cloud Solution Studio / Pricing Studio 0.3.17-dev — 离线文件版 / Offline
+
+1. 解压 ZIP 后，用 Chrome / Edge / Firefox 打开 Pricing-Studio-0.3.17-dev-Offline.html。
+   双击打开 HTML。若系统打开文本编辑器，请在浏览器中按 Ctrl+O（Mac 为 Command+O）并选择该文件。
+   不要在压缩包预览器或网盘的 HTML 预览窗口中运行。
+2. 无需安装 Python、Node、插件或登录。断网也能使用。中英文可切换。
+3. 先点“试用虚构示例”，或选择随包 aws-fictional-mvp.csv。清单在本地浏览器内解析。
+   支持文字描述、CSV、XLSX 和原有布局的文字 PDF（非 OCR）。
+4. 核对目标 SKU、架构/OS/数据库/存储、资源数量及用量，选择按需/包月/包年并确认。
+   输入是累计用量时，不要重复乘资源台数。未知规格或价格保持 Pending。
+5. 设置手动折扣情景，点击“导出 Excel”；包含五个 Sheet。Pending 金额为空，部分小计不是完整报价。
+6. 重要：离线 HTML 使用内置的官方公开目录快照，不进行后台联网，不上传原文件。
+   本包不含客户资料或云凭证。公开快照不是客户真实报价。
+   每条单价从原 verifiedAt 起 7 天有效；不会因打包、复制或重启延长。过期后 Pending。
+   离线版不能在线核价，届时需要获取更新的离线包或使用网页版核价；不会编造或借用其他模式价格。
+7. V0.3 当前是 TCP 目录解析/更新阶段：网页报价表单仍用于 Huawei，TCP 不确定价格不会混入该报价。
+   TCP 完整报价与复杂阶梯计算尚未启用，目录状态可在“公开价格目录”查看。
+8. 关闭/刷新会清空当前清单；导出 Excel 后自行保管。语言偏好可由浏览器保存。
+   仅含所选计价项；磁盘、网络、备份、税及其他配套费用请单列。
+
+Unzip, then double-click the HTML in a modern Chrome, Edge or Firefox browser.
+If a text editor opens, use Open File in your browser (Ctrl+O or Command+O) and select the HTML.
+No server, installation, sign-in or Internet is required. The single HTML includes all runtime assets.
+Use the fictional sample, confirm the design, select independent Huawei billing modes and export Excel.
+Original files stay in browser memory. Only language preference is saved.
+The embedded official snapshot retains its ORIGINAL per-rate seven-day expiry.
+Expired, missing and unconfirmed items stay Pending. Live refresh is unavailable in this file.
+Get an updated package after expiry. Partial subtotals are not complete commercial quotations.

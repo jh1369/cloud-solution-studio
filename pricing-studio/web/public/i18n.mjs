@@ -376,8 +376,34 @@ export const COPY={
  'unit.GB-month':['GB·月','GB-month'], 'unit.year':['年','year'], 'unit.GB-year':['GB·年','GB-year']
 };
 export function normalizeLanguage(value){return String(value||'').toLowerCase().startsWith('en')?'en':'zh';}
+const aiMessages={
+ 'ai.run':['AI 补充匹配','Supplement with AI'],
+ 'ai.retry':['重新运行 AI','Run AI again'],
+ 'ai.cancel':['取消 AI 匹配','Cancel AI matching'],
+ 'ai.remote':['授权向已配置的模型服务发送最少量的标准化规格','Authorize sending minimal normalized specs to the configured model service'],
+ 'ai.authorize':['请授权本次规格外发，然后重新运行。','Authorize the specification transfer and run again.'],
+ 'ai.coverage':['规则 {rule}/{total} · AI 新增计价 {ai} · 手动 {manual} · 剩余 {pending}','Rules {rule}/{total} · AI priced {ai} · Manual {manual} · Pending {pending}'],
+ 'ai.results':['AI 候选 {candidates} · 拦截 {rejected} · 调用失败 {failed}','AI candidates {candidates} · Rejected {rejected} · Call failures {failed}'],
+ 'ai.running':['正在补充匹配…','Finding alternatives…'],
+ 'ai.cancelled':['已取消，已应用的方案已保留。','Cancelled. Applied suggestions are retained.'],
+ 'ai.noCandidates':['未找到符合当前报价范围的有效目录候选。','No valid catalog candidates for the current quote scope.'],
+ 'ai.unavailable':['规格推荐服务不可用。当前预算可继续使用。','The recommendation service is unavailable. The current budget remains available.'],
+ 'ai.origin.rule':['规则匹配','Rule-based'],
+ 'ai.origin.suggested':['AI 建议','AI Suggested'],
+ 'ai.origin.manual':['手动选择','Manual'],
+ 'ai.originalNotes':['以下为原 AI 建议的说明','Notes for the original AI suggestion'],
+ 'ai.estimate':['AI 估算方案','AI budget scenario'],
+ 'ai.missing':['待补参数 {fields}','Required inputs: {fields}'],
+ 'ai.meter.target-instance-hours':['目标实例小时','target instance-hours'],
+ 'ai.meter.cold-data-capacity':['冷数据容量','cold data capacity'],
+ 'ai.meter.cold-storage-meter':['冷存储计量','cold storage meter'],
+ 'ai.meter.source-specification':['来源规格','source specification'],
+ 'ai.meter.target-quantity':['目标数量','target quantity'],
+ 'ai.meter.usage':['使用量','usage']
+};
+
 export function t(key,language='zh',vars={}){
- const entry=COPY[key];if(!entry)throw new Error(`Missing translation: ${key}`);
+ const entry=COPY[key]??aiMessages[key];if(!entry)throw new Error(`Missing translation: ${key}`);
  return entry[normalizeLanguage(language)==='en'?1:0].replace(/\{(\w+)\}/g,(_,name)=>String(vars[name]??`{${name}}`));
 }
 export function billingLabel(mode,language='zh'){return Object.hasOwn(COPY,'mode.'+mode)?t('mode.'+mode,language):String(mode);}
@@ -459,6 +485,12 @@ export const ENGINE_REASON_MESSAGES={
  HW_ANCILLARY_PENDING:['此费用需独立计量和核价。','This charge requires its own billed unit and verified price.'],
  HW_SPEC_PRICE_LINK:['官方规格在本区域及计费模式没有唯一匹配的有效价格计划。','No unique verified price plan links to this flavor in the selected region and billing mode.'],
  HW_SPEC_RECHECK:['规格或价格方案已更改，请重新匹配。','The specification or plan changed. Match the specification again.'],
+ HW_AI_ESTIMATE:['AI 参考估算，使用已核验的华为云公开费率。','AI budget scenario using the verified Huawei public rate.'],
+ HW_AI_METER_REQUIRED:['已找到参考规格，预算仍需可核验的计量。','A reference option is available. Verified metering is required for pricing.'],
+ HW_AI_LINUX:['来源 OS 未指定，按华为云 Linux 镜像估算。','Source OS unspecified. Estimate uses a Huawei Linux image.'],
+ HW_AI_ARCH:['目标 CPU 架构与来源不同，应用兼容性待核对。','Target CPU architecture differs. Application compatibility requires review.'],
+ HW_AI_RDS_REFERENCE:['MySQL 8.0 主备为参考架构。实例费使用明确的实例小时或订阅数量。','MySQL 8.0 primary/standby is a reference design. Instance charges use explicit instance-hours or subscription quantities.'],
+ HW_AI_CACHE_PHYSICAL:['用 AWS 官方节点物理内存估算缓存容量档位，实际可用内存待核对。','Sizing uses AWS official physical node memory as a proxy. Actual usable cache requires review.'],
  HW_AWS_CONDITIONAL:['核对来源规格和目标假设后确认。','Review the source specifications and target assumptions before confirmation.'],
  HW_AWS_CAPACITY_REVIEW:['候选满足核数、内存、架构与系统。请核实性能、映像及实例族是否满足迁移要求。','The candidate matches CPU count, memory, architecture and OS. Verify performance, image and instance class requirements.'],
  HW_AWS_BURST_REVIEW:['按常规 ECS 估算。请核实 CPU 积分、持续负载性能、映像和目标计费差异。','Estimate uses a regular ECS instance. Verify CPU credits, sustained performance, image and billing differences.'],
