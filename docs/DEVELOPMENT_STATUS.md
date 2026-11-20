@@ -12,11 +12,11 @@
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 在线 `0.3.17-dev`，原私有站第 20 版 |
+| 当前网页版本 | 在线 `0.3.18-dev`，原私有站第 21 版 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| Sites 部署源码 | `0cdc9686487df8f186d6e796a0fc59059a49d986`（私有站第 20 版） |
+| Sites 部署源码 | `28bf675f51fb138f45e84e73a4aaab6d39db15b5`（私有站第 21 版） |
 | 整体进度 | 导入即生成预算，ECS 受限升配、RDS 账单缩写与默认主备、DCS 节点小时折算和 CSS 托管节点均可直接估算 |
-| 本轮同步范围 | `0.3.17-dev` AI 补充匹配已合入 `main`，私有站已发布。 [PR #25](https://github.com/jh1369/cloud-solution-studio/pull/25) |
+| 本轮同步范围 | `0.3.18-dev` 本地 Codex 辅助报价已合入 `main`，私有站已发布。 [PR #28](https://github.com/jh1369/cloud-solution-studio/pull/28) |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -44,7 +44,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 - 修改本地推荐范围，普通 CSS 有公开计算计划与合法计量时可估算计算费。UltraWarm 和缺容量的存储继续 Pending。RDS 优先 MySQL 8.0 主备 Cloud SSD，存储与备份单列。Codex 五表显示 Rule Matched、AI Suggested、Conditional Estimate、Pending。移除功能：无。
 - 在 `pricing-studio/web` 用 Node 24 和 Python 3.12 运行 `npm run release:offline`，Python 50 通过、Node 166 通过，失败 0。Chromium 156 的回环 XLSX 导入、既有 AI 浏览器回归和独立 HTML 导入下载通过。原生文件打开仍待验收。
 - 用虚构 CSV 实际执行 CLI 导出、Codex 选型和导入，并用 openpyxl 重开 [五表报价](../releases/pricing-studio/examples/Codex-Synthetic-Quotation.xlsx)。规则 3 行、AI 推荐 7 行、AI 计价 5 行，剩余主行 Pending 2 条。来源账期 USD 4.08、月度等效 USD 100.29、首期预付 USD 440.55，三种口径独立对账。生产模型开关继续关闭。真实清单未使用，真实回归仍待所有者验收。
-- 发布包见 [v0.3.18-dev](../releases/pricing-studio/v0.3.18-dev/)。CLI 源码与示例通过 GitHub 交付。[运行方法](../pricing-studio/web/README.md#local-codex-assisted-quotation)
+- 实现合入 `6aef51340ebc2e1026eeb710733fba5d923e3cd4`，站点第 21 版保留所有者访问，已验证版本、远程推理关闭、原 TCP 快照状态和 ZIP。GitHub ZIP、虚构 XLSX 和私有站 ZIP 下载均与发布文件逐字节一致。发布包见 [v0.3.18-dev](../releases/pricing-studio/v0.3.18-dev/)。CLI 源码与示例通过 GitHub 交付。[运行方法](../pricing-studio/web/README.md#local-codex-assisted-quotation)
 
 ## 2. 已完成的功能
 
