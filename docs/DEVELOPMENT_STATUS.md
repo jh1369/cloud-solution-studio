@@ -8,15 +8,15 @@
 | --- | --- |
 | 更新日期 | 2026-11-20，Europe/Berlin |
 | 当前优先目标 / 模式 | AWS 清单到 Huawei EU-Dublin 的快速预算估算与按版本真实回归，单 Agent |
-| 本轮检查基线 | `main` / `d5e30f7c2582fcb94079c85a1ecdd7743e030f69`，含 [PR #24](https://github.com/jh1369/cloud-solution-studio/pull/24) |
+| 本轮检查基线 | `main` / `b5af00cb2437d25110fc4132aea74d020a9816e4`，包含 0.3.18-dev 发布记录 |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 在线 `0.3.18-dev`，原私有站第 21 版 |
+| 当前网页版本 | 在线 `0.3.19-dev`，原私有站第 22 版 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| Sites 部署源码 | `28bf675f51fb138f45e84e73a4aaab6d39db15b5`（私有站第 21 版） |
+| Sites 部署源码 | `a79c5254823797d44d60bdbc11dbfd8cc7673e9d`（私有站第 22 版） |
 | 整体进度 | 导入即生成预算，ECS 受限升配、RDS 账单缩写与默认主备、DCS 节点小时折算和 CSS 托管节点均可直接估算 |
-| 本轮同步范围 | `0.3.18-dev` 本地 Codex 辅助报价已合入 `main`，私有站已发布。 [PR #28](https://github.com/jh1369/cloud-solution-studio/pull/28) |
+| 本轮同步范围 | `0.3.19-dev` 月度三表报价已合入 `main`，私有站已发布。 [PR #30](https://github.com/jh1369/cloud-solution-studio/pull/30) |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -52,7 +52,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 - 修改本地 CLI 导出默认格式和账期选项。Input 保留来源值和行位置，报价表固定九列，所有关联费用和不确定性可通过来源行追溯。移除功能：无。既有 Web 和独立 HTML 五表流程保持兼容。
 - 在 `pricing-studio/web` 使用 Node 24 和 Python 3.12 运行 `npm run release:offline`，Python 50 和 Node 169 通过，失败 0。Chromium 156 回环通过原五表与独立 HTML 导入下载验证，原生文件打开未验。独立 openpyxl 验证三表结构、筛选、冻结、双色表头、金额空白以及逐行费率乘计量与汇总。
 - [虚构月度报价](../releases/pricing-studio/examples/Codex-Monthly-Quotation.xlsx) 有 10 个来源行。6 条官方包月、1 条官方按需，3 个来源项目及 3 项关联费用 Pending。AWS 样例实际费用 USD 138.98，Huawei 已估价月度 USD 668.38。采用 `--billing-month 2026-07` 的 744 小时口径。真实客户清单未访问，真实回归待所有者验收。
-- [离线归档](../releases/pricing-studio/v0.3.19-dev/) · [CLI 用法](../pricing-studio/web/README.md#local-codex-assisted-quotation)。
+- 功能合入 `2ad7192da2ca5e07750082edde3c01d8aba4f299`。私有站第 22 版保留所有者访问，生产验证版本、远程推理关闭、离线 ZIP 和原已到期 TCP 快照的 STALE 状态。GitHub 下载的样例 XLSX、GitHub 与站点的 ZIP 均与发布文件逐字节一致。[离线归档](../releases/pricing-studio/v0.3.19-dev/) · [CLI 用法](../pricing-studio/web/README.md#local-codex-assisted-quotation)。
 
 ## 2. 已完成的功能
 
