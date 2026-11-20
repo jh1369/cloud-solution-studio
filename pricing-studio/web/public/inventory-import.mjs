@@ -40,7 +40,7 @@ function awsUsageRows(sheet,name,originalHeaders,XLSX){
  });
 }
 
-export function readInventory(book,XLSX,{reviewAws=false}={}){
+export function readInventory(book,XLSX,{reviewAws=false,keepInvalid=false}={}){
  const name=book.SheetNames.includes('Input')?'Input':book.SheetNames[0];
  const sheet=book.Sheets[name];
  const range=sheet?.['!ref']&&XLSX.utils.decode_range(sheet['!ref']);
@@ -56,7 +56,17 @@ export function readInventory(book,XLSX,{reviewAws=false}={}){
   if(standardTemplate&&header.some(cell=>productHeaders.has(cell))&&
      (header.some(cell=>standardData.has(cell))||header.length>1&&header.every(cell=>standardFields.has(cell)))){
    const records=XLSX.utils.sheet_to_json(sheet,{defval:''});
-   const standard=normalizeRows(records);
+   const standard=keepInvalid?records.map(record=>{
+    try{return normalizeRows([record])[0];}
+    catch(error){
+     const values=Object.fromEntries(Object.entries(record).map(([key,value])=>[comparable(key),value]));
+     const [row]=normalizeRows([{product:[...productHeaders].map(key=>values[key]).find(value=>!blank(value))??'Unknown',
+      specification:[...standardData].map(key=>values[key]).find(value=>!blank(value))??''}]);
+     row.huaweiImportIssues=['specification'];
+     row.huaweiInputError=error.message;
+     return row;
+    }
+   }):normalizeRows(records);
    const headings=first??[],known=knownColumns(headings);
    let cellsByRow;
    for(const [index,row] of standard.entries()){

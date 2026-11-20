@@ -46,6 +46,14 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 - 用虚构 CSV 实际执行 CLI 导出、Codex 选型和导入，并用 openpyxl 重开 [五表报价](../releases/pricing-studio/examples/Codex-Synthetic-Quotation.xlsx)。规则 3 行、AI 推荐 7 行、AI 计价 5 行，剩余主行 Pending 2 条。来源账期 USD 4.08、月度等效 USD 100.29、首期预付 USD 440.55，三种口径独立对账。生产模型开关继续关闭。真实清单未使用，真实回归仍待所有者验收。
 - 实现合入 `6aef51340ebc2e1026eeb710733fba5d923e3cd4`，站点第 21 版保留所有者访问，已验证版本、远程推理关闭、原 TCP 快照状态和 ZIP。GitHub ZIP、虚构 XLSX 和私有站 ZIP 下载均与发布文件逐字节一致。发布包见 [v0.3.18-dev](../releases/pricing-studio/v0.3.18-dev/)。CLI 源码与示例通过 GitHub 交付。[运行方法](../pricing-studio/web/README.md#local-codex-assisted-quotation)
 
+### 0.3.19-dev · Codex 月度报价
+
+- 开发基线 `b5af00cb2437d25110fc4132aea74d020a9816e4`。新增 CLI 月度预算选择和三表 Excel 导出，优先独立核验的官方包月价，按需使用目标月度计量。显式完整 UTC 账期才允许用累计小时推算包月数量，DCS 先做已有节点小时转换。规格、用量、费用或价格依据不足时留 Pending。
+- 修改本地 CLI 导出默认格式和账期选项。Input 保留来源值和行位置，报价表固定九列，所有关联费用和不确定性可通过来源行追溯。移除功能：无。既有 Web 和独立 HTML 五表流程保持兼容。
+- 在 `pricing-studio/web` 使用 Node 24 和 Python 3.12 运行 `npm run release:offline`，Python 50 和 Node 169 通过，失败 0。Chromium 156 回环通过原五表与独立 HTML 导入下载验证，原生文件打开未验。独立 openpyxl 验证三表结构、筛选、冻结、双色表头、金额空白以及逐行费率乘计量与汇总。
+- [虚构月度报价](../releases/pricing-studio/examples/Codex-Monthly-Quotation.xlsx) 有 10 个来源行。6 条官方包月、1 条官方按需，3 个来源项目及 3 项关联费用 Pending。AWS 样例实际费用 USD 138.98，Huawei 已估价月度 USD 668.38。采用 `--billing-month 2026-07` 的 744 小时口径。真实客户清单未访问，真实回归待所有者验收。
+- [离线归档](../releases/pricing-studio/v0.3.19-dev/) · [CLI 用法](../pricing-studio/web/README.md#local-codex-assisted-quotation)。
+
 ## 2. 已完成的功能
 
 | 功能 | 当前实现与边界 | 仓库证据 |

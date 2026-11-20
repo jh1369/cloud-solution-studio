@@ -4,11 +4,13 @@ import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {parseArgs} from 'node:util';
 import {runInNewContext} from 'node:vm';
-import {REGION,huaweiBudget} from '../public/engine.mjs';
+import {REGION} from '../public/engine.mjs';
 import {readInventory} from '../public/inventory-import.mjs';
 import {applyHuaweiMatch,identifyHuaweiRow,quoteHuaweiRows} from '../public/huawei-match.mjs';
-import {aiCoverage,aiPlanSignature,huaweiAiRequest,huaweiAiSchema,resolveAiInput,validateAiRecommendation} from '../public/huawei-ai-match.mjs';
+import {aiPlanSignature,huaweiAiRequest,huaweiAiSchema,resolveAiInput,validateAiRecommendation} from '../public/huawei-ai-match.mjs';
 import {buildWorkbook} from '../public/excel.mjs';
+import {monthlyBudgetLines,monthlyBudgetOptions,monthlyBudgetTotal,preferRecommendedMonthly,selectMonthlyBudget} from './monthly-budget.mjs';
+import {buildMonthlyWorkbook,monthlyWorkbookInput} from './monthly-quotation-xlsx.mjs';
 
 const context={Buffer,Uint8Array,ArrayBuffer,TextDecoder,TextEncoder};
 runInNewContext(readFileSync(new URL('../public/vendor/xlsx.full.min.js',import.meta.url),'utf8'),context);
@@ -25,17 +27,27 @@ const guidance=[
 ];
 const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-export function readQuotationRows(bytes){
- const {standard}=readInventory(XLSX.read(bytes,{type:'buffer',raw:true}),XLSX);
+export function readQuotationInput(bytes){
+ const book=XLSX.read(bytes,{type:'buffer',raw:true,cellNF:true});
+ const {standard}=readInventory(book,XLSX,{keepInvalid:true});
  if(!standard)throw Error('Use a standard Pricing Studio CSV/XLSX input or a supported AWS usage worksheet.');
- return Array.from(standard);
+ const rows=Array.from(standard);
+ return {rows,input:monthlyWorkbookInput(XLSX,book,rows)};
 }
 
-export function prepareQuotation(rows,catalog,{now=Date.now()}={}){
+export function readQuotationRows(bytes){
+ return readQuotationInput(bytes).rows;
+}
+
+export function prepareQuotation(rows,catalog,{now=Date.now(),monthlyBudget,input}={}){
  if(catalog.region!==REGION||catalog.currency!=='USD'||!Array.isArray(catalog.items)||
     new Set(catalog.items.map(item=>item.id)).size!==catalog.items.length)throw Error('Expected a unique Huawei EU-Dublin USD catalog.');
- const options={now,hours:730,discount:0,codexQuotation:true,delivery:'codex',language:'en'};
- rows.forEach(row=>applyHuaweiMatch(identifyHuaweiRow(row),catalog,options));
+ const options={now,hours:monthlyBudget?.periodHours??730,discount:monthlyBudget?.discount??0,
+  codexQuotation:true,delivery:'codex',language:'en',monthlyBudget};
+ rows=rows.map(row=>{
+  identifyHuaweiRow(row);
+  return monthlyBudget?selectMonthlyBudget(row,catalog,options):applyHuaweiMatch(row,catalog,options);
+ });
  const output=quoteHuaweiRows(rows,catalog,options);
  const entries=rows.flatMap((row,index)=>{
   const request=huaweiAiRequest(row,catalog,output[index],options);
@@ -49,21 +61,24 @@ export function prepareQuotation(rows,catalog,{now=Date.now()}={}){
    usageKnown:row.usage!=null,quantityKnown:(row.targetQuantity??row.quantity)>0
   }}}]:[];
  });
- return {rows,output,options,entries,catalog};
+ return {rows,output,options,entries,catalog,input};
 }
 
-export function quotationTask({entries}){
+export function quotationTask({entries,options}){
  const requests=entries.map(({input})=>input);
- const taskId=digest(requests);
+ const budget=options.monthlyBudget?{month:options.monthlyBudget.month,periodHours:options.monthlyBudget.periodHours,
+  billingMonth:options.monthlyBudget.billingMonth??null}:null;
+ const taskId=digest(budget?[budget,requests]:requests);
  const base=huaweiAiSchema(requests.length);
- return {format,taskId,region:REGION,currency:'USD',guidance,requests,responseSchema:{
+ return {format,taskId,region:REGION,currency:'USD',...(budget?{budget}:{}),guidance,requests,responseSchema:{
   ...base,required:['taskId',...base.required],properties:{taskId:{const:taskId},...base.properties}
  }};
 }
 
 export function applyQuotationRecommendations(prepared,task,result){
  if(task?.format!==format||task.region!==REGION||task.currency!=='USD'||!Array.isArray(task.requests)||
-    task.requests.length>2000||digest(task.requests)!==task.taskId)throw Error('Invalid matching task.');
+    task.requests.length>2000||digest(task.budget?[task.budget,task.requests]:task.requests)!==task.taskId||
+    JSON.stringify(task.budget??null)!==JSON.stringify(quotationTask(prepared).budget??null))throw Error('Invalid matching task.');
  if(!result||Object.keys(result).length!==2||result.taskId!==task.taskId||!Array.isArray(result.recommendations)||
     result.recommendations.length>2000)throw Error('Recommendations must reference the original matching task.');
  const active=new Map(prepared.entries.map(entry=>[entry.input.id,entry]));
@@ -88,28 +103,38 @@ export function applyQuotationRecommendations(prepared,task,result){
   if(recommendation.selection===null){counts.abstained++;continue;}
   row.huaweiAi={request,signature:aiPlanSignature(row),recommendation};
   applyHuaweiMatch(row,prepared.catalog,prepared.options);
-  if(row.huaweiAi?.display)counts.accepted++;
-  else counts.rejected++;
+  if(row.huaweiAi?.display){
+   counts.accepted++;
+   if(prepared.options.monthlyBudget){
+    const index=Number(id.slice(1))-1;
+    prepared.rows[index]=preferRecommendedMonthly(row,prepared.catalog,prepared.options);
+   }
+  }else counts.rejected++;
  }
  counts.omitted=task.requests.filter(input=>!byRow.has(input.id)).length;
  prepared.output=quoteHuaweiRows(prepared.rows,prepared.catalog,prepared.options);
  return counts;
 }
 
-export function quotationWorkbook({rows,catalog,options,output}){
+export function quotationWorkbook(prepared){
+ const {rows,catalog,options,output}=prepared;
+ if(options.monthlyBudget)return buildMonthlyWorkbook(XLSX,prepared);
  return XLSX.write(buildWorkbook(XLSX,rows,catalog,{...options,output},'Huawei Cloud budget'),{bookType:'xlsx',type:'buffer'});
 }
 
 function main(argv){
  const {positionals,values}=parseArgs({args:argv,allowPositionals:true,options:{
-  catalog:{type:'string'},task:{type:'string'},recommendations:{type:'string'},quote:{type:'string'}
+  catalog:{type:'string'},task:{type:'string'},recommendations:{type:'string'},quote:{type:'string'},
+  'billing-month':{type:'string'},'period-hours':{type:'string'},discount:{type:'string'}
  }});
  const [action,inventory]=positionals;
  if(!['export','import'].includes(action)||positionals.length!==2||!values.task||!values.quote||
     (action==='import')!==!!values.recommendations)throw Error(
-  'Usage: node scripts/codex-quotation.mjs export|import INVENTORY --task TASK.json --quote QUOTE.xlsx [--catalog OFFICIAL.json] [--recommendations RESULT.json (import)]');
+  'Usage: node scripts/codex-quotation.mjs export|import INVENTORY --task TASK.json --quote QUOTE.xlsx [--billing-month YYYY-MM] [--period-hours HOURS] [--discount FRACTION] [--catalog OFFICIAL.json] [--recommendations RESULT.json (import)]');
  const readJSON=path=>JSON.parse(readFileSync(path,'utf8'));
- const prepared=prepareQuotation(readQuotationRows(readFileSync(inventory)),readJSON(values.catalog??defaultCatalog));
+ const {rows,input}=readQuotationInput(readFileSync(inventory));
+ const monthlyBudget=monthlyBudgetOptions({billingMonth:values['billing-month'],periodHours:values['period-hours'],discount:values.discount});
+ const prepared=prepareQuotation(rows,readJSON(values.catalog??defaultCatalog),{monthlyBudget,input});
  let recommendations;
  if(action==='export'){
   const task=quotationTask(prepared);
@@ -118,9 +143,12 @@ function main(argv){
   recommendations=applyQuotationRecommendations(prepared,readJSON(values.task),readJSON(values.recommendations));
  }
  writeFileSync(values.quote,quotationWorkbook(prepared),{flag:'wx',mode:0o600});
- const coverage=aiCoverage(prepared.rows,prepared.output),budget=huaweiBudget(prepared.rows,prepared.output);
+ const lines=monthlyBudgetLines(prepared.rows,prepared.output,prepared.options);
+ const coverage={monthly:lines.filter(line=>line.amount!==null&&line.result.billingMode==='MONTHLY').length,
+  onDemand:lines.filter(line=>line.amount!==null&&line.result.billingMode==='ONDEMAND').length,
+  pending:lines.filter(line=>line.amount===null&&!['Included','Linked'].includes(line.result.status)).length};
  console.log(JSON.stringify({eligiblePending:prepared.entries.length,coverage,recommendations,
-  totals:{sourcePeriod:budget.sourcePeriod,monthly:budget.monthly,prepaid:budget.prepaid}},null,2));
+  monthlyUSD:monthlyBudgetTotal(lines)},null,2));
 }
 
 if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){

@@ -188,15 +188,21 @@ Run `node --test tests/huawei-ai-match.test.mjs` for focused tests. After `npm r
 
 ## Local Codex-assisted quotation
 
-From `pricing-studio/web` with Node 24, run the following commands with the fictional inventory:
+From `pricing-studio/web` with Node 24, export the fictional inventory and its July task:
 
 ```sh
-node scripts/codex-quotation.mjs export tests/fixtures/codex-quotation-synthetic.csv --task pending.json --quote initial.xlsx
-node scripts/codex-quotation.mjs import tests/fixtures/codex-quotation-synthetic.csv --task pending.json --recommendations recommendations.json --quote final.xlsx
+node scripts/codex-quotation.mjs export tests/fixtures/monthly-quotation-synthetic.csv --billing-month 2026-07 --task pending.json --quote initial.xlsx
+node scripts/codex-quotation.mjs import tests/fixtures/monthly-quotation-synthetic.csv --billing-month 2026-07 --task pending.json --recommendations tests/fixtures/monthly-quotation-recommendations.json --quote final.xlsx
 ```
 
-Between the commands, ask Codex in the approved environment to read `pending.json` and save a response following its `responseSchema` as `recommendations.json`. Only share the fictional task JSON with cloud Codex. Keep any customer workbook, derived task and quotation in the authorized isolated environment. The CLI runs without network access or an inference server. It accepts standard CSV/XLSX and the supported AWS usage worksheet. Nonstandard layouts must be normalized first. The input can specify `huawei_billing_mode` as `ONDEMAND`, `MONTHLY` or `YEARLY`. Subscription estimates require explicit target quantities.
+For a new task, ask Codex in the approved environment to read `pending.json` and return the matching recommendation JSON, then replace the recommendation file path in the import command. Cloud Codex should receive only synthetic tasks. Keep customer workbooks, derived tasks and quotations in the authorized isolated environment. This CLI needs no network or inference server. It accepts standard CSV/XLSX and supported AWS usage worksheets. Use fresh output paths and keep the original task. Use the same billing-month inputs for export and import.
 
-Both commands require the active eu-west-101 USD public catalog. Use `--catalog /path/to/verified-catalog.json` when supplying a newer trusted public snapshot. Expired plans stay Pending. A candidate change requires a fresh task for the affected rows. Use fresh output paths. The task lists only eligible Pending rows, the normalized specifications, coarse metering flags and verified candidates. Keep the original task until import. The CLI revalidates the result against the current local catalog and recalculates the five-sheet workbook. Amounts for the source period, monthly equivalent and first-term prepayment have different bases.
+### Monthly budget options
 
-The [fictional XLSX example](../../releases/pricing-studio/examples/Codex-Synthetic-Quotation.xlsx) was generated while the bundled public catalog was valid. Its original verification timestamps are available in Public Pricing. The [Codex response](tests/fixtures/codex-quotation-recommendations.json) is tied to that catalog's task ID.
+- `--billing-month YYYY-MM` confirms a full UTC billing month, derives its hours and sets the AWS actual column label. Without a month, the label stays at the July template default. Use `--period-hours 672|696|720|744` to confirm a full month by length. Without confirmation, aggregate source-period usage is excluded from the monthly budget.
+- Explicit valid target quantities take precedence. Eligible aggregate instance hours can be divided by the full period and rounded up for a provisional whole-month quantity. DCS first uses the existing node-hour conversion. Size-based plans also require eligible capacity or metered usage. ACU, UltraWarm and I/O require their own billing basis and remain Pending here.
+- The CLI tests independently verified Huawei monthly plans first and falls back to verified pay-per-use at the supported monthly meter. This workflow applies its own monthly preference to the source rows. `--discount 0.1` means a 10% discount. Omitting the flag leaves the workbook discount blank and applies zero. `--catalog /path/to/verified-catalog.json` loads a trusted public eu-west-101 USD snapshot; expired plans remain Pending.
+
+The workbook includes **Input**, **AWS-Huawei Quotation** and **Assumptions & Pending**. Input keeps original cell values and sheet row positions. For source formulas, it retains cached values. The AWS actual column recognizes common USD actual-cost headers such as `AWS Actual USD` and `lineItem/UnblendedCost`. Provide an explicit Currency column for mixed currencies; non-USD actuals stay in Input only. The quote shows the exact official rate and the total billable units for each charge. Assumptions records the original source row, price source, verification time, and quantity basis. The browser and standalone HTML retain their existing exports.
+
+[Download a fictional three-sheet workbook](../../releases/pricing-studio/examples/Codex-Monthly-Quotation.xlsx). It was generated while the bundled catalog was valid. The checked-in recommendation example is tied to that task and catalog.
