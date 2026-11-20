@@ -26,3 +26,14 @@
 .inventory-draft{border:1px solid #513164;border-radius:8px;padding:10px}
 .inventory-draft pre{white-space:pre-wrap;overflow-wrap:anywhere}
 .inventory-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:14px}
+
+.budget-details{margin:12px 0;color:var(--muted)}
+.budget-details summary{cursor:pointer;color:var(--text);font-weight:650}
+.budget-details ul{margin:6px 0 0;padding-inline-start:20px;max-height:13rem;overflow:auto}
+.budget-details li+li{margin-top:5px}
+.budget-details .setting-row{gap:8px}
+.budget-details p{margin:6px 0}
+.quote-card .quote-heading h2{min-width:0}
+.quote-card .quote-heading .badge{white-space:normal;text-align:center}
+.resource-actions{flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:550px){.resource-card .card-title{flex-wrap:wrap}.resource-actions{justify-content:flex-start}}

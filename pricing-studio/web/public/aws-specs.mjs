@@ -3,9 +3,13 @@ import {AWS_SPEC_DATE,AWS_SPEC_SOURCES,AWS_SPEC_RECORDS} from './aws-spec-data.m
 const operationSource='https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/billing-info-fields.html';
 const serviceNames={EC2:'ECS',RDS:'RDS',ElastiCache:'DCS',OpenSearch:'CSS'};
 const size='(?:\\d*xlarge|metal(?:-\\d+xl)?|large|medium|small|micro|nano)';
-const instanceType=(prefix,family,suffix='')=>new RegExp('\\b'+prefix+family+'\\.'+size+suffix+'\\b(?!\\.[a-z0-9])','gi');
+const rdsSuffix='(?:\\.tpc[12]\\.mem\\d+x)?';
+const rdsTypeEnd='(?![.-][a-z0-9])';
+const instanceType=(prefix,family,suffix='',end='(?!\\.[a-z0-9])')=>new RegExp('\\b'+prefix+family+'\\.'+size+suffix+'\\b'+end,'gi');
+const rdsUsageType=new RegExp(`\\b(?:((?:InstanceUsage|Multi-AZUsage):)(?:db\\.)?|db\\.)([a-z][a-z\\d]*)\\.(${size}|\\d*xl)(${rdsSuffix})\\b${rdsTypeEnd}`,'gi');
+const rdsUsageToken=/\b(?:InstanceUsage|Multi-AZUsage):([\w.-]+)/gi;
 const programs=[
- ['RDS',/^(?:amazon\s*)?(?:rds|relational database service)$/i,instanceType('db\\.','[a-z][a-z0-9]*','(?:\\.tpc[12]\\.mem\\d+x)?')],
+ ['RDS',/^(?:amazon\s*)?(?:rds|relational database service)$/i,instanceType('db\\.','[a-z][a-z0-9]*',rdsSuffix,rdsTypeEnd)],
  ['ElastiCache',/^(?:amazon\s*)?elasticache$/i,instanceType('cache\\.','[a-z][a-z0-9]*')],
  ['OpenSearch',/^(?:amazones|(?:amazon\s*)?(?:opensearch(?: service)?|elasticsearch(?: service)?))$/i,instanceType('','[a-z][a-z0-9]*','(?:\\.search)?')],
  ['EC2',/^(?:amazon\s*)?(?:ec2|elastic compute cloud)$/i,instanceType('','[a-z][0-9][a-z0-9]*')]
@@ -26,7 +30,8 @@ export function awsSourceService(product){
 function normalizeAwsTypeText(kind,description){
  const text=String(description??'').normalize('NFKC');
  if(kind!=='RDS')return text;
- return text.replace(/\b((?:InstanceUsage|Multi-AZUsage):)(?=[a-z][a-z\d]*\.(?:\d*xlarge|large|medium|small|micro)\b)/gi,'$1db.');
+ return text.replace(rdsUsageType,(_,meter,family,capacity,suffix)=>
+  (meter??'')+'db.'+family+'.'+capacity.replace(/^(\d*)xl$/i,'$1xlarge')+suffix);
 }
 
 export function hasAwsSourceType(product,description){
@@ -47,6 +52,10 @@ export function lookupAwsSpec(product,description){
   const type=kind==='OpenSearch'&&!value.endsWith('.search')?value+'.search':value;
   const profile=profiles.get(kind+'|'+type);
   found.set(kind+'|'+type,profile??null);
+ }
+ if(known==='RDS')for(const [,token] of text.matchAll(rdsUsageToken)){
+  const key='RDS|'+token.replace(/\.+$/,'').toLowerCase();
+  found.set(key,profiles.get(key)??null);
  }
  return found.size===1?found.values().next().value:null;
 }

@@ -1,4 +1,4 @@
-import {calculate,REGION,billingOf,priceValidation,mappingReview,sumMoney,huaweiProductSpecIssue,huaweiQuoteLines,EIP_BILLING_SOURCE} from './engine.mjs';
+import {calculate,REGION,billingOf,priceValidation,mappingReview,sumMoney,huaweiProductSpecIssue,huaweiQuoteLines,EIP_BILLING_SOURCE,huaweiBudget,huaweiBudgetAmounts} from './engine.mjs';
 import {billingLabel,translateMessage,reasonLabel,mappingLabel,t} from './i18n.mjs';
 import {TCP_QUOTE_REGION,tcpQuoteRows,tcpQuoteTotals} from './providers.mjs';
 
@@ -49,6 +49,7 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
   return book;
  }
  const output=opts.output??rows.map(row=>calculate(row,catalog,opts)),lines=huaweiQuoteLines(rows,output);
+ const budget=opts.delivery==='offline'?null:huaweiBudget(rows,output);
  const mapped=lines.filter(line=>line.row),includeSpec=mapped.some(({row})=>row.huaweiProductMatch);
  const includeCharge=lines.some(line=>line.charge),includeEip=mapped.some(({row})=>row.service==='EIP');
  const includeAnalysis=rows.some(row=>row.awsInventory||row.semanticInventory);
@@ -103,10 +104,12 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
  ]);
  add('Quotation',[
   ['Row','Target Service','Status','Monthly Public or Amortized USD','Discount Fraction','Monthly Scenario or Amortized USD','Annual Scenario USD','Source Period Public USD','Source Period Scenario USD','Reason','Huawei Billing Mode','Contract Term','Term Public USD','Term Scenario USD','Prepaid First Term Scenario USD','Annual Basis',...(includeCharge?['Charge']:[]),...(includeEip?['Bandwidth Mbit/s','Billable Usage','Billed Quantity','Rate Unit','Linked Row']:[]),...(includeAnalysis?['Conditional Scenario USD','Conditional Basis']:[]),
-   ...(includeMigration?['Target Billable Usage','Target Rate Unit','Reason Code']:[])],
+   ...(includeMigration?['Target Billable Usage','Target Rate Unit','Reason Code']:[]),
+   ...(budget?['Budget Source Period USD','Budget Monthly Equivalent USD','Budget Annual Scenario USD','Budget First-Term Prepaid USD']:[])],
   ...lines.map(({row,index,charge,result})=>{
    const mode=row?billingOf(row):null;
    const priced=['Valid','Period'].includes(result.status);
+   const estimate=budget?huaweiBudgetAmounts(result):null;
    return [index+1,row?.service??(charge==='eipReservation'?'EIP':rows[index].service),result.status,result.status==='Valid'?result.monthly:null,row?opts.discount:null,
     result.status==='Valid'?result.scenario:null,result.status==='Valid'?result.annual:null,result.status==='Period'?result.monthly:null,
     result.status==='Period'?result.scenario:null,reasonLabel(result,language),mode?billingLabel(mode,language):null,
@@ -116,7 +119,8 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
      priced?result.quantity??null:null,priced?result.item?.unit??null:null,result.linkedRow??null]:[]),
     ...(includeAnalysis?[result.conditionalScenario??null,result.conditionalPeriod??null]:[]),
     ...(includeMigration?[row?.huaweiMigration?result.effectiveUsage??null:null,
-     row?.huaweiMigration?result.item?.unit??null:null,result.reasonCode??null]:[])];
+     row?.huaweiMigration?result.item?.unit??null:null,result.reasonCode??null]:[]),
+    ...(estimate?[estimate.sourcePeriod,estimate.monthly,estimate.annual,estimate.prepaid]:[])];
   })
  ]);
  const results=lines.map(line=>line.result),monthly=results.filter(result=>result.status==='Valid'),period=results.filter(result=>result.status==='Period'),prepaid=results.filter(result=>result.upfrontScenario!==null);
@@ -140,6 +144,17 @@ export function buildWorkbook(XLSX,rows,catalog,opts,projectName){
   ['Storage conversion','Only pay-per-use uses GB-month × reference hours => GB-hour. Monthly/yearly EVS uses explicit per-disk GB capacity × verified subscription rate.'],
   ['Mapping','User-confirmed proposed target design, not guaranteed AWS/Huawei feature equivalence.'],
   ['Coverage',`${monthly.length} monthly-reference, ${period.length} source-period, ${results.filter(result=>result.status==='Pending').length} Pending`],
+  ...(budget?[
+   ['Estimated Budget Coverage',`${budget.priced} / ${budget.input}`],
+   ['Estimated Budget Scope',t(budget.unpriced||budget.excludedCharges?'budget.partial':'budget.complete',language)],
+   ['Unpriced Resource Rows',budget.unpriced],['Excluded Related Charges',budget.excludedCharges],
+   ['Estimated Budget Source Period USD',budget.sourcePeriod],['Estimated Budget Monthly Equivalent USD',budget.monthly],
+   ['Estimated Budget Annual Scenario USD',budget.annual],['Estimated Budget First-Term Prepaid USD',budget.prepaid],
+   ['Budget Basis',t('budget.detail',language)],
+   ...(opts.storageBudget?.RDS?[['RDS Budget Storage GiB per Instance',opts.storageBudget.RDS]]:[]),
+   ...(opts.storageBudget?.CSS?[['CSS Budget Storage GiB per Node',opts.storageBudget.CSS]]:[]),
+   ...budget.assumptions.map(([code,count])=>[code,t('budget.assumptionLine',{text:reasonLabel({reasonCode:code},language),count},language)])
+  ]:[]),
   ...(includeAnalysis?[['Conditional estimates',estimates.length],
    ['Conditional monthly equivalent USD',monthlyEstimates.length?sumMoney(monthlyEstimates.map(result=>result.conditionalMonthly)):null],
    ['Conditional source-period subtotal USD',periodEstimates.length?sumMoney(periodEstimates.map(result=>result.conditionalScenario)):null]]:[]),

@@ -1,6 +1,6 @@
 # Cloud Solution Studio
 
-Local-first tools for cloud solution architects. Pricing Studio V0.3 supports AWS-to-Huawei Cloud Public quotations and TCP pay-per-use estimates for selected ECS, EVS and RDS configurations in EU-DE. Both workflows use the existing inventory import and five-sheet Excel export. Huawei additionally supports deterministic SKU matching and optional model-assisted normalization on the user machine. The TCP publisher and Worker reader support private object storage. The private Site uses an expiring verified snapshot for its initial TCP release. [Verified status](docs/DEVELOPMENT_STATUS.md)
+Local-first tools for cloud solution architects. Pricing Studio gives an initial AWS-to-Huawei Cloud budget for EU-Dublin and TCP pay-per-use estimates for selected ECS, EVS and RDS configurations in EU-DE. Both workflows use the existing inventory import and five-sheet Excel export. Huawei supports deterministic SKU matching and optional model-assisted normalization on the user machine. The TCP publisher and Worker reader support private object storage. [Verified status](docs/DEVELOPMENT_STATUS.md)
 
 ## Security boundary
 
@@ -37,12 +37,10 @@ pricing-studio/
 
 The web app uses browser JavaScript and a Cloudflare Worker. Python 3.12 runs the catalog updater with SQLite and can publish the validated TCP catalog through an S3-compatible client. The Worker reads the private bucket binding directly. The original Python CLI declares `Python >=3.10` and uses the standard library.
 
-## Pricing Studio Web V0.3.15-dev
-
-Implemented:
+## Pricing Studio Web V0.3.16-dev
 
 - Rule-based Chinese and English resource descriptions, CSV/XLSX inventory import, and the supported text-based AWS billing PDF layout.
-- Editable target SKU suggestions and explicit human confirmation. Product-family similarity does not guarantee architecture, OS/licensing, engine, topology or feature equivalence.
+- Imports produce a budget immediately from verified public rates and disclosed settings. The workspace displays coverage, unpriced resources and adjustable group assumptions.
 - Huawei online estimates match ECS, EVS, Redis DCS, scoped RDS, dedicated elastic ELB, CCE management, public and private NAT, and Dynamic BGP EIP charges. The browser links documented specs to verified EU-Dublin plans. The Worker refreshes prices through the public calculator without a Huawei Cloud account. [Matching rules](pricing-studio/web/README.md#huawei-specification-matching)
 - AWS source billing retained separately from Huawei target **按需 / 包月 / 包年**. Source reserved/spot does not become a target billing choice.
 - The checked-in snapshot contains 543 pay-per-use, 495 one-month and 494 one-year price plans. Public NAT pay-per-use uses billed days. EIP prices fixed bandwidth, graduated outbound GB and unbound reservation hours separately.
@@ -50,7 +48,7 @@ Implemented:
 - Five-sheet Excel export includes Input, Service Mapping, Public Pricing, Quotation and Assumptions. Service Mapping retains specification evidence. Quotation records related Pending charges with blank amounts and a reference to the same input row.
 - Browser-local file parsing. Only allowlisted Huawei product IDs go to the server when refreshing prices; original files, AWS account IDs and descriptions are not uploaded by that flow.
 - The local Web + Worker workspace uses a loopback model to review nonstandard CSV and multi-sheet XLSX in batches. Standard templates take the existing direct import path. Each source row retains its sheet, row, cells and field evidence. Official AWS EC2, RDS, ElastiCache and OpenSearch instance records supplement model suggestions. The hosted workspace supports manual review with the same source records. [Local model configuration](pricing-studio/web/README.md#model-assisted-csv-and-excel-on-the-user-machine)
-- The same Huawei price engine calculates confirmed charges and conditional estimates separately. A review action can confirm rows with the same source type, target plan and conditions while preserving each row's metered usage. Both statuses and Pending charges are visible in the five-sheet export. [AWS source specification evidence](pricing-studio/web/README.md#aws-source-specifications-and-conditional-quotes)
+- The same Huawei price engine retains confirmed, conditional and Pending results. The page and Excel add confirmed and conditional amounts by billing basis. Source-period input stays separate from monthly reference and subscription prepayment. [Budget scope](pricing-studio/web/README.md#aws-source-specifications-and-conditional-quotes)
 - AWS migration review ranks verified ECS choices, keeps RDS and CSS storage separate, and shows DCS node-to-instance metering evidence. Grouped target-design fields preserve source values and identify assumptions. [Migration coverage](docs/HUAWEI_QUOTE_COVERAGE.md#0314-dev-四类迁移报价复测)
 - Huawei's browser regression export produces stage-specific aggregate counts, with separate primary and ancillary Pending reasons. The owner can share the statistics after privately validating a reference workbook. [Real regression history](docs/HUAWEI_REAL_REGRESSION.md)
 

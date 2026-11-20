@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../dist/server/index.js';
 import {readFile} from 'node:fs/promises';
+import {basename} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {priceValidation} from '../public/engine.mjs';
 const catalogue=JSON.parse(await readFile(new URL('../public/catalog.json',import.meta.url)));
 const origin='https://pricing.example';
@@ -18,9 +20,11 @@ test('TCP update button API detects official document changes without price prom
  }finally{globalThis.fetch=previous;}
 });
 test('Offline package is a byte-exact ZIP attachment with a working web entry',async()=>{
- const path='/downloads/pricing-studio-offline.zip',version=JSON.parse(await readFile(new URL('../package.json',import.meta.url))).version,name=`Pricing-Studio-${version}-Offline.zip`;
+ const path='/downloads/pricing-studio-offline.zip',version=JSON.parse(await readFile(new URL('../package.json',import.meta.url))).version;
+ const archive=process.env.PRICING_OFFLINE_ARCHIVE||fileURLToPath(new URL(`../outputs/offline/Pricing-Studio-${version}-Offline.zip`,import.meta.url));
+ const name=basename(archive);
  const response=await worker.fetch(new Request(origin+path));
- const expected=await readFile(new URL('../outputs/offline/'+name,import.meta.url));
+ const expected=await readFile(archive);
  assert.equal(response.status,200);assert.equal(response.headers.get('Content-Type'),'application/zip');
  assert.equal(response.headers.get('Content-Disposition'),`attachment; filename="${name}"`);
  assert.equal(response.headers.get('Cache-Control'),'no-store');

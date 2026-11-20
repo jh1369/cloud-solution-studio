@@ -302,6 +302,56 @@ export function huaweiQuoteLines(rows,output){
  return rows.flatMap((row,index)=>[{row,index,charge:row.huaweiCharge,result:output[index]},
   ...relatedHuaweiCharges(row,output[index]).map(line=>({...line,index}))]);
 }
+export function huaweiBudgetAmounts(result){
+ const conditional=result.status==='Conditional';
+ const sourcePeriod=result.status==='Period'?result.scenario:
+  conditional&&result.conditionalPeriod==='source-period'?result.conditionalScenario:null;
+ const monthly=result.status==='Valid'?result.scenario:conditional?result.conditionalMonthly??null:null;
+ return {
+  sourcePeriod,monthly,
+  annual:result.status==='Valid'?result.annual:conditional?result.conditionalAnnual??null:null,
+  prepaid:result.status==='Valid'?result.upfrontScenario:conditional?result.conditionalUpfront??null:null
+ };
+}
+export function huaweiBudget(rows,output){
+ const lines=huaweiQuoteLines(rows,output);
+ const amounts=lines.map(({result})=>huaweiBudgetAmounts(result));
+ const counts={confirmed:0,conditional:0,unpriced:0};
+ for(const {status} of output){
+  if(status==='Valid'||status==='Period')counts.confirmed++;
+  if(status==='Conditional')counts.conditional++;
+  if(status==='Pending')counts.unpriced++;
+ }
+ const totalFor=(key,list=amounts)=>{
+  const values=list.map(amount=>amount[key]).filter(amount=>amount!=null);
+  return values.length?sumMoney(values):null;
+ };
+ const sourcePeriod=totalFor('sourcePeriod'),monthly=totalFor('monthly');
+ const headline=sourcePeriod!==null||monthly===null&&rows.some(row=>row.period==='source-period')?'sourcePeriod':'monthly';
+ const byService=new Map(),assumptions=new Map();
+ for(const [i,{row,index}] of lines.entries()){
+  const amount=amounts[i];
+  if(amount[headline]!=null){
+   const service=row?.service??rows[index].service;
+   if(!byService.has(service))byService.set(service,[]);
+   byService.get(service).push(amount[headline]);
+  }
+  if(!row||amount.sourcePeriod==null&&amount.monthly==null)continue;
+  for(const code of new Set([...(row.huaweiAssumptions??[]),...(row.huaweiConditions??[]),row.huaweiUsageAssumption].filter(Boolean))){
+   if(!assumptions.has(code))assumptions.set(code,new Set());
+   assumptions.get(code).add(index);
+  }
+ }
+ const conditional=amounts.filter((_,index)=>lines[index].result.status==='Conditional');
+ return {
+  ...counts,input:rows.length,priced:counts.confirmed+counts.conditional,
+  excludedCharges:lines.filter(({result})=>result.status==='Pending').length-counts.unpriced,
+  sourcePeriod,monthly,annual:totalFor('annual'),prepaid:totalFor('prepaid'),headline,
+  conditionalCount:conditional.length,conditionalSourcePeriod:totalFor('sourcePeriod',conditional),conditionalMonthly:totalFor('monthly',conditional),
+  groups:[...byService].map(([service,values])=>[service,sumMoney(values)]).sort((a,b)=>b[1]-a[1]),
+  assumptions:[...assumptions].map(([code,indices])=>[code,indices.size]).sort((a,b)=>b[1]-a[1])
+ };
+}
 export function huaweiProductSpecIssue(row,item){
  const match=row.huaweiProductMatch;
  if(!match)return null;
@@ -328,6 +378,7 @@ export function calculate(row,catalog,options={}){
   if(!['Valid','Period'].includes(result.status)||!row.huaweiConditionKey||approved)return result;
   return {...result,...pendingResult('','HW_AWS_CONDITIONAL'),status:'Conditional',conditionalScenario:result.termScenario,
    conditionalPublic:result.termPublic,conditionalMonthly:result.status==='Valid'?result.scenario:null,
+   conditionalAnnual:result.annual,conditionalUpfront:result.upfrontScenario,
    conditionalPeriod:result.status==='Period'?'source-period':result.billingMode};
  }
  catch(error){return pendingResult(error.code==='AMOUNT_PRECISION'?error.message:'Invalid quantity, usage, discount or reference hours.',error.code||'INPUT_INVALID');}
