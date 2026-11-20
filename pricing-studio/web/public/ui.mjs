@@ -110,7 +110,13 @@ export function migrationControls(row,language){
  const input=(key)=>label(key,`<input name="${key}" maxlength="256" value="${E(settings[key]?.value??'')}">`);
  const storage=kind==='RDS'||kind==='OpenSearch'?[choice('storageType',kind==='RDS'?['Cloud SSD','ESSD']:['','SSD','SAS']),
   number('storageGiB'),number('storageHours'),number('storageQuantity','1')]:[];
- const controls=kind==='RDS'?[choice('engine',['MySQL']),choice('version',['8.0','5.7']),choice('topology',['ha','single']),...storage]:
+ const engines=row.huaweiMigration?.engineVersions??{};
+ const engine=settings.engine?.value,version=settings.version?.value;
+ const versions=kind==='RDS'?label('version',`<select name="version" required>
+  <option value="">${E(T('budget.selectVersion'))}</option>
+  ${Object.entries(engines).flatMap(([name,values])=>values.map(value=>`<option value="${E(value)}" data-engine="${E(name)}"
+   ${engine===name&&value===version?'selected':''} ${engine!==name?'hidden disabled':''}>${E(value)}</option>`)).join('')}</select>`):'';
+ const controls=kind==='RDS'?[choice('engine',[...new Set([engine,...Object.keys(engines)].filter(Boolean))]),versions,choice('topology',['ha','single']),...storage]:
   kind==='ElastiCache'?[choice('engine',['Redis OSS']),choice('version',['4.0','5.0','6.0','7.0']),choice('topology',['ha','single','cluster']),
    number('cacheGiB'),number('replicas','1'),number('shards','1'),choice('nodeGrouping',['assumed','verified']),input('groupingEvidence'),number('sourcePeriodHours'),number('targetInstances','1')]:
    kind==='OpenSearch'?[choice('engine',['OpenSearch']),choice('role',['data']),input('version'),...storage]:[];

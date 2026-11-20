@@ -7,16 +7,16 @@
 | 项目 | 当前状态 |
 | --- | --- |
 | 更新日期 | 2026-11-20，Europe/Berlin |
-| 当前优先目标 / 模式 | Huawei EU-Dublin 的迁移报价与按版本真实回归，单 Agent |
-| 本轮检查基线 | `main` / `36aec0ba7e2eaa79a2cf818d3cb8e015de9b0b18`，含 [PR #22](https://github.com/jh1369/cloud-solution-studio/pull/22) |
+| 当前优先目标 / 模式 | AWS 清单到 Huawei EU-Dublin 的快速预算估算与按版本真实回归，单 Agent |
+| 本轮检查基线 | `main` / `f4f08a302134e2edbf69c07d8f38fb1ac6434954`，含 [PR #23](https://github.com/jh1369/cloud-solution-studio/pull/23) |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 在线源码及原私有站第 17 版均为 `0.3.15-dev` |
+| 当前网页版本 | 在线 `0.3.16-dev`，原私有站第 19 版 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| Sites 部署源码 | `46e6451311bb920c633ad50d2688c5b430d5bd95`（私有站第 17 版） |
-| 整体进度 | ECS 受限升配与候选排序，RDS 主备迁移方案及独立存储，DCS 容量与节点小时换算，CSS 托管节点与独立存储 |
-| 本轮同步范围 | `0.3.15-dev` 的 112 行真实回归、Pending 原因和对比分析。 [真实回归记录](HUAWEI_REAL_REGRESSION.md) |
+| Sites 部署源码 | `59877801d87a9119a0e2912d08ebc77b566ec65b`（私有站第 19 版） |
+| 整体进度 | 导入即生成预算，ECS 受限升配、RDS 账单缩写与默认主备、DCS 节点小时折算和 CSS 托管节点均可直接估算 |
+| 本轮同步范围 | `0.3.16-dev` 快速预算和真实 112 行回归，95 行纳入初步预算。 [真实回归记录](HUAWEI_REAL_REGRESSION.md#0316-dev-快速预算实测) |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -33,7 +33,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 | 计费模式分离 | AWS 原计费仅作来源记录；华为云目标仅有按需、包月、包年；支持逐项及批量切换，切换后需重新确认 | `engine.mjs`、`app.mjs` |
 | 官方公开价格 | `eu-west-101` / USD；快照有 543 个按需、495 个包月、494 个包年计划。EIP 保留阶梯证据，新增 RDS 和 CSS 存储核对 1 GiB 与 100 GiB 的独立询价。保存 SKU、单位、请求/响应、来源和核验时间 | `public/catalog.json`、`scripts/build_catalog.py` |
 | 价格刷新 | 固定官方端点、服务端产品白名单；按目标计费模式分组请求；验证失败不生成价格 | `worker.mjs` |
-| 费用与情景 | 支持范围内的按需用量、独立月/年订阅价、手动折扣、首期预付、包年月均摊销。已确认报价、条件估算、Pending 独立展示，用户可按同配置和目标方案批量复核 | `engine.mjs`、`huawei-match.mjs`、`ui.mjs` |
+| 费用与情景 | 默认预算纳入已确认和有官方价格的条件估算，按来源账期、月度参考、年度情景及预付分别汇总。保留三类明细状态、批量假设编辑和可选 RDS/CSS 存储 | `engine.mjs`、`huawei-match.mjs`、`huawei-migration.mjs`、`app.mjs` |
 | 账单用量边界 | 累计实例小时不反推台数；来源账期不自动外推全年；订阅需明确目标数量/每盘容量 | `engine.mjs` |
 | Excel 导出 | Input、Service Mapping、Public Pricing、Quotation、Assumptions。保留非标准导入的来源和官方规格证据。实例与关联费用分行，Pending 金额空白 | `public/excel.mjs` |
 | 构建与测试 | Python 标准库构建 Worker，浏览器依赖随包提供。在线候选的自动测试及 CLI 结果见本轮记录 | `web/scripts/`、`web/tests/`、`pricing-studio/tests/` |
@@ -102,7 +102,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 1. 保持 Web + Worker，V0.3 增加 TCP 目录阶段；Python CLI starter 未改。Python 3.12 仅用于构建/公开目录适配；新增 Node 本地 HTTP 适配复用同一 Worker，不另建报价引擎。
 2. 原 Python 包声明 `>=3.10`、无运行依赖；原始 Python 3.12/openpyxl/SQLite 全套目标尚未统一实现。版本号分别记录，不能混淆。
 3. `public/` 为受版本控制的网页源码和依赖；生成 `dist/`、`.openai/` 部署配置和临时导出不入库。构建和测试不需要站点身份、凭证或网络询价。
-4. 服务族映射、SKU 复核、价格证据、计费计算和导出按职责分离。映射必须人工确认，缺失或不可信价格不生成有效金额。
+4. 服务族映射、SKU 验证、价格证据、计费计算和导出按职责分离。有有效官方价格的条件估算随披露假设计入预算，手工复核用于记录明细状态。缺价条目保持 Pending。
 5. AWS 源计费与华为云目标模式独立。包月/包年使用独立官方订阅价，不以按需小时价乘算；包年月均仅为摊销，不是月付选项。
 6. 快照有效期 7 天；刷新固定到官方欧洲站端点，币种/产品身份验证失败则 Pending。价格依据包含模式、周期、区域、单位、时间。
 7. 用户文件在浏览器内存解析。核价刷新仅传递批准的 Huawei 产品 ID。本机模型适配器由同源回环服务提供，真实清单及报价保留在获准隔离环境。OpenAI API 适配器仅提供服务端虚构数据测试入口。
@@ -113,7 +113,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 
 - **Python starter 已知问题未改动：** `float()` 配合 `< 0` 不能拒绝 NaN/Infinity；原样例存储数量与 `usage_hours` 语义不充分，不能直接用于财务计价。
 - 网页只支持有限的规则式描述、规格族和账单 PDF 布局；扫描 PDF、任意格式和自由自然语言不保证识别。未知字段需补充。
-- 模型建议需对照来源，陌生表头和复杂描述可能留待用户补充。OpenSearch 有来源型号记录，CSS 暂无可验证目标价格；RDS 和缓存需补齐引擎、版本、拓扑和独立存储计费证据。
+- 模型建议需对照来源，陌生表头和复杂描述可能留待用户补充。CSS 普通数据节点有可核价目标，UltraWarm 待独立核验。RDS 数据盘、备份、CSS 存储和部分 DCS 容量仍取决于可用计量和公开价格证据。
 - 441/400/400 是验证过的计价计划记录数，不代表服务功能覆盖全部 AWS，也不代表每个服务都有三种模式。未覆盖项目保持 Pending。
 - 公开计算器接口可能变化、限流或不可用；官方单价有效不等于映射、可售性或客户折扣得到承诺。
 - 正向财务测试已改用虚构有效夹具；生产公开快照仍严格到期 Pending。本次只实测核心 3 服务 × 3 模式，不能外推整个目录的实时可售性。
@@ -125,6 +125,13 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 - 原私有 Sites 的身份和访问配置未放入 GitHub；下载源码不会自动取得该站点的管理或访问权限。
 
 ## 7. 最近一次测试与同步检查
+
+### Web V0.3.16-dev
+
+- 在 `pricing-studio/web/` 使用 Node 24.22.1 和 Python 3.12.14 设置 `PRICING_OFFLINE_ARCHIVE` 指向现有 `0.3.1-dev` 归档，执行 `npm test`。158 项 JavaScript 通过、0 失败。50 项 Python 中 48 项通过、2 项因缺 boto3 跳过。原 CLI 在 `pricing-studio/` 以 `PYTHONPATH=src python3.12 -m unittest discover -s tests` 通过 1 项。现有站点的下载使用既有 `0.3.0-dev` 附件。
+- Chromium 156.0.8078.79 在本地回环 Worker 完成 24 行虚构表导入。16 行无需确认进入预算。验证未计价过滤、RDS 引擎与版本编辑、可选存储、三计费模式、小屏布局及五表账期与订阅金额独立对账。
+- 同一真实清单两版隔离回归。有效价格候选由 85 增为 95，RDS 10 行缩写全部恢复，原 11 行确认计价保留，条件估算由 74 增为 84。两份五表下载重开核对 112 行源用量、175 行费用、95 行主费用价格证据及 80 项 Pending 的空金额，页面小计一致。0 外部或模型请求。 [复测口径与原因](HUAWEI_REAL_REGRESSION.md#0316-dev-快速预算实测)
+- 原私有站第 19 版部署成功。复核所有者权限、10 个线上资源字节、既有 TCP 快照和旧下载附件。托管模型和回归服务端路径均返回 HTTP 404。 [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
 
 ### Web V0.3.15-dev
 
@@ -206,7 +213,7 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 
 ## 8. 下一步开发计划
 
-真实回归显示 RDS 账单尺寸缩写影响 10/27 项主费用 Pending。隔离试算证实这 10 项已有可用 AWS 来源规格及 Huawei 条件估算。优化优先级还包括 ECS 兼容目录及 DCS、RDS、CSS 的方案确认和独立费用证据。 [真实回归分析](HUAWEI_REAL_REGRESSION.md#优化讨论优先级)
+RDS 缩写已通过真实回归修复。按新版主费用缺口，首要目录问题是 12 行 ECS 的兼容规格。另有 DCS 容量证据、Aurora ACU、UltraWarm 冷数据和独立存储费用待核验。 [本版真实回归分析](HUAWEI_REAL_REGRESSION.md#0316-dev-快速预算实测)
 
 Huawei 欧洲站覆盖率优先补齐 RDS 数据盘和备份，随后为 ELB/EIP 分项和 OBS。每项建设以可验证的官方价格和独立计费单位为依据。[覆盖率分析](HUAWEI_QUOTE_COVERAGE.md)
 
@@ -566,3 +573,9 @@ Huawei 欧洲站覆盖率优先补齐 RDS 数据盘和备份，随后为 ELB/EIP
 - **新增与删除** 产品功能均无。**修改** 脱敏回归记录、覆盖率及本开发状态。实测基线为 `36aec0ba7e2eaa79a2cf818d3cb8e015de9b0b18`，Web `0.3.15-dev`。 [实测报告](HUAWEI_REAL_REGRESSION.md#2026-11-20-隔离回归)
 - **验证** 在 `pricing-studio/web/` 以 Node 24.22.1、Python 3.12.14 构建 Worker 成功。比较两版引擎，使用 Chromium 156.0.8078.79 依次验证首导、四类方案复核、两阶段下载以及 ECS 临时确认与失效。`node scripts/validate_huawei_regression.mjs` 两份统计通过配对校验。openpyxl 3.1.5 重开 2 份五表文件，112 行原用量、175 行费用和 90 行 Pending 空金额核对通过。0 个外部或模型请求。文档交付沿用该 Web 版本的自动测试记录。
 - **分析与同步** RDS 尺寸缩写、ECS 规格目录、DCS 可用容量和节点计量、CSS 版本及冷数据仍是主要缺口。分支 `docs/huawei-real-workbook-regression`，GitHub 以包含本条记录的主线合并提交为准。实测采用随包公开价格，运行版本为原私有站第 17 版。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/)
+
+### 2026-11-20 — Huawei 快速预算估算器
+
+- **新增** RDS `xl` 系列及缺前缀账单型号规范化、预算覆盖率与未计价过滤、主要假设和可选全局存储容量。RDS 引擎和版本选择关联公开目录。**修改** 页面和五表共用各周期预算小计。**移除** 人工确认作为汇入初步预算的前置要求，保留原状态和可选复核。
+- **验证** 158 项 JavaScript、48 项 Web Python 和 1 项 CLI 测试通过，Web Python 有 2 项因依赖跳过。真实 112 行首导和复核后均有 95 行纳入按需账期预算。17 项主费用和 63 项关联费用保持 Pending。 [测试与原因](HUAWEI_REAL_REGRESSION.md#0316-dev-快速预算实测)
+- **同步** Web `0.3.16-dev`，分支 `feat/huawei-budget-estimator`。以包含本条记录的 GitHub `main` 合并提交为准。原私有站第 19 版以源码 `59877801d87a9119a0e2912d08ebc77b566ec65b` 发布通过。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/) · [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)

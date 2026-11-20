@@ -2,11 +2,12 @@
 
 The shared [development status](DEVELOPMENT_STATUS.md) records inspected code, test evidence and synchronization state. Checkboxes below distinguish the integrated web implementation from the existing Python starter; they do not assert customer-ready completeness.
 
-## Pricing Studio V0.3 — Huawei inventory and quotation
+## Pricing Studio V0.3 — Huawei budget estimation
 
 - [x] Use service-specific dimensions and exact catalog matching for ECS, EVS, DCS and scoped RDS instance estimates.
 - [x] Review nonstandard CSV and multi-sheet Excel with a configured loopback model. Batch by sheet, validate complete row coverage, retry failed batches and preserve source evidence through export.
-- [x] Enrich AWS EC2, RDS, ElastiCache and OpenSearch instance types from versioned public specification records. Preserve aggregate AWS hours and show Huawei estimates requiring approval separately from confirmed prices. [AWS source evidence and quote conditions](../pricing-studio/web/README.md#aws-source-specifications-and-conditional-quotes)
+- [x] Enrich AWS EC2, RDS, ElastiCache and OpenSearch instance types from versioned public specification records. Normalize RDS billing abbreviations against the same official records and preserve aggregate AWS hours. [AWS source evidence](../pricing-studio/web/README.md#aws-source-specifications-and-conditional-quotes)
+- [x] Generate a Huawei budget directly at import. Report priced coverage, major assumptions and unpriced items, with separate source-period, monthly reference and prepaid figures. Keep confirmation and conditional states in the five-sheet export. [Real regression](HUAWEI_REAL_REGRESSION.md#0316-dev-快速预算实测)
 - [x] Rank ECS resizing options, review grouped RDS and DCS target designs, and quote verified managed CSS data nodes. Track cache metering and separate storage from covered compute. [Migration coverage](HUAWEI_QUOTE_COVERAGE.md#0314-dev-四类迁移报价复测)
 - [x] Verify imported counts, capacity and usage against their source columns or explicit units. Retain header evidence and require review of uncertain pricing inputs.
 - [x] Match explicit ECS series and public or private NAT gateway sizes. Use billed days for public pay-per-use and hours for private pay-per-use. Keep manually chosen SKUs through billing changes when an equivalent plan exists.

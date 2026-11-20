@@ -1,5 +1,5 @@
 import {buildWorkbook} from './excel.mjs';
-import {normalizeRows,parseText,recommend,calculate,parseBillPages,switchBilling,priceValidation,huaweiProductSpecIssue,huaweiQuoteLines,huaweiApprovalKey} from './engine.mjs';
+import {normalizeRows,parseText,recommend,calculate,parseBillPages,switchBilling,priceValidation,huaweiProductSpecIssue,huaweiQuoteLines,huaweiApprovalKey,finite,huaweiBudget} from './engine.mjs';
 import {tcpQuoteRows,tcpQuoteTotals} from './providers.mjs';
 import {t,billingLabel,dateLabel,translateMessage,readLanguage,saveLanguage,applyTranslations,serviceLabel,reasonLabel} from './i18n.mjs';
 import {escapeHTML,icon,money,emptyResources,resourceHTML,tcpResourceHTML,summaryModel,breakdownHTML,catalogueHTML,migrationControls} from './ui.mjs';
@@ -16,7 +16,7 @@ let language=readLanguage(storage);
 let catalog={items:[],ttlDays:7},rows=[],page=0,activeView='studio',mappingSelected=false,busy=false,catalogState='loading';
 let tcpStatus={provider:'tcp',status:'NEVER_CHECKED'},tcpLoaded=false,tcpBusy=false;
 let provider='huawei',tcpPublication={state:null,catalog:null},tcpQuoteLoading=false,tcpExpiryTimer;
-let conditionAnchor=null;
+let conditionAnchor=null,pendingOnly=false;
 const T=(key,vars)=>t(key,language,vars);
 const E=escapeHTML;
 
@@ -47,7 +47,15 @@ function settings(){
  const hours=Number($('#hours').value),discount=Number($('#discount').value)/100;
  if(!Number.isFinite(hours)||hours<=0||hours>744)throw Error(T('error.hours'));
  if(!Number.isFinite(discount)||discount<0||discount>1)throw Error(T('error.discount'));
- return {hours,discount};
+ const storageBudget={};
+ if(huaweiMatching&&provider==='huawei'){
+  for(const [service,id] of [['RDS','#rds-budget-storage'],['CSS','#css-budget-storage']]){
+   const value=finite($(id).value,T('migration.field.storageGiB'),true);
+   if(value!==null&&value<=0)throw Error(T('budget.storageError'));
+   storageBudget[service]=value;
+  }
+ }
+ return {hours,discount,storageBudget};
 }
 function refreshCrumb(){
  $('#crumb').textContent=T(mappingSelected?'nav.mapping':({studio:'nav.workspace',catalog:'nav.catalog',guide:'nav.guide'})[activeView]);
@@ -68,9 +76,8 @@ function renderConnection(){
  const connection=$('.connection');connection.classList.toggle('expired',state==='expired');connection.classList.toggle('unavailable',state==='unavailable');
  $('#connection-label').textContent=T(state==='loading'?'top.loading':state==='expired'?'top.expired':state==='unavailable'?'top.unavailable':offlineBundle?'offline.snapshot':'top.connected');
 }
-function renderMetrics(output,now){
+function renderMetrics(output,now,ready=output.filter(result=>result.status==='Valid'||result.status==='Period').length){
  $('#metric-resources').textContent=rows.length.toLocaleString(language==='en'?'en-US':'zh-CN');
- const ready=output.filter(result=>result.status==='Valid'||result.status==='Period').length;
  $('#metric-confirmed').innerHTML=`${ready} <em>/ ${rows.length}</em>`;
  const count=provider==='tcp'?(now-Date.parse(tcpPublication.state?.lastVerifiedAt)<=48*3600000?tcpPublication.catalog?.items.length:0):catalog.items.filter(plan=>priceValidation(plan,catalog,{now}).valid).length;
  $('#metric-plans').textContent=count?count.toLocaleString(language==='en'?'en-US':'zh-CN'):'—';
@@ -93,6 +100,39 @@ function renderSummary(output,now){
  ].filter(Boolean).join(' · '):'';
  $('#breakdown').innerHTML=breakdownHTML(summary,language);renderMetrics(output,now);
 }
+function renderBudget(output,now){
+ const budget=huaweiBudget(rows,output),source=budget.headline==='sourcePeriod';
+ const amount=budget[budget.headline];
+ $('#monthly-label').textContent=T(source?'budget.sourcePeriod':'budget.monthly');
+ $('#monthly-money').innerHTML=E(money(amount))+(amount===null?'':`<span> ${T(source?'term.period':'term.monthly')}</span>`);
+ $('#budget-monthly-row').hidden=!source||budget.monthly===null;
+ $('#budget-monthly-money').textContent=money(budget.monthly);
+ $('#annual-row').hidden=budget.annual===null;
+ $('#annual-label').textContent=T('budget.annual');
+ $('#annual-money').textContent=money(budget.annual);
+ $('#upfront-row').hidden=budget.prepaid===null;
+ $('#upfront-money').textContent=money(budget.prepaid);
+ const partial=budget.unpriced>0||budget.excludedCharges>0;
+ $('#quote-status').textContent=T(!budget.input?'status.waiting':amount===null?'budget.unavailable':partial?'budget.partial':'budget.complete');
+ $('#quote-status').className='badge '+(!budget.input?'neutral':partial||amount===null?'pending':'valid');
+ $('#coverage').textContent=T('budget.coverage',{priced:budget.priced,input:budget.input});
+ $('#budget-unpriced').hidden=!budget.input;
+ $('#budget-unpriced').textContent=T('budget.unpriced',{rows:budget.unpriced,charges:budget.excludedCharges});
+ $('#budget-show-unpriced').hidden=!budget.unpriced;
+ $('#quote-note').textContent=budget.input?T('budget.detail'):T('budget.start');
+ const conditional=$('#conditional-summary');
+ conditional.hidden=!budget.conditionalCount;
+ conditional.textContent=budget.conditionalCount?T('budget.conditional',{count:budget.conditionalCount}):'';
+ $('#budget-assumptions').hidden=!budget.assumptions.length;
+ $('#budget-assumption-list').replaceChildren(...budget.assumptions.map(([code,count])=>{
+  const entry=document.createElement('li');
+  entry.textContent=T('budget.assumptionLine',{text:reasonLabel({reasonCode:code},language),count});
+  return entry;
+ }));
+ $('#breakdown-heading').textContent=T(source?'budget.periodBreakdown':'quote.breakdown');
+ $('#breakdown').innerHTML=breakdownHTML({has:amount!==null,scenario:amount,groups:budget.groups},language);
+ renderMetrics(output,now,budget.priced);
+}
 function renderTCPSummary(output,now){
  const totals=tcpQuoteTotals(output);
  $('#monthly-label').textContent=T('tcp.quote.subtotal');$('#monthly-money').textContent=money(totals.monthly,'EUR');
@@ -114,26 +154,35 @@ function render({now=Date.now()}={}){
    renderTCPSummary(output,now);
   }else{
    const options={...settings(),now};
-   output=huaweiMatching?huaweiMatching.quoteHuaweiRows(rows,catalog,options):rows.map(row=>calculate(row,catalog,options));renderSummary(output,now);
+   output=huaweiMatching?huaweiMatching.quoteHuaweiRows(rows,catalog,options):rows.map(row=>calculate(row,catalog,options));
+   if(huaweiMatching)renderBudget(output,now);else renderSummary(output,now);
   }
  }catch(error){
   $('#monthly-money').textContent='—';$('#annual-money').textContent='—';$('#scenario-money').textContent='—';
   $('#upfront-row').hidden=true;$('#upfront-money').textContent='—';$('#coverage').textContent='—';$('#breakdown').textContent='—';
+  for(const id of ['#budget-monthly-row','#budget-assumptions','#budget-unpriced','#budget-show-unpriced','#conditional-summary'])$(id).hidden=true;
   $('#quote-status').textContent=T('status.invalid');$('#quote-status').className='badge pending';
   $('#quote-note').textContent=translateMessage(error.message,language);
   $('#export').disabled=true;$('#quote-export').disabled=true;$('#export-regression').disabled=true;report(error);return;
  }
- page=Math.min(page,Math.max(0,Math.ceil(rows.length/10)-1));
+ const filtered=!isTCP&&!!huaweiMatching&&pendingOnly;
+ const visibleRows=filtered?rows.filter((_,i)=>output[i].status==='Pending'):rows;
+ const visibleOutput=filtered?output.filter(result=>result.status==='Pending'):output;
+ page=Math.min(page,Math.max(0,Math.ceil(visibleRows.length/10)-1));
  $('#resource-count').textContent=rows.length;
  $('#export').disabled=!rows.length||(isTCP&&tcpQuoteLoading);$('#quote-export').disabled=$('#export').disabled;
  $('#export-regression').disabled=!rows.length||busy||isTCP||!!offlineBundle;
  $('#confirm-all').disabled=!rows.some(row=>!row.accepted&&!row.huaweiConditionKey&&canConfirm(row));
  $('#refresh-prices').disabled=!!offlineBundle||busy||(isTCP?tcpQuoteLoading:!refreshIds(output).length);
  $('#parse').disabled=busy;$('#file').disabled=busy;
- $('#resources').innerHTML=!rows.length?emptyResources(language):isTCP?tcpResourceHTML(rows,output,tcpPublication.state,language,page):resourceHTML(rows,output,catalog,language,page,now);
- $('#resource-pagination').hidden=rows.length<=10;
- $('#page-info').textContent=T('pagination.info',{start:page*10+1,end:Math.min(page*10+10,rows.length),total:rows.length});
- $('#prev-page').disabled=page===0;$('#next-page').disabled=(page+1)*10>=rows.length;
+ $('#resources').innerHTML=!rows.length?emptyResources(language):isTCP?tcpResourceHTML(rows,output,tcpPublication.state,language,page):
+  resourceHTML(visibleRows,visibleOutput,catalog,language,page,now)||`<p class="row-notes">${E(T('budget.noneUnpriced'))}</p>`;
+ $('#unpriced-toggle').hidden=isTCP||!huaweiMatching||!rows.length;
+ $('#unpriced-toggle').textContent=T(filtered?'budget.showAll':'budget.showUnpriced');
+ $('#unpriced-toggle').setAttribute('aria-pressed',String(filtered));
+ $('#resource-pagination').hidden=visibleRows.length<=10;
+ $('#page-info').textContent=T('pagination.info',{start:page*10+1,end:Math.min(page*10+10,visibleRows.length),total:visibleRows.length});
+ $('#prev-page').disabled=page===0;$('#next-page').disabled=(page+1)*10>=visibleRows.length;
  renderConnection();
  return output;
 }
@@ -145,6 +194,15 @@ function renderProvider(){
  for(const element of $$('[data-huawei-quote]'))element.hidden=isTCP;
  for(const element of $$('[data-tcp-quote]'))element.hidden=!isTCP;
  $('#target-provider-control').hidden=!!offlineBundle;
+ for(const element of $$('[data-budget]'))element.hidden=!onlineHuawei;
+ $('#annual-row').hidden=false;
+ $('#discounted-scenario').hidden=isTCP||onlineHuawei;
+ $('#quote-title').textContent=T(onlineHuawei?'budget.title':'quote.title');
+ $('#metric-priced-label').textContent=T(onlineHuawei?'budget.priced':'metric.confirmed');
+ $('#metric-priced-hint').textContent=T(onlineHuawei?'budget.pricedHint':'metric.confirmedHint');
+ $('[data-i18n="app.heading"]').textContent=T(onlineHuawei?'budget.heading':'app.heading');
+ $('[data-i18n="app.subtitle"]').textContent=T(onlineHuawei?'budget.subtitle':'app.subtitle');
+ document.title=T(onlineHuawei?'budget.pageTitle':'app.title');
  $('#refresh-prices span').textContent=T(isTCP?'tcp.quote.reload':offlineBundle?'offline.refresh':'quote.refresh');
  $('#mapping-notice').textContent=T(isTCP?'tcp.quote.notice':onlineHuawei?'mapping.hwNotice':'mapping.notice');
  $('[data-i18n="input.file"]').textContent=T(onlineHuawei?'input.hwFile':'input.file');
@@ -257,7 +315,7 @@ function setRows(incoming,append=false){
   if(provider==='huawei'&&huaweiMatching)selectHuawei(row);
   else row.targetId=recommend(row,catalog);
  });
- rows=candidate;page=0;render();
+ rows=candidate;page=0;pendingOnly=false;render();
  toast(T('toast.parsed',{count:incoming.length}));
 }
 $('#parse').addEventListener('click',()=>{try{setRows(parseText($('#description').value));}catch(error){report(error);}});
@@ -269,7 +327,7 @@ function sample(){
 $('#sample').addEventListener('click',sample);
 $('#add').addEventListener('click',()=>{
  rows.push({id:crypto.randomUUID(),product:'EC2',specification:'',region:'',quantity:null,usage:null,unit:'hour',billing:'未提供',targetBilling:'ONDEMAND',targetQuantity:null,capacity:null,service:'ECS',scope:'resource',period:'monthly',notes:'手动添加，请补全规格、数量和用量。',accepted:false,targetId:'',manualRate:null});
- page=Math.floor((rows.length-1)/10);render();
+ pendingOnly=false;page=Math.floor((rows.length-1)/10);render();
 });
 $('#resources').addEventListener('change',event=>{
  const field=event.target.dataset.field;if(!field)return;
@@ -338,6 +396,8 @@ $('#resources').addEventListener('click',event=>{
   form.hidden=!migration;
   form.innerHTML=migration?migrationControls(conditionAnchor,language):'';
   $('#save-migration').hidden=!migration;
+  $('#condition-audit').open=false;
+  $('#condition-audit').hidden=!conditionAnchor.huaweiConditionKey||conditionAnchor.huaweiMigration?.canApprove===false;
   $('#migration-check-label').hidden=!migration;
   $('#migration-check').checked=false;
   $('#apply-condition').disabled=!!migration;
@@ -347,6 +407,8 @@ $('#resources').addEventListener('click',event=>{
  rows=rows.filter(row=>row.id!==button.dataset.delete);render();
 });
 $('#prev-page').onclick=()=>{page--;render();};$('#next-page').onclick=()=>{page++;render();};
+$('#unpriced-toggle').onclick=()=>{pendingOnly=!pendingOnly;page=0;render();};
+$('#budget-show-unpriced').onclick=()=>{pendingOnly=true;page=0;render();openMapping();};
 $('#bulk-billing').addEventListener('change',event=>{
  if(!event.target.value)return;rows.forEach(row=>setBilling(row,event.target.value));
  render();event.target.value='';toast(T('toast.switched'));
@@ -355,12 +417,21 @@ for(const selector of ['#hours','#discount'])$(selector).addEventListener('chang
  rows.forEach(row=>{if(row.huaweiConditionKey)row.huaweiConditionApproval=null;});
  render();
 });
+for(const selector of ['#rds-budget-storage','#css-budget-storage'])$(selector).addEventListener('change',()=>render());
 $('#confirm-all').addEventListener('click',()=>{$('#confirm-check').checked=false;$('#apply-confirm').disabled=true;$('#confirm-dialog').showModal();});
 $('#confirm-check').addEventListener('change',event=>{$('#apply-confirm').disabled=!event.target.checked;});
 $('#cancel-confirm').addEventListener('click',()=>$('#confirm-dialog').close());
 $('#apply-confirm').addEventListener('click',()=>{rows.forEach(row=>{if(!row.huaweiConditionKey&&canConfirm(row))row.accepted=true;});$('#confirm-dialog').close();render();toast(T('toast.confirmed'));});
 $('#cancel-condition').addEventListener('click',()=>$('#condition-dialog').close());
 $('#migration-form').addEventListener('submit',event=>event.preventDefault());
+$('#migration-form').addEventListener('change',event=>{
+ if(event.target.name!=='engine'||conditionAnchor?.huaweiMigration?.kind!=='RDS')return;
+ const version=event.currentTarget.elements.namedItem('version');
+ for(const option of version.options){
+  option.disabled=option.hidden=!!option.dataset.engine&&option.dataset.engine!==event.target.value;
+ }
+ version.value='';
+});
 $('#migration-check').addEventListener('change',()=>{
  $('#apply-condition').disabled=!$('#migration-check').checked||!conditionAnchor?.huaweiConditionKey||
   conditionAnchor.huaweiMigration?.canApprove===false;

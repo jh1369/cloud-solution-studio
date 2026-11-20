@@ -3,10 +3,10 @@
 在原私有站选择 Huawei Cloud，使用和上次相同的参考工作簿与计费模式。非标准表可在预览核对字段。五表 Excel 供所有者在本地对账。 [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
 
 1. 首次导入后点击 **导出脱敏回归统计**，选择 **首次导入**。
-2. 按实际证据核对并确认目标方案后，再导出 **方案确认后**。
+2. 核对或调整预算假设后，再导出 **方案复核后**，记录本轮调整项目。
 3. 反馈时提供这两份统计 JSON，并确认使用了相同参考清单。GitHub 回归记录保存汇总和分析。 [真实回归记录](HUAWEI_REAL_REGRESSION.md)
 
-从 `pricing-studio/web/` 执行以下命令可校验脱敏统计。校验器接受一个统计文件，或按首次导入、方案确认后的顺序接受同一版本的一对文件。
+从 `pricing-studio/web/` 执行以下命令可校验脱敏统计。校验器接受一个统计文件，或按首次导入、方案复核后的顺序接受同一版本的一对文件。
 
 ```bash
 node scripts/validate_huawei_regression.mjs initial.json reviewed.json

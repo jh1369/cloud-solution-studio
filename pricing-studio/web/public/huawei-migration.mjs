@@ -125,6 +125,20 @@ function sourceHourIssue(row,meter){
  return row.scope==='aggregate'&&(!meter||!isHour(row.unit))?'HW_MIG_USAGE_REQUIRED':null;
 }
 
+const rdsTopology={ha:'Primary/Standby',single:'Single'};
+const engineName=value=>typeof value==='string'?value.replace(/^Microsoft SQL Server$/i,'SQL Server'):null;
+function rdsOffer(item){
+ if(item.size||item.resourceType!=='hws.resource.type.rds.vm')return null;
+ const fields=readValues(item.description??''),engine=engineName(fields['db engine']);
+ if(!['MySQL','PostgreSQL','SQL Server'].includes(engine)||engineName(item.engine)!==engine||
+    engine==='MySQL'&&(item.migrationCharge!=='rdsInstance'||item.targetArch!=='x86'))return null;
+ const [series,...edition]=(fields['db engine version']??'').split(/\s+/);
+ if(!/^\d+(?:\.\d+)*(?:\|\d+(?:\.\d+)*)*$/.test(series))return null;
+ return {item,engine,versions:series.split('|').map(version=>[version,...edition].join(' ')),
+  topology:fields['db instance type'],storageType:fields['storage type']==='Extreme SSD'?'ESSD':fields['storage type'],
+  performanceClass:fields['instance class']==='General-purpose'?'general':'compute'};
+}
+
 function rds(row,plans,catalog,now,migration){
  const text=row.specification,profile=row.awsProfile;
  if(/\baurora\b|serverless(?:v?2)?usage|\bacu(?:-hours?)?\b/i.test(text)){
@@ -134,28 +148,32 @@ function rds(row,plans,catalog,now,migration){
  const settings=settingsFor(row,{engine:'MySQL',version:'8.0',topology:'ha',storageType:'Cloud SSD',
   storageGiB:null,storageHours:null,storageQuantity:null});
  const config=dataFor(settings);
- const engine=text.match(/\b(MySQL|PostgreSQL|MariaDB|SQL Server)\b/i)?.[1];
- const sourceVersion=text.match(/\b(?:MySQL|PostgreSQL|MariaDB|SQL Server|version)\s+(\d+(?:\.\d+)+)/i)?.[1];
- const target={...migration,settings,source:{...migration.source,
+ const engine=text.match(/\b(MySQL|PostgreSQL|MariaDB|SQL Server|Oracle|Db2)\b/i)?.[1];
+ const sourceVersion=text.match(/\b(?:MySQL|PostgreSQL|MariaDB|SQL Server|Oracle|Db2|version)\s+(\d+(?:\.\d+)*)\b/i)?.[1];
+ const offers=plans.map(rdsOffer).filter(Boolean),engineVersions={};
+ for(const offer of offers){
+  if(!Object.values(rdsTopology).includes(offer.topology)||!priceValidation(offer.item,catalog,{now}).valid)continue;
+  engineVersions[offer.engine]=[...new Set([...(engineVersions[offer.engine]??[]),...offer.versions])];
+ }
+ const target={...migration,settings,engineVersions,source:{...migration.source,
   engine:sourced(engine??null,engine?'excel':'unknown'),version:sourced(sourceVersion??null,sourceVersion?'excel':'unknown')}};
  const issue=sourceHourIssue(row,migration.meter);
  if(issue)return errorCode(issue,{migration:target});
- const topology={ha:'Primary/Standby',single:'Single'}[config.topology];
- if(!topology||config.engine!=='MySQL'||!['8.0','5.7'].includes(config.version)||!['Cloud SSD','ESSD'].includes(config.storageType))
+ const topology=Object.hasOwn(rdsTopology,config.topology)?rdsTopology[config.topology]:null;
+ if(!topology||!['MySQL','PostgreSQL','SQL Server'].includes(config.engine)||!config.version||!['Cloud SSD','ESSD'].includes(config.storageType))
   return errorCode('HW_DB_PARAMETERS',{migration:target});
- const eligible=plans.flatMap(item=>{
-  if(item.migrationCharge!=='rdsInstance'||item.targetArch!=='x86'||item.size)return [];
-  const fields=readValues(item.description);
-  const storage=fields['storage type']==='Extreme SSD'?'ESSD':fields['storage type'];
-  if(fields['db engine']!==config.engine||!fields['db engine version']?.split('|').includes(config.version)||
-     fields['db instance type']!==topology||storage!==config.storageType)return [];
-  return [{...item,performanceClass:fields['instance class']==='General-purpose'?'general':'compute'}];
- });
+ const eligible=offers.filter(offer=>offer.engine===config.engine&&offer.versions.includes(config.version)&&
+  offer.topology===topology&&offer.storageType===config.storageType)
+  .map(({item,performanceClass})=>({...item,performanceClass}));
  const options=powerOptions(eligible,profile,{general:'general',compute:'compute'},'general',4);
  const match=pick(row,options,catalog,now);
  return {...match,migration:target,charge:'rdsInstance',conditions:[
   'HW_MIG_RDS_DESIGN',...powerConditions(match.selected),
-  ...(profile.architecture==='arm'?['HW_MIG_ARM_X86']:!profile.architecture?['HW_MIG_ARCH_UNKNOWN']:[])
+  ...(settings.engine.origin==='assumption'&&settings.version.origin==='assumption'&&settings.topology.origin==='assumption'&&
+   settings.storageType.origin==='assumption'?['HW_BUDGET_RDS_DEFAULT']:[]),
+  ...(engine&&engine.toLowerCase()!==config.engine.toLowerCase()?['HW_BUDGET_RDS_ENGINE_DIFFERENCE']:[]),
+  ...(config.engine!=='MySQL'?['HW_BUDGET_RDS_TARGET_ARCH']:
+   profile.architecture==='arm'?['HW_MIG_ARM_X86']:!profile.architecture?['HW_MIG_ARCH_UNKNOWN']:[])
  ]};
 }
 
@@ -224,7 +242,7 @@ function cache(row,plans,catalog,now,migration,optionsForSpec){
   canApprove:(billingOf(row)!=='ONDEMAND'||groupingVerified)&&settings.cacheGiB.origin!=='assumption'},
   usageOverride:billingOf(row)==='ONDEMAND'?meter.targetInstanceHours:undefined,charge:'dcsInstance',
   conditions:['HW_MIG_CACHE_DESIGN',...(settings.cacheGiB.origin==='assumption'?['HW_MIG_CACHE_RESERVE']:[]),
-   ...(!groupingVerified&&billingOf(row)==='ONDEMAND'?['HW_MIG_CACHE_PAIRING']:[]),
+   ...(!groupingVerified&&billingOf(row)==='ONDEMAND'?[topology==='ha'?'HW_MIG_CACHE_PAIRING':'HW_BUDGET_CACHE_NODE_METER']:[]),
    ...(profile.architecture==='arm'?['HW_MIG_ARM_X86']:!profile.architecture?['HW_MIG_ARCH_UNKNOWN']:[])]};
 }
 
@@ -257,13 +275,10 @@ export function matchAwsMigration(row,kind,plans,catalog,now,optionsForSpec){
  return css(row,plans,catalog,now,migration);
 }
 
-export function migrationStoragePlan(row,catalog){
- const settings=row.huaweiMigration?.settings;
- if(!settings||!['RDS','CSS'].includes(row.service))return null;
- const config=dataFor(settings);
+export function migrationStoragePlan(row,catalog,config=dataFor(row.huaweiMigration?.settings??{})){
  const charge=row.service==='RDS'?'rdsStorage':'cssStorage';
  const diskType=({'Cloud SSD':'cloudssd',ESSD:'essd'})[config.storageType];
- const sku=row.service==='RDS'&&diskType&&['ha','single'].includes(config.topology)?
+ const sku=row.service==='RDS'&&config.engine==='MySQL'&&diskType&&['ha','single'].includes(config.topology)?
   'rds.mysql.volume.'+diskType+(config.topology==='ha'?'.ha':''):
   row.service==='CSS'?({SSD:'ess.volume.ultrahigh',SAS:'ess.volume.high'})[config.storageType]:null;
  if(!sku)return null;
@@ -276,18 +291,30 @@ export function migrationRelated(row,result,catalog,options){
  if(!group||group.unsupported||!['RDS','CSS'].includes(row.service))return [];
  const charge=row.service==='RDS'?'rdsStorage':'cssStorage';
  const config=dataFor(group.settings??{});
- const price=migrationStoragePlan(row,catalog);
+ const scenarioGiB=options.storageBudget?.[row.service];
+ const useScenario=config.storageGiB==null&&positive(scenarioGiB);
+ const capacity=config.storageGiB??scenarioGiB;
+ if(useScenario&&row.service==='CSS'&&!config.storageType)config.storageType='SSD';
+ const price=migrationStoragePlan(row,catalog,config);
  const count=config.storageQuantity??row.targetQuantity??row.quantity;
- const monthly=billingOf(row)!=='ONDEMAND';
- const capacity=positive(config.storageGiB),hours=positive(config.storageHours);
+ const subscription=billingOf(row)!=='ONDEMAND';
+ const useComputeHours=useScenario&&!subscription&&config.storageHours==null&&config.storageQuantity==null&&
+  result.item?.unit==='hour'&&['Valid','Period','Conditional'].includes(result.status);
+ const aggregate=useComputeHours&&row.scope==='aggregate';
+ const hours=useComputeHours?result.effectiveUsage:config.storageHours;
  let storage={charge,result:pendingResult('','HW_MIG_STORAGE_INPUT')};
- if(capacity&&integer(count)&&(monthly||hours)){
+ if(positive(capacity)&&(aggregate||integer(count))&&(subscription||positive(hours)||useComputeHours&&hours===0)){
   if(!price)storage={charge,result:pendingResult('','HW_MIG_STORAGE_PRICE')};
   else{
-   const part={...row,huaweiCharge:charge,targetId:price.id,capacity:config.storageGiB,
-    scope:'resource',quantity:count,usage:monthly?null:config.storageGiB*config.storageHours,
+   const part={...row,huaweiCharge:charge,targetId:price.id,capacity,
+    scope:aggregate?'aggregate':'resource',quantity:aggregate?null:count,targetQuantity:aggregate?null:count,
+    usage:subscription?null:capacity*hours,
     unit:'GB-hour',unitExplicit:true,huaweiMeterUsage:undefined,huaweiProductMatch:null,awsMatchIssue:null};
-   if(['Valid','Period'].includes(result.status))part.huaweiConditionApproval=huaweiApprovalKey(part,price,options);
+   if(useScenario){
+    part.huaweiConditions=[...(row.huaweiConditions??[]),'HW_BUDGET_STORAGE_ASSUMPTION'];
+    part.huaweiConditionKey='HW_BUDGET_STORAGE_ASSUMPTION';
+    part.huaweiConditionApproval=null;
+   }else if(['Valid','Period'].includes(result.status))part.huaweiConditionApproval=huaweiApprovalKey(part,price,options);
    storage={charge,row:part,result:calculate(part,catalog,options)};
   }
  }
