@@ -12,11 +12,11 @@
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
-| 当前网页版本 | 在线 `0.3.16-dev`，原私有站第 19 版 |
+| 当前网页版本 | 在线 `0.3.17-dev`，原私有站第 20 版 |
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
-| Sites 部署源码 | `59877801d87a9119a0e2912d08ebc77b566ec65b`（私有站第 19 版） |
+| Sites 部署源码 | `0cdc9686487df8f186d6e796a0fc59059a49d986`（私有站第 20 版） |
 | 整体进度 | 导入即生成预算，ECS 受限升配、RDS 账单缩写与默认主备、DCS 节点小时折算和 CSS 托管节点均可直接估算 |
-| 本轮同步范围 | `0.3.16-dev` 快速预算和真实 112 行回归，95 行纳入初步预算。 [真实回归记录](HUAWEI_REAL_REGRESSION.md#0316-dev-快速预算实测) |
+| 本轮同步范围 | `0.3.17-dev` AI 补充匹配已合入 `main`，私有站已发布。 [PR #25](https://github.com/jh1369/cloud-solution-studio/pull/25) |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -28,6 +28,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 - 在 `pricing-studio/web` 使用 Python 3.12、Node 24.22.1 运行 `npm run release:offline`，Python 50 通过、Node 164 通过，失败 0。离线 HTML 和 ZIP 归档在 [v0.3.17-dev](../releases/pricing-studio/v0.3.17-dev/)。
 - Chromium 156.0.8078.79，`node tests/browser/huawei-ai-match.cjs` 通过。使用回环模拟模型完成 XLSX 导入、AI 补充、手动切换、重跑和两次五表对账。独立 HTML 经回环 HTTP 完成导入下载且无额外请求。受环境浏览器策略限制，原生 `file://` 打开未验收。
 - 合成条件下规则 1/6，AI 候选 5，AI 新增计价 3，剩余 Pending 2。独立反例拦截 10 个无效响应。AI 费用 USD 11.88，预算合计 USD 12.72。[合成与真实验收口径](HUAWEI_REAL_REGRESSION.md#0317-dev-ai-补充匹配候选)
+- 发布状态：实现合入 `1a1d8fd5f0099e557dc65551c2486518e9be8122`。GitHub 与原私有站下载的 ZIP 均与归档逐字节一致。生产烟测确认 Web 版本、远程 AI 关闭及 TCP 原快照仍有效。站点继续只有原所有者可访问。
 - 待验收：在所有者隔离环境用真实模型回归 112 行。核对原有 95 条预算、17 条 Pending 的实际新增估价，以及原生离线文件打开。远程上线需要供应商、区域、保留策略和客户规格外发审批。
 
 ## 2. 已完成的功能
