@@ -31,6 +31,13 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 - 发布状态：实现合入 `1a1d8fd5f0099e557dc65551c2486518e9be8122`。GitHub 与原私有站下载的 ZIP 均与归档逐字节一致。生产烟测确认 Web 版本、远程 AI 关闭及 TCP 原快照仍有效。站点继续只有原所有者可访问。
 - 待验收：在所有者隔离环境用真实模型回归 112 行。核对原有 95 条预算、17 条 Pending 的实际新增估价，以及原生离线文件打开。远程上线需要供应商、区域、保留策略和客户规格外发审批。
 
+### 2026-11-20 · ChatGPT 套餐用量接入评估
+
+- 审阅基线为 `main` / `2c8962eea7edc34f6063d540937c27359ee176e6`，Web `0.3.17-dev`。Sites 元数据确认第 20 版及所有者私有访问，现有 ChatGPT 登录客户端已配置。可见元数据未提供 Plan Usage 权限或 Responses API scope 的证明。
+- OpenAI 将身份登录与套餐推理分开授权。远程托管站点需提交官方意向表，等待 OpenAI 明确批准 ChatGPT Plan Usage，并确认适用的 OAuth 客户端、精确回调 URI、token 端点认证、允许的 scopes 和托管条件。开源回环动态注册流程不构成当前远程站点的授权。[官方快速入门](https://developers.openai.com/siwc/quickstart) · [远程站点申请](https://openai.com/form/sign-in-with-chatgpt-interest/)
+- 获准后，由用户使用符合资格的 ChatGPT Plus 或 Pro 账号授权。套餐用量或可用 credits 与独立 API 项目计费分开，可能受账号、应用及工作区额度影响。官方开源流程描述了按账号列出模型、使用 `POST /v1/responses`、`store: false` 和 `stream: true`。远程客户端实际可用模型、额度和 `text.format` JSON Schema 仍待获批后用虚构输入独立验收。[模型和推理](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference) · [预览限制](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)
+- 本轮仅更新文档。功能新增、修改和移除均无。核对官方文档、Sites 站点元数据和 Git 差异，未运行新增业务测试、OAuth 授权、Responses 调用或真实清单回归。保留现有站点与价格逻辑。OpenAI API 为唯一备用选项，单独批准后才启用付费服务。后续需确认处理区域、保留策略和数据外发范围，先完成虚构数据端到端验收，再由所有者决定真实回归范围。
+
 ## 2. 已完成的功能
 
 | 功能 | 当前实现与边界 | 仓库证据 |
