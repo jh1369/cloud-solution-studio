@@ -95,3 +95,5 @@ ChatGPT handles requirements, solution design, public service-capability analysi
 ### Huawei AI 补充匹配
 
 Pricing Studio 先用规则生成 Huawei EU-Dublin 初步预算。连接回环模型后，可对 Pending 条目运行「AI 补充匹配」。模型从公开目录候选中选择目标规格，现有报价引擎核验费率和计量并计算金额。页面和五表 Excel 标识 AI 估算、手动选择及方案假设。模型服务、数据传输和本机配置见 [Pricing Studio Web](pricing-studio/web/README.md#huawei-ai-specification-matching)。
+
+For local Codex-assisted Huawei estimates, see the JSON export/import workflow and fictional five-sheet quotation. [Pricing Studio Web instructions](pricing-studio/web/README.md#local-codex-assisted-quotation)

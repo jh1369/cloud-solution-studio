@@ -38,6 +38,14 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 - 获准后，由用户使用符合资格的 ChatGPT Plus 或 Pro 账号授权。套餐用量或可用 credits 与独立 API 项目计费分开，可能受账号、应用及工作区额度影响。官方开源流程描述了按账号列出模型、使用 `POST /v1/responses`、`store: false` 和 `stream: true`。远程客户端实际可用模型、额度和 `text.format` JSON Schema 仍待获批后用虚构输入独立验收。[模型和推理](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference) · [预览限制](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)
 - 本轮仅更新文档。功能新增、修改和移除均无。核对官方文档、Sites 站点元数据和 Git 差异，未运行新增业务测试、OAuth 授权、Responses 调用或真实清单回归。保留现有站点与价格逻辑。OpenAI API 为唯一备用选项，单独批准后才启用付费服务。后续需确认处理区域、保留策略和数据外发范围，先完成虚构数据端到端验收，再由所有者决定真实回归范围。
 
+### 0.3.18-dev · 本地 Codex 辅助报价
+
+- 审阅基线为 `b60c01680d2730efe76f147901ba086e3f1172f2`。新增无网络的 Node CLI，可从标准 CSV/XLSX 或支持的 AWS 用量表生成初步五表报价和 Pending 任务 JSON，并从原任务和结构化回复重新报价。任务只含规范化 AWS 规格、计量状态和目录候选。入库前复核行、计费模式、区域、有效期、候选及推荐 schema。
+- 修改本地推荐范围，普通 CSS 有公开计算计划与合法计量时可估算计算费。UltraWarm 和缺容量的存储继续 Pending。RDS 优先 MySQL 8.0 主备 Cloud SSD，存储与备份单列。Codex 五表显示 Rule Matched、AI Suggested、Conditional Estimate、Pending。移除功能：无。
+- 在 `pricing-studio/web` 用 Node 24 和 Python 3.12 运行 `npm run release:offline`，Python 50 通过、Node 166 通过，失败 0。Chromium 156 的回环 XLSX 导入、既有 AI 浏览器回归和独立 HTML 导入下载通过。原生文件打开仍待验收。
+- 用虚构 CSV 实际执行 CLI 导出、Codex 选型和导入，并用 openpyxl 重开 [五表报价](../releases/pricing-studio/examples/Codex-Synthetic-Quotation.xlsx)。规则 3 行、AI 推荐 7 行、AI 计价 5 行，剩余主行 Pending 2 条。来源账期 USD 4.08、月度等效 USD 100.29、首期预付 USD 440.55，三种口径独立对账。生产模型开关继续关闭。真实清单未使用，真实回归仍待所有者验收。
+- 发布包见 [v0.3.18-dev](../releases/pricing-studio/v0.3.18-dev/)。CLI 源码与示例通过 GitHub 交付。[运行方法](../pricing-studio/web/README.md#local-codex-assisted-quotation)
+
 ## 2. 已完成的功能
 
 | 功能 | 当前实现与边界 | 仓库证据 |
