@@ -223,6 +223,10 @@ AWS 账期用量表有独立的浏览器本地识别路径。超过通用导入�
 
 随包目录共 1,532 个计划，按需 / 包月 / 包年为 543 / 495 / 494。新增存储计划的费率由 1 GiB 和 100 GiB 的独立公开询价交叉核验。快照与在线刷新共同校验产品、SKU、区域、币种、计费模式、计量及价格时效。 [公开询价](https://portal.eu.huaweicloud.com/api/cbc/global/rest/BSS/billing/ratingservice/v2/inquiry/resource) · [随包目录](../pricing-studio/web/public/catalog.json)
 
+## 0.3.15-dev 真实参考清单回归
+
+EU-Dublin 按需实测的有效候选由 41/112 升至 85/112，主费用 Pending 由 74 降至 27，确认计价为 11，条件估算为 74。另有 63 项独立费用 Pending。真实与合成结果分开统计。 [实测口径、原因和优化优先级](HUAWEI_REAL_REGRESSION.md#2026-11-20-隔离回归)
+
 [rds-catalog]: https://portal.eu.huaweicloud.com/api/calculator/rest/cbc/portalcalculatornodeservice/v4/api/productInfo?urlPath=rds&region=eu-west-101&language=en-us&station=en-EU&tag=general.online.portal
 [rds-billing]: https://support.huaweicloud.com/eu/productdesc-rds/rds_01_0030.html
 [rds-od]: https://support.huaweicloud.com/eu/price-rds/rds_00_0005.html

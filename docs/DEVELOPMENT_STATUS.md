@@ -6,9 +6,9 @@
 
 | 项目 | 当前状态 |
 | --- | --- |
-| 更新日期 | 2026-11-19，Europe/Berlin |
+| 更新日期 | 2026-11-20，Europe/Berlin |
 | 当前优先目标 / 模式 | Huawei EU-Dublin 的迁移报价与按版本真实回归，单 Agent |
-| 本轮检查基线 | `main` / `34eb6d302e29333e353d60af380d8b57c308924b`，含 [PR #21](https://github.com/jh1369/cloud-solution-studio/pull/21) |
+| 本轮检查基线 | `main` / `36aec0ba7e2eaa79a2cf818d3cb8e015de9b0b18`，含 [PR #22](https://github.com/jh1369/cloud-solution-studio/pull/22) |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
@@ -16,7 +16,7 @@
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
 | Sites 部署源码 | `46e6451311bb920c633ad50d2688c5b430d5bd95`（私有站第 17 版） |
 | 整体进度 | ECS 受限升配与候选排序，RDS 主备迁移方案及独立存储，DCS 容量与节点小时换算，CSS 托管节点与独立存储 |
-| 本轮同步范围 | 浏览器内脱敏回归导出、统计校验器、历史实测汇总及每版验收规则。 [真实回归记录](HUAWEI_REAL_REGRESSION.md) |
+| 本轮同步范围 | `0.3.15-dev` 的 112 行真实回归、Pending 原因和对比分析。 [真实回归记录](HUAWEI_REAL_REGRESSION.md) |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
@@ -131,7 +131,7 @@ V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一
 - 在 `pricing-studio/web/` 使用 Node 24.22.1 和 Python 3.12.14 构建 Worker，沿用既有下载附件。执行 `node --test --test-skip-pattern='Offline package is a byte-exact ZIP attachment' tests/*.test.mjs`，151 项通过、0 项失败。执行 `PYTHONPATH=tests python3.12 -m unittest test_catalog test_catalog_updates test_tcp_pdf test_schedule test_catalog_publication`，41 项通过、0 项失败，2 项因缺 boto3 跳过。原 CLI 在 `pricing-studio/` 通过 1 项。
 - Chromium 156.0.8078.79 用 24 行虚构 Excel 实际导出两阶段统计。单组复核前后，主费用确认数为 1 和 2，条件估算为 15 和 14，Pending 均为 8。两份 JSON 通过配对校验。导入、复核和导出流程产生 0 个网络 POST。单测覆盖额外字段、未知原因和不一致计数的拒收。
 - 原私有站第 17 版部署成功。复核为所有者访问，5 个线上资源与部署源码逐字节一致。对照既有 TCP 目录及下载归档通过。 [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
-- 历史实测的公开记录仅含脱敏统计。当前版真实回归待接收所有者的两份统计，后续以同一阶段和同一清单口径对比。 [真实回归记录](HUAWEI_REAL_REGRESSION.md)
+- 2026-11-20 在获准隔离环境中用真实参考清单完成两阶段回归。首次导入和方案复核后均为 112 行识别、85 行有候选、11 行确认、74 行条件估算、27 行主费用 Pending，另有 63 项关联费用 Pending。两份五表下载的来源、价格证据、金额与页面一致。 [真实回归记录](HUAWEI_REAL_REGRESSION.md)
 
 ### Web V0.3.14-dev
 
@@ -205,6 +205,8 @@ PYTHONPATH=src python3.12 -m unittest discover -s tests -v
 - GitHub 同步由本次明确授权触发；已通过 GitHub API 核实 `main` 的源码同步提交 `73baa615e800598255f1ba0ecf5f89ca4a49ef42`，文件树 `e5131af7d2dedbc607793e74a0ce0f74e19cc2cf` 与本地一致，工作树干净。生成的 Worker 和本地验证输出仍被忽略。未执行站点重部署、工作流触发或自动发布配置变更。
 
 ## 8. 下一步开发计划
+
+真实回归显示 RDS 账单尺寸缩写影响 10/27 项主费用 Pending。隔离试算证实这 10 项已有可用 AWS 来源规格及 Huawei 条件估算。优化优先级还包括 ECS 兼容目录及 DCS、RDS、CSS 的方案确认和独立费用证据。 [真实回归分析](HUAWEI_REAL_REGRESSION.md#优化讨论优先级)
 
 Huawei 欧洲站覆盖率优先补齐 RDS 数据盘和备份，随后为 ELB/EIP 分项和 OBS。每项建设以可验证的官方价格和独立计费单位为依据。[覆盖率分析](HUAWEI_QUOTE_COVERAGE.md)
 
@@ -558,3 +560,9 @@ Huawei 欧洲站覆盖率优先补齐 RDS 数据盘和备份，随后为 ELB/EIP
 - **新增** 浏览器内两阶段统计导出、统计校验器与真实回归记录。**修改** 每次 Huawei 在线更新的仓库验收流程，记录主费用与关联费用的状态和原因计数。**删除** 无。 [真实回归记录](HUAWEI_REAL_REGRESSION.md)
 - **验证与待办** 定向单测、完整在线回归、虚构 Excel 浏览器导入和两次下载通过，见第 7 节。历史真实基线为 `0.3.13-dev` 首次导入的 11 行已确认、27 行条件估算、74 行 Pending。收到最新版的两阶段脱敏统计后，按同一清单比较候选覆盖与剩余原因，优先检查历史阻塞最集中的 RDS、DCS 和 CSS。 [所有者验收](HUAWEI_PRIVATE_ACCEPTANCE_TEMPLATE.md)
 - **同步** 分支 `feat/huawei-regression-report`，GitHub 版本以包含本条记录的主线合并提交为准。在线 `0.3.15-dev` 已发布至原私有站第 17 版。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/) · [原私有站](https://cloud-solution-pricing-studio.finalgrain8.chatgpt.site/)
+
+### 2026-11-20 — Huawei 真实参考清单隔离复测
+
+- **新增与删除** 产品功能均无。**修改** 脱敏回归记录、覆盖率及本开发状态。实测基线为 `36aec0ba7e2eaa79a2cf818d3cb8e015de9b0b18`，Web `0.3.15-dev`。 [实测报告](HUAWEI_REAL_REGRESSION.md#2026-11-20-隔离回归)
+- **验证** 在 `pricing-studio/web/` 以 Node 24.22.1、Python 3.12.14 构建 Worker 成功。比较两版引擎，使用 Chromium 156.0.8078.79 依次验证首导、四类方案复核、两阶段下载以及 ECS 临时确认与失效。`node scripts/validate_huawei_regression.mjs` 两份统计通过配对校验。openpyxl 3.1.5 重开 2 份五表文件，112 行原用量、175 行费用和 90 行 Pending 空金额核对通过。0 个外部或模型请求。文档交付沿用该 Web 版本的自动测试记录。
+- **分析与同步** RDS 尺寸缩写、ECS 规格目录、DCS 可用容量和节点计量、CSS 版本及冷数据仍是主要缺口。分支 `docs/huawei-real-workbook-regression`，GitHub 以包含本条记录的主线合并提交为准。实测采用随包公开价格，运行版本为原私有站第 17 版。 [GitHub main](https://github.com/jh1369/cloud-solution-studio/commits/main/)
