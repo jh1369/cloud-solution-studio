@@ -6,9 +6,9 @@
 
 | 项目 | 当前状态 |
 | --- | --- |
-| 更新日期 | 2026-11-20，Europe/Berlin |
+| 更新日期 | 2026-11-24，Europe/Berlin |
 | 当前优先目标 / 模式 | AWS 清单到 Huawei EU-Dublin 的快速预算估算与按版本真实回归，单 Agent |
-| 本轮检查基线 | `main` / `b5af00cb2437d25110fc4132aea74d020a9816e4`，包含 0.3.18-dev 发布记录 |
+| 本轮检查基线 | `main` / `13d2eab0a0e9cc22b7e293457a426c3a3e3a9d80`；本轮为补充价格数据库修订，不改变 Web 0.3.19-dev |
 | 后续同步权限 | 用户授权充分验证并完成任务后直接合入 GitHub，通过检查的版本自动部署原私有站点，保持访问范围 |
 | 规范仓库 / 分支 | `jh1369/cloud-solution-studio` / `main` |
 | 本次集成前基线 | `c8261feec774bed955f782ec2e1ed918cd37a025`，原有 13 个初始化提交 |
@@ -16,10 +16,19 @@
 | 原 Python CLI 版本 | `pricing-studio/pyproject.toml`：`0.1.0`，保留原业务代码 |
 | Sites 部署源码 | `a79c5254823797d44d60bdbc11dbfd8cc7673e9d`（私有站第 22 版） |
 | 整体进度 | 导入即生成预算，ECS 受限升配、RDS 账单缩写与默认主备、DCS 节点小时折算和 CSS 托管节点均可直接估算 |
-| 本轮同步范围 | `0.3.19-dev` 月度三表报价已合入 `main`，私有站已发布。 [PR #30](https://github.com/jh1369/cloud-solution-studio/pull/30) |
+| 本轮同步范围 | 补充价格数据库 `2026-11-24.1`，通过本条记录所在 PR 合入 `main`。Web/Worker/离线应用仍为 `0.3.19-dev`，不触发应用发布 |
 | 上轮离线归档同步 | GitHub `main` 已接收候选版源码及离线包提交 `836b740de649b63dc9c915ff8d7e16fbadb42de4`。从该提交和 `main` 分别下载 ZIP，均为 HTTP 200、866,718 字节，与实测归档逐字节相同。[候选版提交](https://github.com/jh1369/cloud-solution-studio/commit/836b740de649b63dc9c915ff8d7e16fbadb42de4) |
 
 V0.1.1 历史迁入时，9 个浏览器资源及 Worker 与部署版本字节一致；`SOURCE_PROVENANCE.json` 只记录该历史基线。该迁入证据不表示当前版本；V0.3 运行资源与独立 Sites 发布目录逐字节核对，部署源码另记如上。`public/` 为源码，`dist/` 仍是被忽略的构建产物。
+
+### 2026-11-24 · Huawei 欧洲站补充价格数据库
+
+- **版本 / 基线：** Web 与离线应用保持 `0.3.19-dev`；数据库修订 `2026-11-24.1`。工作分支 `data/huawei-eu-prices-20261124`，审阅基线为上表 `main` 提交。
+- **新增：** `pricing-studio/catalogs/huawei/index.json` 与不可变参考快照，160 项配置/计费项、419 项价格观察，其中 402 项列价、12 项免费、5 项原文未列价。覆盖 ECS X1/aC8 82 项、DDS 41 项、DDS 存储 2 项、EVS 4 项、OBS 30 项、SFS 1 项。保留精确十进制、小时/月/年独立价、GB/GiB/每万次请求单位、单元格/表行来源及来源摘要。新增离线校验与查询脚本、10 项专项测试。
+- **修改：** README 增加数据库入口，记录 4 项 EVS 旧目录/补充价差异。**移除：** 无。正式 `public/catalog.json`、Web/Worker、离线归档和计价引擎均不修改。本轮是数据修订，不生成新的应用版本或部署。
+- **验证：** `pricing-studio/web`，Python 3.12.14：专项测试 10 通过、0 失败；`python3.12 -m unittest discover -s tests -p 'test_*catalog*.py' -v` 共发现 40 项，38 通过、2 项既有 S3 测试因缺依赖跳过、0 失败。`python3.12 scripts/supplemental_huawei_catalog.py validate` 验证索引摘要和全部记录；CLI 精确查询 X1 及查询 20 项 DDS shard 通过。检查 JSON/来源、工作区与暂存差异，以及运行价格库和引擎相对基线未改。未运行在线官方核价、真实清单回归或浏览器验收；本轮不修改自动报价路径。
+- **限制 / 下一步：** 标记为 `USER_SUPPLIED_REFERENCE`，无独立官方 API 核验，不可伪造 productId、OS/许可、核验时间或有效起始日期。OBS 的按需 GB/月不乘小时。X1、DDS 年度价按原文保留，不从月价推算。DDS mongos/shard/config 区分保存，副本/节点与计费单元等价关系未建立。SFS 无年度价，原文未列价不当作零。后续取得官方产品身份和独立询价证据，再考虑接入正式自动报价。
+- **同步：** 根据本轮入库请求及既有同步授权，通过安全检查后随本条所在 PR 合入 GitHub `main`；以该 PR 的合并状态/提交为准。生产站和既有离线交付保持原版本。仅同步公开目录事实、通用校验代码和说明。
 
 ### 0.3.17-dev AI 补充匹配
 

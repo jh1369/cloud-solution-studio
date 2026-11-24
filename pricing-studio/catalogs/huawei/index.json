@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "provider": "Huawei Cloud",
+  "catalogs": [
+    {
+      "revision": "2026-11-24.1",
+      "region": "eu-west-101",
+      "currency": "USD",
+      "path": "eu-west-101/2026-11-24-user-reference/catalog.json",
+      "receivedOn": "2026-11-24",
+      "status": "USER_SUPPLIED_REFERENCE",
+      "productionEligible": false,
+      "items": 160,
+      "prices": 419,
+      "sha256": "14180361d9f0a3ebb163e1b1783f08e6e8062b82eb9123520fdefee664da696e"
+    }
+  ]
+}

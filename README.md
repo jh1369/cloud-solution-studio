@@ -37,6 +37,8 @@ pricing-studio/
 
 The web app uses browser JavaScript and a Cloudflare Worker. Python 3.12 runs the catalog updater with SQLite and can publish the validated TCP catalog through an S3-compatible client. The Worker reads the private bucket binding directly. The original Python CLI declares `Python >=3.10` and uses the standard library.
 
+Owner-supplied Huawei EU-Dublin public list prices are archived in the [supplemental price database](pricing-studio/catalogs/huawei/README.md). The 2026-11-24 revision includes X1, aC8, DDS, EVS, OBS and SFS with exact units and provenance. These reference records are separate from the API-verified production catalog.
+
 ## Pricing Studio Web V0.3.16-dev
 
 - Rule-based Chinese and English resource descriptions, CSV/XLSX inventory import, and the supported text-based AWS billing PDF layout.
