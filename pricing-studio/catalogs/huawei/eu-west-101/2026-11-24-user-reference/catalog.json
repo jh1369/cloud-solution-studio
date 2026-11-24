@@ -1,0 +1,6087 @@
+{
+  "schemaVersion": 1,
+  "revision": "2026-11-24.1",
+  "provider": "Huawei Cloud",
+  "region": "eu-west-101",
+  "currency": "USD",
+  "receivedOn": "2026-11-24",
+  "priceEffectiveOn": null,
+  "verification": {
+    "status": "USER_SUPPLIED_REFERENCE",
+    "officialApiVerified": false,
+    "officialVerifiedAt": null,
+    "productionEligible": false
+  },
+  "sources": [
+    {
+      "id": "ecs-dds-table",
+      "kind": "user-supplied-public-price-table",
+      "title": "ac8-x1 ecs&DDS 价格.xlsx",
+      "receivedOn": "2026-11-24",
+      "priceEffectiveOn": null,
+      "officialPageUrl": "https://www.huaweicloud.com/eu/pricing/calculator.html",
+      "sha256": "522062b2ebb607aaf62a5ec65a9d002f85120a575c0c3569076a8e2e897a57f1"
+    },
+    {
+      "id": "evs-screenshot",
+      "kind": "user-supplied-official-calculator-screenshot",
+      "title": "image(20261124-144505).png",
+      "receivedOn": "2026-11-24",
+      "priceEffectiveOn": null,
+      "officialPageUrl": "https://www.huaweicloud.com/eu/pricing/calculator.html",
+      "sha256": "298ecb84b281913c1a772d93aace06f82971bb6ca5b72ae26a710c87ba828568"
+    },
+    {
+      "id": "obs-screenshot",
+      "kind": "user-supplied-official-calculator-screenshot",
+      "title": "image(20261124-144722).png",
+      "receivedOn": "2026-11-24",
+      "priceEffectiveOn": null,
+      "officialPageUrl": "https://www.huaweicloud.com/eu/pricing/calculator.html",
+      "sha256": "611f4ec31a76ddb6d8cef523aca9a8e0751cb7ba5649f2a073c5e5ce7b6f1551"
+    },
+    {
+      "id": "sfs-screenshot",
+      "kind": "user-supplied-official-calculator-screenshot",
+      "title": "image(20261124-154343).png",
+      "receivedOn": "2026-11-24",
+      "priceEffectiveOn": null,
+      "officialPageUrl": "https://www.huaweicloud.com/eu/pricing/calculator.html",
+      "sha256": "09f41ce2568f3cbe3dea4acca6791f101bd6c7a4fd4b9f5078ea944e0986ab0e"
+    }
+  ],
+  "items": [
+    {
+      "id": "ecs:ac8.large.2",
+      "service": "ECS",
+      "sku": "ac8.large.2",
+      "series": "ac8",
+      "vcpus": 2,
+      "memoryGB": 4,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.065",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E5"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "34.16",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F5"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "341.6",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G5"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.large.4",
+      "service": "ECS",
+      "sku": "ac8.large.4",
+      "series": "ac8",
+      "vcpus": 2,
+      "memoryGB": 8,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0808",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E6"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "42.47",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F6"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "424.7",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G6"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.xlarge.2",
+      "service": "ECS",
+      "sku": "ac8.xlarge.2",
+      "series": "ac8",
+      "vcpus": 4,
+      "memoryGB": 8,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.13",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E7"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "68.33",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F7"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "683.3",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G7"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.xlarge.4",
+      "service": "ECS",
+      "sku": "ac8.xlarge.4",
+      "series": "ac8",
+      "vcpus": 4,
+      "memoryGB": 16,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.1616",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E8"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "84.94",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F8"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "849.4",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G8"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.2xlarge.2",
+      "service": "ECS",
+      "sku": "ac8.2xlarge.2",
+      "series": "ac8",
+      "vcpus": 8,
+      "memoryGB": 16,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.26",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E9"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "136.66",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F9"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1366.6",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G9"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.2xlarge.4",
+      "service": "ECS",
+      "sku": "ac8.2xlarge.4",
+      "series": "ac8",
+      "vcpus": 8,
+      "memoryGB": 32,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.3232",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E10"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "169.87",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F10"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1698.7",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G10"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.4xlarge.2",
+      "service": "ECS",
+      "sku": "ac8.4xlarge.2",
+      "series": "ac8",
+      "vcpus": 16,
+      "memoryGB": 32,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.52",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E11"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "273.31",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F11"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2733.1",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G11"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.4xlarge.4",
+      "service": "ECS",
+      "sku": "ac8.4xlarge.4",
+      "series": "ac8",
+      "vcpus": 16,
+      "memoryGB": 64,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.6464",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E12"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "339.75",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F12"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "3397.5",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G12"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.8xlarge.2",
+      "service": "ECS",
+      "sku": "ac8.8xlarge.2",
+      "series": "ac8",
+      "vcpus": 32,
+      "memoryGB": 64,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "1.04",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E13"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "546.62",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F13"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "5466.2",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G13"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.8xlarge.4",
+      "service": "ECS",
+      "sku": "ac8.8xlarge.4",
+      "series": "ac8",
+      "vcpus": 32,
+      "memoryGB": 128,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "1.2928",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E14"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "679.5",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F14"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "6795",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G14"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.12xlarge.2",
+      "service": "ECS",
+      "sku": "ac8.12xlarge.2",
+      "series": "ac8",
+      "vcpus": 48,
+      "memoryGB": 96,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "1.56",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E15"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "819.94",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F15"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "8199.4",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G15"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.12xlarge.4",
+      "service": "ECS",
+      "sku": "ac8.12xlarge.4",
+      "series": "ac8",
+      "vcpus": 48,
+      "memoryGB": 192,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "1.9392",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E16"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "1019.24",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F16"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "10192.4",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G16"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.16xlarge.2",
+      "service": "ECS",
+      "sku": "ac8.16xlarge.2",
+      "series": "ac8",
+      "vcpus": 64,
+      "memoryGB": 128,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "2.08",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E17"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "1093.25",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F17"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "10932.5",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G17"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.16xlarge.4",
+      "service": "ECS",
+      "sku": "ac8.16xlarge.4",
+      "series": "ac8",
+      "vcpus": 64,
+      "memoryGB": 256,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "2.5856",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E18"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "1358.99",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F18"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "13589.9",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G18"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.24xlarge.2",
+      "service": "ECS",
+      "sku": "ac8.24xlarge.2",
+      "series": "ac8",
+      "vcpus": 96,
+      "memoryGB": 192,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "3.12",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E19"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "1639.87",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F19"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "16398.7",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G19"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.24xlarge.4",
+      "service": "ECS",
+      "sku": "ac8.24xlarge.4",
+      "series": "ac8",
+      "vcpus": 96,
+      "memoryGB": 384,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "3.8784",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E20"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "2038.49",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F20"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "20384.9",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G20"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.32xlarge.2",
+      "service": "ECS",
+      "sku": "ac8.32xlarge.2",
+      "series": "ac8",
+      "vcpus": 128,
+      "memoryGB": 256,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "4.16",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E21"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "2186.5",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F21"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "21865",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G21"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.32xlarge.4",
+      "service": "ECS",
+      "sku": "ac8.32xlarge.4",
+      "series": "ac8",
+      "vcpus": 128,
+      "memoryGB": 512,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "5.1712",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E22"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "2717.98",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F22"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "27179.8",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G22"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.48xlarge.2",
+      "service": "ECS",
+      "sku": "ac8.48xlarge.2",
+      "series": "ac8",
+      "vcpus": 192,
+      "memoryGB": 384,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "6.24",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E23"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "3279.74",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F23"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "32797.4",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G23"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.48xlarge.4",
+      "service": "ECS",
+      "sku": "ac8.48xlarge.4",
+      "series": "ac8",
+      "vcpus": 192,
+      "memoryGB": 768,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "7.7568",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E24"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "4076.97",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F24"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "40769.7",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G24"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.96xlarge.2.physical",
+      "service": "ECS",
+      "sku": "ac8.96xlarge.2.physical",
+      "series": "ac8",
+      "vcpus": 384,
+      "memoryGB": 768,
+      "physical": true,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "12.48",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E25"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "6559.49",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F25"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "65594.9",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G25"
+        }
+      ]
+    },
+    {
+      "id": "ecs:ac8.96xlarge.4.physical",
+      "service": "ECS",
+      "sku": "ac8.96xlarge.4.physical",
+      "series": "ac8",
+      "vcpus": 384,
+      "memoryGB": 1536,
+      "physical": true,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "15.5136",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E26"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "8153.95",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F26"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "81539.5",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G26"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.2u.2g",
+      "service": "ECS",
+      "sku": "x1.2u.2g",
+      "series": "x1",
+      "vcpus": 2,
+      "memoryGB": 2,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0594",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E31"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "31.22",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F31"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "228.95",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G31"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.2u.4g",
+      "service": "ECS",
+      "sku": "x1.2u.4g",
+      "series": "x1",
+      "vcpus": 2,
+      "memoryGB": 4,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.065",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E32"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "34.16",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F32"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "250.54",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G32"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.2u.6g",
+      "service": "ECS",
+      "sku": "x1.2u.6g",
+      "series": "x1",
+      "vcpus": 2,
+      "memoryGB": 6,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0706",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E33"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "37.11",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F33"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "272.12",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G33"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.2u.8g",
+      "service": "ECS",
+      "sku": "x1.2u.8g",
+      "series": "x1",
+      "vcpus": 2,
+      "memoryGB": 8,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0762",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E34"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "40.05",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F34"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "293.71",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G34"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.2u.10g",
+      "service": "ECS",
+      "sku": "x1.2u.10g",
+      "series": "x1",
+      "vcpus": 2,
+      "memoryGB": 10,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0818",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E35"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "42.99",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F35"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "315.29",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G35"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.2u.12g",
+      "service": "ECS",
+      "sku": "x1.2u.12g",
+      "series": "x1",
+      "vcpus": 2,
+      "memoryGB": 12,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0874",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E36"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "45.94",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F36"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "336.87",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G36"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.2u.16g",
+      "service": "ECS",
+      "sku": "x1.2u.16g",
+      "series": "x1",
+      "vcpus": 2,
+      "memoryGB": 16,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0986",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E37"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "51.82",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F37"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "380.04",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G37"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.4u.2g",
+      "service": "ECS",
+      "sku": "x1.4u.2g",
+      "series": "x1",
+      "vcpus": 4,
+      "memoryGB": 2,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.1132",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E38"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "59.5",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F38"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "436.32",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G38"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.4u.4g",
+      "service": "ECS",
+      "sku": "x1.4u.4g",
+      "series": "x1",
+      "vcpus": 4,
+      "memoryGB": 4,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.1188",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E39"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "62.44",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F39"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "457.9",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G39"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.4u.6g",
+      "service": "ECS",
+      "sku": "x1.4u.6g",
+      "series": "x1",
+      "vcpus": 4,
+      "memoryGB": 6,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.1244",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E40"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "65.38",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F40"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "479.49",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G40"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.4u.8g",
+      "service": "ECS",
+      "sku": "x1.4u.8g",
+      "series": "x1",
+      "vcpus": 4,
+      "memoryGB": 8,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.13",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E41"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "68.33",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F41"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "501.07",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G41"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.4u.10g",
+      "service": "ECS",
+      "sku": "x1.4u.10g",
+      "series": "x1",
+      "vcpus": 4,
+      "memoryGB": 10,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.1356",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E42"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "71.27",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F42"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "522.66",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G42"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.4u.12g",
+      "service": "ECS",
+      "sku": "x1.4u.12g",
+      "series": "x1",
+      "vcpus": 4,
+      "memoryGB": 12,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.1412",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E43"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "74.21",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F43"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "544.24",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G43"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.4u.16g",
+      "service": "ECS",
+      "sku": "x1.4u.16g",
+      "series": "x1",
+      "vcpus": 4,
+      "memoryGB": 16,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.1524",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E44"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "80.1",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F44"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "587.41",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G44"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.4u.32g",
+      "service": "ECS",
+      "sku": "x1.4u.32g",
+      "series": "x1",
+      "vcpus": 4,
+      "memoryGB": 32,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.1972",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E45"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "103.65",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F45"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "760.09",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G45"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.6u.2g",
+      "service": "ECS",
+      "sku": "x1.6u.2g",
+      "series": "x1",
+      "vcpus": 6,
+      "memoryGB": 2,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.167",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E46"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "87.78",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F46"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "643.68",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G46"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.6u.6g",
+      "service": "ECS",
+      "sku": "x1.6u.6g",
+      "series": "x1",
+      "vcpus": 6,
+      "memoryGB": 6,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.1782",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E47"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "93.66",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F47"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "686.85",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G47"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.6u.8g",
+      "service": "ECS",
+      "sku": "x1.6u.8g",
+      "series": "x1",
+      "vcpus": 6,
+      "memoryGB": 8,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.1838",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E48"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "96.61",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F48"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "708.44",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G48"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.6u.10g",
+      "service": "ECS",
+      "sku": "x1.6u.10g",
+      "series": "x1",
+      "vcpus": 6,
+      "memoryGB": 10,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.1894",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E49"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "99.55",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F49"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "730.02",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G49"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.6u.12g",
+      "service": "ECS",
+      "sku": "x1.6u.12g",
+      "series": "x1",
+      "vcpus": 6,
+      "memoryGB": 12,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.195",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E50"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "102.49",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F50"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "751.61",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G50"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.6u.16g",
+      "service": "ECS",
+      "sku": "x1.6u.16g",
+      "series": "x1",
+      "vcpus": 6,
+      "memoryGB": 16,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.2062",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E51"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "108.38",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F51"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "794.78",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G51"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.6u.18g",
+      "service": "ECS",
+      "sku": "x1.6u.18g",
+      "series": "x1",
+      "vcpus": 6,
+      "memoryGB": 18,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.2118",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E52"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "111.32",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F52"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "816.36",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G52"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.6u.20g",
+      "service": "ECS",
+      "sku": "x1.6u.20g",
+      "series": "x1",
+      "vcpus": 6,
+      "memoryGB": 20,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.2174",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E53"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "114.27",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F53"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "837.95",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G53"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.6u.24g",
+      "service": "ECS",
+      "sku": "x1.6u.24g",
+      "series": "x1",
+      "vcpus": 6,
+      "memoryGB": 24,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.2286",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E54"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "120.15",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F54"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "881.12",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G54"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.6u.48g",
+      "service": "ECS",
+      "sku": "x1.6u.48g",
+      "series": "x1",
+      "vcpus": 6,
+      "memoryGB": 48,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.2958",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E55"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "155.47",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F55"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1140.13",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G55"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.8u.4g",
+      "service": "ECS",
+      "sku": "x1.8u.4g",
+      "series": "x1",
+      "vcpus": 8,
+      "memoryGB": 4,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.2264",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E56"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "119",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F56"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "872.64",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G56"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.8u.8g",
+      "service": "ECS",
+      "sku": "x1.8u.8g",
+      "series": "x1",
+      "vcpus": 8,
+      "memoryGB": 8,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.2376",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E57"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "124.88",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F57"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "915.81",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G57"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.8u.12g",
+      "service": "ECS",
+      "sku": "x1.8u.12g",
+      "series": "x1",
+      "vcpus": 8,
+      "memoryGB": 12,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.2488",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E58"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "130.77",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F58"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "958.97",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G58"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.8u.16g",
+      "service": "ECS",
+      "sku": "x1.8u.16g",
+      "series": "x1",
+      "vcpus": 8,
+      "memoryGB": 16,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.26",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E59"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "136.66",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F59"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1002.14",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G59"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.8u.18g",
+      "service": "ECS",
+      "sku": "x1.8u.18g",
+      "series": "x1",
+      "vcpus": 8,
+      "memoryGB": 18,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.2656",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E60"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "139.6",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F60"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1023.73",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G60"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.8u.20g",
+      "service": "ECS",
+      "sku": "x1.8u.20g",
+      "series": "x1",
+      "vcpus": 8,
+      "memoryGB": 20,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.2712",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E61"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "142.54",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F61"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1045.31",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G61"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.8u.24g",
+      "service": "ECS",
+      "sku": "x1.8u.24g",
+      "series": "x1",
+      "vcpus": 8,
+      "memoryGB": 24,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.2824",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E62"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "148.43",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F62"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1088.48",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G62"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.8u.28g",
+      "service": "ECS",
+      "sku": "x1.8u.28g",
+      "series": "x1",
+      "vcpus": 8,
+      "memoryGB": 28,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.2936",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E63"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "154.32",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F63"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1131.65",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G63"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.8u.32g",
+      "service": "ECS",
+      "sku": "x1.8u.32g",
+      "series": "x1",
+      "vcpus": 8,
+      "memoryGB": 32,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.3048",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E64"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "160.2",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F64"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1174.82",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G64"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.8u.64g",
+      "service": "ECS",
+      "sku": "x1.8u.64g",
+      "series": "x1",
+      "vcpus": 8,
+      "memoryGB": 64,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.3944",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E65"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "207.3",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F65"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1520.18",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G65"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.12u.6g",
+      "service": "ECS",
+      "sku": "x1.12u.6g",
+      "series": "x1",
+      "vcpus": 12,
+      "memoryGB": 6,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.3396",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E66"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "178.49",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F66"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1308.95",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G66"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.12u.12g",
+      "service": "ECS",
+      "sku": "x1.12u.12g",
+      "series": "x1",
+      "vcpus": 12,
+      "memoryGB": 12,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.3564",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E67"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "187.32",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F67"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1373.71",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G67"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.12u.16g",
+      "service": "ECS",
+      "sku": "x1.12u.16g",
+      "series": "x1",
+      "vcpus": 12,
+      "memoryGB": 16,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.3676",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E68"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "193.21",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F68"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1416.88",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G68"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.12u.18g",
+      "service": "ECS",
+      "sku": "x1.12u.18g",
+      "series": "x1",
+      "vcpus": 12,
+      "memoryGB": 18,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.3732",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E69"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "196.15",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F69"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1438.46",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G69"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.12u.20g",
+      "service": "ECS",
+      "sku": "x1.12u.20g",
+      "series": "x1",
+      "vcpus": 12,
+      "memoryGB": 20,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.3788",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E70"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "199.1",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F70"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1460.05",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G70"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.12u.24g",
+      "service": "ECS",
+      "sku": "x1.12u.24g",
+      "series": "x1",
+      "vcpus": 12,
+      "memoryGB": 24,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.39",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E71"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "204.98",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F71"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1503.22",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G71"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.12u.28g",
+      "service": "ECS",
+      "sku": "x1.12u.28g",
+      "series": "x1",
+      "vcpus": 12,
+      "memoryGB": 28,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.4012",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E72"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "210.87",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F72"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1546.39",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G72"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.12u.32g",
+      "service": "ECS",
+      "sku": "x1.12u.32g",
+      "series": "x1",
+      "vcpus": 12,
+      "memoryGB": 32,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.4124",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E73"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "216.76",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F73"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1589.55",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G73"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.12u.36g",
+      "service": "ECS",
+      "sku": "x1.12u.36g",
+      "series": "x1",
+      "vcpus": 12,
+      "memoryGB": 36,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.4236",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E74"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "222.64",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F74"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1632.72",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G74"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.12u.40g",
+      "service": "ECS",
+      "sku": "x1.12u.40g",
+      "series": "x1",
+      "vcpus": 12,
+      "memoryGB": 40,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.4348",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E75"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "228.53",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F75"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1675.89",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G75"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.12u.48g",
+      "service": "ECS",
+      "sku": "x1.12u.48g",
+      "series": "x1",
+      "vcpus": 12,
+      "memoryGB": 48,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.4572",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E76"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "240.3",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F76"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1762.23",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G76"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.12u.96g",
+      "service": "ECS",
+      "sku": "x1.12u.96g",
+      "series": "x1",
+      "vcpus": 12,
+      "memoryGB": 96,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.5916",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E77"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "310.94",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F77"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2280.26",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G77"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.16u.8g",
+      "service": "ECS",
+      "sku": "x1.16u.8g",
+      "series": "x1",
+      "vcpus": 16,
+      "memoryGB": 8,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.4528",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E78"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "237.99",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F78"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1745.27",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G78"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.16u.16g",
+      "service": "ECS",
+      "sku": "x1.16u.16g",
+      "series": "x1",
+      "vcpus": 16,
+      "memoryGB": 16,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.4752",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E79"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "249.77",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F79"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1831.61",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G79"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.16u.18g",
+      "service": "ECS",
+      "sku": "x1.16u.18g",
+      "series": "x1",
+      "vcpus": 16,
+      "memoryGB": 18,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.4808",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E80"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "252.71",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F80"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1853.2",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G80"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.16u.20g",
+      "service": "ECS",
+      "sku": "x1.16u.20g",
+      "series": "x1",
+      "vcpus": 16,
+      "memoryGB": 20,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.4864",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E81"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "255.65",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F81"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1874.78",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G81"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.16u.24g",
+      "service": "ECS",
+      "sku": "x1.16u.24g",
+      "series": "x1",
+      "vcpus": 16,
+      "memoryGB": 24,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.4976",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E82"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "261.54",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F82"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1917.95",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G82"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.16u.28g",
+      "service": "ECS",
+      "sku": "x1.16u.28g",
+      "series": "x1",
+      "vcpus": 16,
+      "memoryGB": 28,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.5088",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E83"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "267.43",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F83"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1961.12",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G83"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.16u.32g",
+      "service": "ECS",
+      "sku": "x1.16u.32g",
+      "series": "x1",
+      "vcpus": 16,
+      "memoryGB": 32,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.52",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E84"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "273.31",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F84"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2004.29",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G84"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.16u.36g",
+      "service": "ECS",
+      "sku": "x1.16u.36g",
+      "series": "x1",
+      "vcpus": 16,
+      "memoryGB": 36,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.5312",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E85"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "279.2",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F85"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2047.46",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G85"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.16u.40g",
+      "service": "ECS",
+      "sku": "x1.16u.40g",
+      "series": "x1",
+      "vcpus": 16,
+      "memoryGB": 40,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.5424",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E86"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "285.09",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F86"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2090.63",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G86"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.16u.48g",
+      "service": "ECS",
+      "sku": "x1.16u.48g",
+      "series": "x1",
+      "vcpus": 16,
+      "memoryGB": 48,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.5648",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E87"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "296.86",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F87"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2176.97",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G87"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.16u.56g",
+      "service": "ECS",
+      "sku": "x1.16u.56g",
+      "series": "x1",
+      "vcpus": 16,
+      "memoryGB": 56,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.5872",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E88"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "308.63",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F88"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2263.3",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G88"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.16u.64g",
+      "service": "ECS",
+      "sku": "x1.16u.64g",
+      "series": "x1",
+      "vcpus": 16,
+      "memoryGB": 64,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.6096",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E89"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "320.41",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F89"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2349.64",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G89"
+        }
+      ]
+    },
+    {
+      "id": "ecs:x1.16u.128g",
+      "service": "ECS",
+      "sku": "x1.16u.128g",
+      "series": "x1",
+      "vcpus": 16,
+      "memoryGB": 128,
+      "physical": false,
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.7888",
+          "currency": "USD",
+          "quantityUnit": "instance-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!E90"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "414.59",
+          "currency": "USD",
+          "quantityUnit": "instance-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!F90"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "3040.35",
+          "currency": "USD",
+          "quantityUnit": "instance-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!G90"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:mongos:1u4g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "General-purpose",
+      "vcpus": 1,
+      "memoryGB": 4,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.05",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O5"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "24",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P5"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "240",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q5"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:mongos:2u4g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "General-purpose",
+      "vcpus": 2,
+      "memoryGB": 4,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.089",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O6"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "45.991",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P6"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "459.914",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q6"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:mongos:2u8g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "General-purpose",
+      "vcpus": 2,
+      "memoryGB": 8,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.1",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O7"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "51.3",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P7"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "513",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q7"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:mongos:4u8g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "General-purpose",
+      "vcpus": 4,
+      "memoryGB": 8,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.178",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O8"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "91.982",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P8"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "919.828",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q8"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:mongos:4u16g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "General-purpose",
+      "vcpus": 4,
+      "memoryGB": 16,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.2",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O9"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "102.6",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P9"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1026",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q9"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:mongos:8u16g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "General-purpose",
+      "vcpus": 8,
+      "memoryGB": 16,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.356",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O10"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "183.966",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P10"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1839.656",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q10"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:mongos:8u32g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "General-purpose",
+      "vcpus": 8,
+      "memoryGB": 32,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.4",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O11"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "205.2",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P11"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2052",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q11"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:mongos:16u32g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "General-purpose",
+      "vcpus": 16,
+      "memoryGB": 32,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.712",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O12"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "367.931",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P12"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "3679.31",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q12"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:mongos:16u64g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "General-purpose",
+      "vcpus": 16,
+      "memoryGB": 64,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.8",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O13"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "410.4",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P13"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "4104",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q13"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:shard:1u4g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "General-purpose",
+      "vcpus": 1,
+      "memoryGB": 4,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.15",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O14"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "72",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P14"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "720",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q14"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:shard:2u4g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "General-purpose",
+      "vcpus": 2,
+      "memoryGB": 4,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.268",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O15"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "137.974",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P15"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1379.742",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q15"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:shard:2u8g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "General-purpose",
+      "vcpus": 2,
+      "memoryGB": 8,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.3",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O16"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "153.896",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P16"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1538.964",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q16"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:shard:4u8g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "General-purpose",
+      "vcpus": 4,
+      "memoryGB": 8,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.536",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O17"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "275.948",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P17"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2759.484",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q17"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:shard:4u16g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "General-purpose",
+      "vcpus": 4,
+      "memoryGB": 16,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.6",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O18"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "307.793",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P18"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "3077.928",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q18"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:shard:8u16g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "General-purpose",
+      "vcpus": 8,
+      "memoryGB": 16,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "1.072",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O19"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "551.897",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P19"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "5518.968",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q19"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:shard:8u32g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "General-purpose",
+      "vcpus": 8,
+      "memoryGB": 32,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "1.2",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O20"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "615.6",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P20"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "6156",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q20"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:shard:16u32g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "General-purpose",
+      "vcpus": 16,
+      "memoryGB": 32,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "2.144",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O21"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "1103.794",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P21"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "11037.94",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q21"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:shard:16u64g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "General-purpose",
+      "vcpus": 16,
+      "memoryGB": 64,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "2.4",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O22"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "1231.2",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P22"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "12312",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q22"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:config:2u4g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "config",
+      "instanceClass": "General-purpose",
+      "vcpus": 2,
+      "memoryGB": 4,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.268",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O23"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "137.974",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P23"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1379.742",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q23"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:config:4u8g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "config",
+      "instanceClass": "General-purpose",
+      "vcpus": 4,
+      "memoryGB": 8,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.536",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O24"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "275.948",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P24"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2759.484",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q24"
+        }
+      ]
+    },
+    {
+      "id": "dds:general-purpose:config:8u16g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "config",
+      "instanceClass": "General-purpose",
+      "vcpus": 8,
+      "memoryGB": 16,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "1.072",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O25"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "551.897",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P25"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "5518.968",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q25"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:mongos:2u8g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "Enhanced II",
+      "vcpus": 2,
+      "memoryGB": 8,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.142",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O30"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "73.283",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P30"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "732.833",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q30"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:mongos:4u16g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "Enhanced II",
+      "vcpus": 4,
+      "memoryGB": 16,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.284",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O31"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "146.567",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P31"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1465.667",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q31"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:mongos:8u32g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "Enhanced II",
+      "vcpus": 8,
+      "memoryGB": 32,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.569",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O32"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "293.133",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P32"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2391.333",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q32"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:mongos:16u64g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "Enhanced II",
+      "vcpus": 16,
+      "memoryGB": 64,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "1.138",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O33"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "586.267",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P33"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "5862.667",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q33"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:mongos:32u128g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "Enhanced II",
+      "vcpus": 32,
+      "memoryGB": 128,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "2.276",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O34"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "1172.533",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P34"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "11725.33",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q34"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:mongos:64u256g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "mongos",
+      "instanceClass": "Enhanced II",
+      "vcpus": 64,
+      "memoryGB": 256,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "5.552",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O35"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "2345.067",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P35"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "23450.67",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q35"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:shard:2u8g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "Enhanced II",
+      "vcpus": 2,
+      "memoryGB": 8,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.428",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O36"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "219.849",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P36"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2198.49",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q36"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:shard:2u16g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "Enhanced II",
+      "vcpus": 2,
+      "memoryGB": 16,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.87",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O37"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "417.6",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P37"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "4176",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q37"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:shard:4u16g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "Enhanced II",
+      "vcpus": 4,
+      "memoryGB": 16,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.856",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O38"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "439.698",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P38"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "4396.98",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q38"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:shard:4u32g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "Enhanced II",
+      "vcpus": 4,
+      "memoryGB": 32,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "1.74",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O39"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "835.2",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P39"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "8352",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q39"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:shard:8u32g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "Enhanced II",
+      "vcpus": 8,
+      "memoryGB": 32,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "1.711",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O40"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "879.396",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P40"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "4397",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q40"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:shard:8u64g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "Enhanced II",
+      "vcpus": 8,
+      "memoryGB": 64,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "3.48",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O41"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "1670.4",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P41"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "16704",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q41"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:shard:16u64g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "Enhanced II",
+      "vcpus": 16,
+      "memoryGB": 64,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "3.423",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O42"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "1758.792",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P42"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "17587.92",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q42"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:shard:16u128g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "Enhanced II",
+      "vcpus": 16,
+      "memoryGB": 128,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "6.96",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O43"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "3340.8",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P43"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "33408",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q43"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:shard:32u128g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "Enhanced II",
+      "vcpus": 32,
+      "memoryGB": 128,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "6.845",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O44"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "3517.584",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P44"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "35175.84",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q44"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:shard:32u256g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "Enhanced II",
+      "vcpus": 32,
+      "memoryGB": 256,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "13.92",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O45"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "6681.6",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P45"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "66816",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q45"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:shard:64u256g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "instanceClass": "Enhanced II",
+      "vcpus": 64,
+      "memoryGB": 256,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "13.691",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O46"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "7035.168",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P46"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "70351.68",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q46"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:config:2u4g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "config",
+      "instanceClass": "Enhanced II",
+      "vcpus": 2,
+      "memoryGB": 4,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.382",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O47"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "197.106",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P47"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1971.06",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q47"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:config:4u8g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "config",
+      "instanceClass": "Enhanced II",
+      "vcpus": 4,
+      "memoryGB": 8,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.764",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O48"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "394.212",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P48"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "3942.12",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q48"
+        }
+      ]
+    },
+    {
+      "id": "dds:enhanced-ii:config:8u16g",
+      "service": "DDS",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "config",
+      "instanceClass": "Enhanced II",
+      "vcpus": 8,
+      "memoryGB": 16,
+      "quantityBasis": "source-listed-billing-unit",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "1.528",
+          "currency": "USD",
+          "quantityUnit": "source-unit-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O49"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "788.424",
+          "currency": "USD",
+          "quantityUnit": "source-unit-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!P49"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "7884.24",
+          "currency": "USD",
+          "quantityUnit": "source-unit-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!Q49"
+        }
+      ]
+    },
+    {
+      "id": "dds-storage:shard",
+      "service": "DDS_STORAGE",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "shard",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0018",
+          "currency": "USD",
+          "quantityUnit": "GB-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!M54"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "0.72",
+          "currency": "USD",
+          "quantityUnit": "GB-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!N54"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "7.2",
+          "currency": "USD",
+          "quantityUnit": "GB-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O54"
+        }
+      ]
+    },
+    {
+      "id": "dds-storage:config",
+      "service": "DDS_STORAGE",
+      "sku": null,
+      "instanceType": "Cluster",
+      "nodeRole": "config",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0018",
+          "currency": "USD",
+          "quantityUnit": "GB-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!M55"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "0.72",
+          "currency": "USD",
+          "quantityUnit": "GB-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!N55"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "7.2",
+          "currency": "USD",
+          "quantityUnit": "GB-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "ecs-dds-table",
+          "locator": "Sheet1!O55"
+        }
+      ]
+    },
+    {
+      "id": "evs:SAS",
+      "service": "EVS",
+      "sku": "SAS",
+      "diskType": "High I/O",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0000651",
+          "currency": "USD",
+          "quantityUnit": "GiB-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "evs-screenshot",
+          "locator": "High I/O / ONDEMAND"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "0.0475",
+          "currency": "USD",
+          "quantityUnit": "GiB-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "evs-screenshot",
+          "locator": "High I/O / MONTHLY"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "0.475",
+          "currency": "USD",
+          "quantityUnit": "GiB-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "evs-screenshot",
+          "locator": "High I/O / YEARLY"
+        }
+      ]
+    },
+    {
+      "id": "evs:SSD",
+      "service": "EVS",
+      "sku": "SSD",
+      "diskType": "Ultra-high I/O",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.000302",
+          "currency": "USD",
+          "quantityUnit": "GiB-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "evs-screenshot",
+          "locator": "Ultra-high I/O / ONDEMAND"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "0.22",
+          "currency": "USD",
+          "quantityUnit": "GiB-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "evs-screenshot",
+          "locator": "Ultra-high I/O / MONTHLY"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "2.2",
+          "currency": "USD",
+          "quantityUnit": "GiB-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "evs-screenshot",
+          "locator": "Ultra-high I/O / YEARLY"
+        }
+      ]
+    },
+    {
+      "id": "evs:GPSSD",
+      "service": "EVS",
+      "sku": "GPSSD",
+      "diskType": "General Purpose SSD",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.000143",
+          "currency": "USD",
+          "quantityUnit": "GiB-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "evs-screenshot",
+          "locator": "General Purpose SSD / ONDEMAND"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "0.104",
+          "currency": "USD",
+          "quantityUnit": "GiB-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "evs-screenshot",
+          "locator": "General Purpose SSD / MONTHLY"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "1.04",
+          "currency": "USD",
+          "quantityUnit": "GiB-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "evs-screenshot",
+          "locator": "General Purpose SSD / YEARLY"
+        }
+      ]
+    },
+    {
+      "id": "evs:ESSD",
+      "service": "EVS",
+      "sku": "ESSD",
+      "diskType": "Extreme SSD",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.000658",
+          "currency": "USD",
+          "quantityUnit": "GiB-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "evs-screenshot",
+          "locator": "Extreme SSD / ONDEMAND"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "0.48",
+          "currency": "USD",
+          "quantityUnit": "GiB-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "evs-screenshot",
+          "locator": "Extreme SSD / MONTHLY"
+        },
+        {
+          "billingMode": "YEARLY",
+          "amount": "4.8",
+          "currency": "USD",
+          "quantityUnit": "GiB-year",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "evs-screenshot",
+          "locator": "Extreme SSD / YEARLY"
+        }
+      ]
+    },
+    {
+      "id": "obs:stored-single-az:standard",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Standard",
+      "meter": "stored-single-az",
+      "label": "Data stored (single-AZ)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0210",
+          "currency": "USD",
+          "quantityUnit": "GB-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "Data stored (single-AZ) / Standard"
+        }
+      ]
+    },
+    {
+      "id": "obs:stored-single-az:infrequent-access",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Infrequent Access",
+      "meter": "stored-single-az",
+      "label": "Data stored (single-AZ)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0100",
+          "currency": "USD",
+          "quantityUnit": "GB-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "Data stored (single-AZ) / Infrequent Access"
+        }
+      ]
+    },
+    {
+      "id": "obs:stored-single-az:archive",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Archive",
+      "meter": "stored-single-az",
+      "label": "Data stored (single-AZ)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0040",
+          "currency": "USD",
+          "quantityUnit": "GB-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "Data stored (single-AZ) / Archive"
+        }
+      ]
+    },
+    {
+      "id": "obs:stored-multi-az:standard",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Standard",
+      "meter": "stored-multi-az",
+      "label": "Data stored (multi-AZ)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": null,
+          "currency": "USD",
+          "quantityUnit": "GB-month",
+          "perQuantity": 1,
+          "status": "NOT_LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "Data stored (multi-AZ) / Standard"
+        }
+      ]
+    },
+    {
+      "id": "obs:stored-multi-az:infrequent-access",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Infrequent Access",
+      "meter": "stored-multi-az",
+      "label": "Data stored (multi-AZ)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": null,
+          "currency": "USD",
+          "quantityUnit": "GB-month",
+          "perQuantity": 1,
+          "status": "NOT_LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "Data stored (multi-AZ) / Infrequent Access"
+        }
+      ]
+    },
+    {
+      "id": "obs:stored-multi-az:archive",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Archive",
+      "meter": "stored-multi-az",
+      "label": "Data stored (multi-AZ)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": null,
+          "currency": "USD",
+          "quantityUnit": "GB-month",
+          "perQuantity": 1,
+          "status": "NOT_LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "Data stored (multi-AZ) / Archive"
+        }
+      ]
+    },
+    {
+      "id": "obs:early-deletion-transition:standard",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Standard",
+      "meter": "early-deletion-transition",
+      "label": "Early deletion or transition fee",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": null,
+          "currency": "USD",
+          "quantityUnit": "GB-month",
+          "perQuantity": 1,
+          "status": "NOT_LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "Early deletion or transition fee / Standard"
+        }
+      ]
+    },
+    {
+      "id": "obs:early-deletion-transition:infrequent-access",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Infrequent Access",
+      "meter": "early-deletion-transition",
+      "label": "Early deletion or transition fee",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0100",
+          "currency": "USD",
+          "quantityUnit": "GB-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "Early deletion or transition fee / Infrequent Access"
+        }
+      ]
+    },
+    {
+      "id": "obs:early-deletion-transition:archive",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Archive",
+      "meter": "early-deletion-transition",
+      "label": "Early deletion or transition fee",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0040",
+          "currency": "USD",
+          "quantityUnit": "GB-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "Early deletion or transition fee / Archive"
+        }
+      ]
+    },
+    {
+      "id": "obs:request-read:standard",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Standard",
+      "meter": "request-read",
+      "label": "API requests (read)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0004",
+          "currency": "USD",
+          "quantityUnit": "request",
+          "perQuantity": 10000,
+          "status": "LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "API requests (read) / Standard"
+        }
+      ]
+    },
+    {
+      "id": "obs:request-read:infrequent-access",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Infrequent Access",
+      "meter": "request-read",
+      "label": "API requests (read)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0010",
+          "currency": "USD",
+          "quantityUnit": "request",
+          "perQuantity": 10000,
+          "status": "LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "API requests (read) / Infrequent Access"
+        }
+      ]
+    },
+    {
+      "id": "obs:request-read:archive",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Archive",
+      "meter": "request-read",
+      "label": "API requests (read)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0004",
+          "currency": "USD",
+          "quantityUnit": "request",
+          "perQuantity": 10000,
+          "status": "LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "API requests (read) / Archive"
+        }
+      ]
+    },
+    {
+      "id": "obs:request-write:standard",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Standard",
+      "meter": "request-write",
+      "label": "API requests (write)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0050",
+          "currency": "USD",
+          "quantityUnit": "request",
+          "perQuantity": 10000,
+          "status": "LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "API requests (write) / Standard"
+        }
+      ]
+    },
+    {
+      "id": "obs:request-write:infrequent-access",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Infrequent Access",
+      "meter": "request-write",
+      "label": "API requests (write)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0100",
+          "currency": "USD",
+          "quantityUnit": "request",
+          "perQuantity": 10000,
+          "status": "LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "API requests (write) / Infrequent Access"
+        }
+      ]
+    },
+    {
+      "id": "obs:request-write:archive",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Archive",
+      "meter": "request-write",
+      "label": "API requests (write)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0330",
+          "currency": "USD",
+          "quantityUnit": "request",
+          "perQuantity": 10000,
+          "status": "LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "API requests (write) / Archive"
+        }
+      ]
+    },
+    {
+      "id": "obs:request-delete:standard",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Standard",
+      "meter": "request-delete",
+      "label": "API requests (delete)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0",
+          "currency": "USD",
+          "quantityUnit": "request",
+          "perQuantity": 1,
+          "status": "FREE",
+          "sourceId": "obs-screenshot",
+          "locator": "API requests (delete) / Standard"
+        }
+      ]
+    },
+    {
+      "id": "obs:request-delete:infrequent-access",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Infrequent Access",
+      "meter": "request-delete",
+      "label": "API requests (delete)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0",
+          "currency": "USD",
+          "quantityUnit": "request",
+          "perQuantity": 1,
+          "status": "FREE",
+          "sourceId": "obs-screenshot",
+          "locator": "API requests (delete) / Infrequent Access"
+        }
+      ]
+    },
+    {
+      "id": "obs:request-delete:archive",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Archive",
+      "meter": "request-delete",
+      "label": "API requests (delete)",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0",
+          "currency": "USD",
+          "quantityUnit": "request",
+          "perQuantity": 1,
+          "status": "FREE",
+          "sourceId": "obs-screenshot",
+          "locator": "API requests (delete) / Archive"
+        }
+      ]
+    },
+    {
+      "id": "obs:request-lifecycle-transition:standard",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Standard",
+      "meter": "request-lifecycle-transition",
+      "label": "Lifecycle Transition Request",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": null,
+          "currency": "USD",
+          "quantityUnit": "request",
+          "perQuantity": 10000,
+          "status": "NOT_LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "Lifecycle Transition Request / Standard"
+        }
+      ]
+    },
+    {
+      "id": "obs:request-lifecycle-transition:infrequent-access",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Infrequent Access",
+      "meter": "request-lifecycle-transition",
+      "label": "Lifecycle Transition Request",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0100",
+          "currency": "USD",
+          "quantityUnit": "request",
+          "perQuantity": 10000,
+          "status": "LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "Lifecycle Transition Request / Infrequent Access"
+        }
+      ]
+    },
+    {
+      "id": "obs:request-lifecycle-transition:archive",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Archive",
+      "meter": "request-lifecycle-transition",
+      "label": "Lifecycle Transition Request",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.0330",
+          "currency": "USD",
+          "quantityUnit": "request",
+          "perQuantity": 10000,
+          "status": "LISTED",
+          "sourceId": "obs-screenshot",
+          "locator": "Lifecycle Transition Request / Archive"
+        }
+      ]
+    },
+    {
+      "id": "obs:traffic-upload:standard",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Standard",
+      "meter": "traffic-upload",
+      "label": "Upload traffic to OBS",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0",
+          "currency": "USD",
+          "quantityUnit": "not-specified",
+          "perQuantity": 1,
+          "status": "FREE",
+          "sourceId": "obs-screenshot",
+          "locator": "Upload traffic to OBS / Standard"
+        }
+      ]
+    },
+    {
+      "id": "obs:traffic-upload:infrequent-access",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Infrequent Access",
+      "meter": "traffic-upload",
+      "label": "Upload traffic to OBS",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0",
+          "currency": "USD",
+          "quantityUnit": "not-specified",
+          "perQuantity": 1,
+          "status": "FREE",
+          "sourceId": "obs-screenshot",
+          "locator": "Upload traffic to OBS / Infrequent Access"
+        }
+      ]
+    },
+    {
+      "id": "obs:traffic-upload:archive",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Archive",
+      "meter": "traffic-upload",
+      "label": "Upload traffic to OBS",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0",
+          "currency": "USD",
+          "quantityUnit": "not-specified",
+          "perQuantity": 1,
+          "status": "FREE",
+          "sourceId": "obs-screenshot",
+          "locator": "Upload traffic to OBS / Archive"
+        }
+      ]
+    },
+    {
+      "id": "obs:traffic-obs-to-ecs:standard",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Standard",
+      "meter": "traffic-obs-to-ecs",
+      "label": "Traffic from OBS to ECS servers",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0",
+          "currency": "USD",
+          "quantityUnit": "not-specified",
+          "perQuantity": 1,
+          "status": "FREE",
+          "sourceId": "obs-screenshot",
+          "locator": "Traffic from OBS to ECS servers / Standard"
+        }
+      ]
+    },
+    {
+      "id": "obs:traffic-obs-to-ecs:infrequent-access",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Infrequent Access",
+      "meter": "traffic-obs-to-ecs",
+      "label": "Traffic from OBS to ECS servers",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0",
+          "currency": "USD",
+          "quantityUnit": "not-specified",
+          "perQuantity": 1,
+          "status": "FREE",
+          "sourceId": "obs-screenshot",
+          "locator": "Traffic from OBS to ECS servers / Infrequent Access"
+        }
+      ]
+    },
+    {
+      "id": "obs:traffic-obs-to-ecs:archive",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Archive",
+      "meter": "traffic-obs-to-ecs",
+      "label": "Traffic from OBS to ECS servers",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0",
+          "currency": "USD",
+          "quantityUnit": "not-specified",
+          "perQuantity": 1,
+          "status": "FREE",
+          "sourceId": "obs-screenshot",
+          "locator": "Traffic from OBS to ECS servers / Archive"
+        }
+      ]
+    },
+    {
+      "id": "obs:traffic-replication-put:standard",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Standard",
+      "meter": "traffic-replication-put",
+      "label": "Cross-region replication PUT traffic",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0",
+          "currency": "USD",
+          "quantityUnit": "not-specified",
+          "perQuantity": 1,
+          "status": "FREE",
+          "sourceId": "obs-screenshot",
+          "locator": "Cross-region replication PUT traffic / Standard"
+        }
+      ]
+    },
+    {
+      "id": "obs:traffic-replication-put:infrequent-access",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Infrequent Access",
+      "meter": "traffic-replication-put",
+      "label": "Cross-region replication PUT traffic",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0",
+          "currency": "USD",
+          "quantityUnit": "not-specified",
+          "perQuantity": 1,
+          "status": "FREE",
+          "sourceId": "obs-screenshot",
+          "locator": "Cross-region replication PUT traffic / Infrequent Access"
+        }
+      ]
+    },
+    {
+      "id": "obs:traffic-replication-put:archive",
+      "service": "OBS",
+      "sku": null,
+      "storageClass": "Archive",
+      "meter": "traffic-replication-put",
+      "label": "Cross-region replication PUT traffic",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0",
+          "currency": "USD",
+          "quantityUnit": "not-specified",
+          "perQuantity": 1,
+          "status": "FREE",
+          "sourceId": "obs-screenshot",
+          "locator": "Cross-region replication PUT traffic / Archive"
+        }
+      ]
+    },
+    {
+      "id": "sfs:turbo:previous-generation:standard",
+      "service": "SFS",
+      "sku": null,
+      "fileSystemType": "SFS Turbo",
+      "generation": "Previous-Generation File Systems",
+      "type": "Standard",
+      "prices": [
+        {
+          "billingMode": "ONDEMAND",
+          "amount": "0.00013699",
+          "currency": "USD",
+          "quantityUnit": "GB-hour",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "sfs-screenshot",
+          "locator": "Standard / Pay per Use"
+        },
+        {
+          "billingMode": "MONTHLY",
+          "amount": "0.09",
+          "currency": "USD",
+          "quantityUnit": "GB-month",
+          "perQuantity": 1,
+          "status": "LISTED",
+          "sourceId": "sfs-screenshot",
+          "locator": "Standard / Yearly/Monthly / Monthly"
+        }
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "service": "EVS",
+      "sku": "SAS",
+      "billingMode": "ONDEMAND",
+      "priorAmount": "6.5e-05",
+      "suppliedAmount": "0.0000651",
+      "priorVerifiedAt": "2026-11-17T10:08:26.935988+00:00",
+      "resolution": "preserve-both-pending-independent-official-verification"
+    },
+    {
+      "service": "EVS",
+      "sku": "SAS",
+      "billingMode": "MONTHLY",
+      "priorAmount": "0.04",
+      "suppliedAmount": "0.0475",
+      "priorVerifiedAt": "2026-11-17T10:08:29.175681+00:00",
+      "resolution": "preserve-both-pending-independent-official-verification"
+    },
+    {
+      "service": "EVS",
+      "sku": "SAS",
+      "billingMode": "YEARLY",
+      "priorAmount": "0.47",
+      "suppliedAmount": "0.475",
+      "priorVerifiedAt": "2026-11-17T10:08:31.274172+00:00",
+      "resolution": "preserve-both-pending-independent-official-verification"
+    },
+    {
+      "service": "EVS",
+      "sku": "GPSSD",
+      "billingMode": "MONTHLY",
+      "priorAmount": "0.1",
+      "suppliedAmount": "0.104",
+      "priorVerifiedAt": "2026-11-17T10:08:29.175725+00:00",
+      "resolution": "preserve-both-pending-independent-official-verification"
+    }
+  ],
+  "notes": [
+    "Independent Hourly, Monthly and 1 Year values are transcribed as supplied; no term price is derived.",
+    "Receipt date is not an official verification date or a price-effective date.",
+    "DDS mongos, shard and config remain separate. No replica count, node equivalence or operating-system variant is inferred.",
+    "OBS pay-per-use GB-month is not a monthly subscription and must not be multiplied by monthly hours.",
+    "NOT_LISTED represents the slash shown by the source, not a zero rate or a statement of regional unavailability.",
+    "SFS has an hourly and monthly rate only; no annual rate was supplied.",
+    "Free traffic lines preserve the displayed scope; their unspecified quantity units are not inferred."
+  ]
+}
